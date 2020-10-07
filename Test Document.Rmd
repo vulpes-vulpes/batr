@@ -3,7 +3,6 @@ title: "Test Document"
 author: "Toby J. Thorne"
 date: "07/10/2020"
 output: github_document
-
 ---
 
 ```{r setup, include=FALSE}
