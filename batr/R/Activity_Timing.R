@@ -1,0 +1,102 @@
+#'Plot Timing of First Observations Relative to Sunset
+#'
+#'\code{first_observations_plot} creates a plot showing the first observation of
+#'the specified species relative to local sunset for each site withn a project.
+#'
+#'@family Activity Timing
+#'
+#'@param dataset Object: a \code{raw_data_projectname} data frame genereted by
+#'  the \code{GUANO_loader} function.
+#'@param project_name Character, a brief and relevant reference phrase that will
+#'  be used to name the text file. Ideally mathcing project name used in other
+#'  functions.
+#'@param monitoring_start Character, the date the monitoring began (e.g.
+#'  "2019-01-01")
+#'@param monitoring_end Character, the date the monitoring ceased (e.g.
+#'  "2019-01-01")
+#'@param gaps Object: a \code{gaps_projectname} data frame genereted by the
+#'  \code{log_file_parser} function. Defaults to \code{null}.
+#'@param location Specify a location to filter to a specific site. Default is
+#'  \code{NULL}.
+#'@param survey_year Specify a specific year. Default is \code{NULL}.
+#'@param timezone Character. Specify a timezone for calculating sunset times.
+#'  Default is 'EST', do not change for Ontario data...
+#'@param text_size Numeric: adjusts the size of text in the figure.
+#'@param date_breaks Date value: adjusts the formatting of the month labels on
+#'  the y-axis. See https://www.statmethods.net/input/dates.html for formatting.
+#'@param save_directory Character: if provided a .png image of the plot will be
+#'  saved in the folder specified. Defaults to \code{NULL}: no output saved.
+#'
+#'
+#'@return A plot as an object in the current envrionment, and a saved image if
+#'  selected.
+#'@export
+first_observations_plot <- function(dataset, project_name, species, monitoring_start, monitoring_end, gaps = NULL, location = NULL,
+                                    survey_year = NULL, timezone = 'EST', text_size = 8, date_label = "%b", save_directory = NULL) {
+  species_subset <- dataset[which(dataset$Species==species),] #subset the species
+  if (!is.null(survey_year)) {
+    species_subset <- species_subset[which(lubridate::year(species_subset$Night)==survey_year),]
+  } # filter for a single year
+  if (!is.null(location)) {
+    species_subset <- species_subset[which(species_subset$Location2==location),]
+  } #subset the location if present
+  species_subset <- dplyr::select(species_subset, Night, Species, Location2, Latitude, Longitude, Timestamp) # trim colums for sanity
+  species_subset$Time_PM <- ifelse(lubridate::hour(species_subset$Timestamp) < 12, NA, species_subset$Timestamp) # Change morning observations to NA
+  species_subset <- species_subset[!is.na(species_subset$Time_PM),] # Remove NA values
+  species_subset$Time_PM <- as.POSIXct(species_subset$Time_PM, origin = "1970-01-01") # Return to date/time format
+  species_subset$Time_PM <- species_subset$Time_PM - 3600 # Correct for DST
+  names(species_subset)[names(species_subset) == "Night"] <- "date" # Sets a column name that suncalc will recognise
+  names(species_subset)[names(species_subset) == "Latitude"] <- "lat" # As above
+  names(species_subset)[names(species_subset) == "Longitude"] <- "lon" # As above
+  species_subset <- aggregate(Time_PM ~ date + Location2 + lat + lon, species_subset, function(x) min(x)) # narrow to first observations on each night
+  names(species_subset)[names(species_subset) == "Location2"] <- "Location" # As above
+  locations <- species_subset[!duplicated(species_subset$Location),]
+  locations$Time_PM <- NULL
+  locations$date <- NULL
+  species_subset <- padr::pad(species_subset, by = "date", start_val = as.Date(monitoring_start),
+                              end_val = as.Date(monitoring_end), group = "Location")
+  species_subset <- merge(species_subset, locations, by = "Location", all.x = T)
+  species_subset$lat.x <- NULL; species_subset$lon.x <- NULL
+  names(species_subset)[names(species_subset) == "lat.y"] <- "lat"
+  names(species_subset)[names(species_subset) == "lon.y"] <- "lon"
+  species_subset$sunset <- suncalc::getSunlightTimes(data = species_subset, keep = "sunset", tz = timezone) # Adds a column of sunset
+  species_subset$sunset2 <- species_subset$sunset$sunset
+  species_subset$sunset <- NULL
+  names(species_subset)[names(species_subset) == "sunset2"] <- "sunset"
+  species_subset$sunset <- species_subset$sunset + 3600
+  species_subset$sunset_time <- format(species_subset$sunset, format = "%H:%M:%S") # Remove date infromation from sunset time
+  species_subset$sunset_time <- as.POSIXct(species_subset$sunset_time, format = "%H:%M:%S") # Return sunset time to POSIXct format with date infromatino removed
+  species_subset$ob_time <- format(species_subset$Time_PM, format = "%H:%M:%S") # Remove date infromation from sunset time
+  species_subset$ob_time <- as.POSIXct(species_subset$ob_time, format = "%H:%M:%S") # Return sunset time to POSIXct format with date infromatino removed
+  species_subset$date <- as.Date(species_subset$date)
+  if (!is.null(gaps)) {
+    gaps$ymax <- max(species_subset$ob_time, na.rm = T)
+    gaps$ymin <- min(species_subset$sunset_time)
+  }
+  #assign(paste("Sunset_FO_", project, sep = ""), species_subset, envir = globalenv()) # Save as new data.frame outside the function
+  first_observations_plot <- ggplot2::ggplot() +
+    ggplot2::geom_line(data = species_subset, mapping = ggplot2::aes(x = date, y = sunset_time, group = Location)) +
+    ggplot2::geom_point(data = species_subset, mapping = ggplot2::aes(x = date, y = ob_time)) +
+    ggplot2::scale_x_date(limits = c(as.Date(monitoring_start),as.Date(monitoring_end)), breaks = scales::pretty_breaks(), date_breaks = "1 month", date_labels =  date_label) +
+    ggplot2::ylab("Time") +
+    ggplot2::facet_wrap(
+      ~Location,  ncol = 2, scales = "fixed", strip.position = "top") +#, labeller=location_labeller) +
+    ggplot2::theme_classic() +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5),
+      strip.background = ggplot2::element_blank(),
+      strip.text = ggplot2::element_text(hjust = 0),
+      text = ggplot2::element_text(size = text_size)
+    ) +
+    if (!is.null(gaps)) {
+      ggplot2::geom_rect(data=gaps, ggplot2::aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, alpha=0.9),
+                       show.legend = FALSE)
+    }
+  if (!is.null(save_directory)) {
+    ggplot2::ggsave(paste(save_directory, "/", species, "_first_observations_plot_", project_name, ".png", sep = ""), width = 25, height = 20, units = "cm")
+  }
+  # Save plot to environment
+  #assign(paste(species, "_first_observation_plot_", project_name, sep = ""), species_site_aggregated_plot, envir=globalenv())
+  # Output plot to environment
+  return(first_observations_plot)
+}

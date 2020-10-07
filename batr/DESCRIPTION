@@ -1,0 +1,26 @@
+Package: batr
+Type: Package
+Title: Imports GUANO Anotated Files and Creates Summary Data and Plots
+Version: 0.0.0.9000
+Authors@R: person("Toby", "Thorne", email = "toby@tobythorne.com",
+           role = c("aut", "cre"))
+Description: A collection of tools to import and use GUANO metadata in
+    annotated .wav files of bat recordings. The package depends on comphrensive
+    metadata being present in the files. The package extracts this data to a
+    text file for future loading. It calculates summary data and basic plots. A collection of tools to import and use GUANO metadata in
+    annotated .wav files of bat recordings. The package depends on comphrensive
+    metadata being present in the files. The package extracts this data to a
+    text file for future loading. It calculates summary data and basic plots. 
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 3.1.0)
+Imports: 
+  ggplot2 (>= 3.2.1),
+  guano (>= 0.1),
+  lubridate (>= 1.7.4),
+  magrittr (>= 1.5),
+  dplyr (>= 0.8.3)
+Suggests:
+  suncalc (>= 0.5.0)
+RoxygenNote: 7.1.1
