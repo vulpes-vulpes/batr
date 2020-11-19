@@ -143,7 +143,7 @@ species_daily_site_plot <- function(dataset, project_name, species, monitoring_s
     ggplot2::facet_wrap(
       ~Location,  ncol = 1, scales = y_scale, strip.position = "top") +#, labeller=location_labeller) +
     ggplot2::geom_hline(yintercept=0) +
-    ggplot2::theme_classic() +e
+    ggplot2::theme_classic() +
     ggplot2::theme(
       plot.title = ggplot2::element_text(hjust = 0.5),
       strip.background = ggplot2::element_blank(),
