@@ -280,7 +280,8 @@ log_file_parser <- function(path, dataset_name, monitoring_start, monitoring_end
     colnames(date_range2) <- c("Date")
     sites2 <- do.call("rbind", replicate(length(unique(date_range2$Date)), sites2, simplify = FALSE))
     date_range2 <- cbind(date_range2, sites2)
-    output$Date <- as.Date(as.numeric(output$Date), "1970-01-01")
+    output$Date <- as.Date(output$Date)
+    #output$Date <- as.Date(as.numeric(output$Date), "1970-01-01") Creates NAs on Mac
     output <- merge(date_range2, output, all.x = T)
     output[is.na(output)] <- 0
     output$Microphone.Failure[output$Microphone.Failure == 0] <- TRUE
