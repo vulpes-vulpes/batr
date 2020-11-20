@@ -280,7 +280,7 @@ monitoring_effort_plot <- function(gaps, project_name, monitoring_start, monitor
       text = ggplot2::element_text(size=text_size)
     )
   if(isTRUE(title)) {
-    species_daily_site_plot <- species_daily_site_plot + ggplot2::ggtitle(paste("Total Monitor Uptime by Site", sep = ""))
+    monitoring_effort_plot <- monitoring_effort_plot + ggplot2::ggtitle(paste("Total Monitor Uptime by Site", sep = ""))
   }
   # Save plot to a specified folder if requested
   #if (!is.null(save_directory)) {
