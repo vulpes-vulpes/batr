@@ -266,13 +266,30 @@ log_file_parser <- function(path, dataset_name, monitoring_start, monitoring_end
 
   file_list2 <- list.files(path, recursive = T, pattern = "*.csv") # Creates a list of files in the folder
   if (length(file_list2) > 1) {
-    output <- data.frame(matrix(vector(), 0, 4,
-                               dimnames=list(c(), c("Date", "Location", "Log_Count", "Microphone Failure"))),
-                        stringsAsFactors=F)
-    for (file in file_list2){
+    output <- as.data.frame(file_list2)
+    output$Date <- strptime(gsub(".*/", "", output$file_list2), "log %Y-%m-%d")
+    output$Location <- sub("\\/.*", "", output$file_list2)
+    output$Log_Count <- NA
+    output$Active <- NA
+    row_iterator <- 1
+    for (file in output$file_list2){
       file_data <- read.csv(paste(path, "/", file, sep = ""))
-      output[nrow(output)+1,] <- c(as.character(strptime(gsub(".*/", "", file), "log %Y-%m-%d")), sub("\\/.*", "", file), 0, any(grepl("Status: Check microphone", file_data[,3])))
-      rm(file_data)
+      
+      mic_fails <- length(grep("Status: Check microphone", file_data[,3]))
+      files <- length(grep("FILE", file_data[,2]))
+      recording <- any(grepl("Status: Recording now", file_data[,3]))
+    
+      if (mic_fails > 1 & files < 10) {
+        output[row_iterator, 5] <- "N"
+      } else if (mic_fails > 1 | isFALSE(recording)) {
+        output[row_iterator, 5] <- "N"
+      } else {
+        output[row_iterator, 5] <- "Y"
+      }
+      
+      row_iterator <- row_iterator + 1
+      #output[nrow(output)+1,] <- c(as.character(strptime(gsub(".*/", "", file), "log %Y-%m-%d")), sub("\\/.*", "", file), 0, any(grepl("Status: Check microphone", file_data[,3])))
+      #rm(file_data)
     }
     sites2 <- as.data.frame(unique(output$Location))
     colnames(sites2) <- c("Location")
@@ -281,12 +298,12 @@ log_file_parser <- function(path, dataset_name, monitoring_start, monitoring_end
     sites2 <- do.call("rbind", replicate(length(unique(date_range2$Date)), sites2, simplify = FALSE))
     date_range2 <- cbind(date_range2, sites2)
     output$Date <- as.Date(output$Date)
-    #output$Date <- as.Date(as.numeric(output$Date), "1970-01-01") Creates NAs on Mac
     output <- merge(date_range2, output, all.x = T)
-    output[is.na(output)] <- 0
-    output$Microphone.Failure[output$Microphone.Failure == 0] <- TRUE
-    output$Active <- ifelse(output[,4]==F, "Y", "N")
-    output$Microphone.Failure <- NULL
+    output[is.na(output)] <- "N"
+    #output$Microphone.Failure[output$Microphone.Failure == 0] <- TRUE
+    #output$Active <- ifelse(output[,4]==F, "Y", "N")
+    #output$Microphone.Failure <- NULL
+    output$file_list2 <- NULL
     output$Log_Count <- ifelse(output[,4]=="Y", 1, 0)
   }
   if (exists("active_dates") & exists("output")) {
