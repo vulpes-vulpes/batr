@@ -20,7 +20,8 @@ Imports:
   guano (>= 0.1),
   lubridate (>= 1.7.4),
   magrittr (>= 1.5),
-  dplyr (>= 0.8.3)
+  dplyr (>= 0.8.3),
+  reshape2 (>= 1.4.4)
 Suggests:
   suncalc (>= 0.5.0)
 RoxygenNote: 7.1.1
