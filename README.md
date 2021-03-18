@@ -1,2 +1,135 @@
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
 # batr
-Tools 
+
+<!-- badges: start -->
+
+<!-- badges: end -->
+
+The goal of batr is to streamline analyses and reporting of bat acoustic
+monitoring data containing [GUANO metadata](https://guano-md.org/). The
+package includes code to extract GUANO data directly from attributed WAV
+files, and to create summaries, plots and analyses.
+
+The package is currently a work in progress. The basic functions work\*,
+but may be buggy for different use cases. Improvements and additional
+features are planned as time permits. Feedback or contributions are
+welcomed.
+
+\*currently only for the eight bat species in Ontario
+
+## Installation
+
+Development is ongoing, but you can install the current version from
+[GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("vulpes-vulpes/batr")
+```
+
+## Using batr
+
+### Formatting Data For Import:
+
+#### Primary Data (WAV files):
+
+Primary input data, in the form of [GUANO](https://guano-md.org/)
+attributed WAV files of bat echolocation calls, need to be arranged and
+attributed correctly to work smoothly with batr. Regardless of the
+recording and processing approach, *all* WAV files should have the
+following GUANO fields at minimum:
+
+  - Timestamp (per [GUANO metadata](https://guano-md.org/)
+    specification)
+  - Species Identification (Species.Auto.ID and/or Species.Maunal.ID)
+  - Loc Position (formatted as decimal lat / lon, e.g.: “00.000000
+    -00.00000”, any number of decimal places can be specified)
+  - Location / Site Name (unique to each individual recording location,
+    note that the [GUANO metadata](https://guano-md.org/)) specification
+    does not define a specific field for these data, but batr requires
+    it, users may choose their own field for these data and inform batr
+    when using the `GUANO_loader` function)
+
+#### Tertiary Data (Recorder log / summary files):
+
+Most automated bat acoustic monitoring hardware produce some form of log
+file to track device activity, errors etc. These files contain valuable
+data to determine survey effort: determining whether the unit was active
+at a given time. This is valuable for many analyses, especially those
+involving long-term data collection, because it makes it possible to
+determine whether a result of zero bats observed in a given time period
+occurred because there were zero bats, **or** because the recording
+device was inactive for any reason at that time.
+
+batr currently has the ability to import and parse such files from the
+following devices:
+
+  - Anabat Swift: the daily CSV log files output by the Swift should be
+    grouped in one directory per recording location, with te directory
+    name **exactly** matching the Location / Site Name specified in the
+    GUANO metadata of the WAV files
+  - Wildlife Acoustics SM3BAT, SM4BAT, SMmini: summary TXT files
+    produced by Wildlife Acoustics recorders should be renamed to
+    **exactly** match the Location / Site Name specified in the GUANO
+    metadata of the WAV files, if there are multiple TXT files for the
+    same monitoring location they can be distinguished with a counter
+    following a hyphen in the file name (e.g. site-1.txt, site-2.txt)
+
+If you wish to see log files from other devices support please get in
+touch and send example files, and I’ll see what I can do.
+
+### Reading GUANO:
+
+The `GUANO_reader` function (see below) examines all WAV files in a
+directory (and subdirectories), reads any [GUANO
+metadata](https://guano-md.org/) that are present into a table, and
+saves the resulting table as a tab delineated TXT file. **Depending on
+the number of files included, reading the metadata may take a long
+time** (thousands of files will easily take over an hour to read). The
+advantage of reading to a TXT file in this manner is that the resulting
+file is smaller, more portable and can read more quickly in future. A
+limitation is that if the GUANO metadata for any of the WAV files is
+modified, the TXT file must be recreated. Future plans include a
+mechanism for partial updates, and ultimately database integration.
+
+``` r
+GUANO_reader(path_to_directory, project_name)
+```
+
+### Loading GUANO:
+
+Once a TXT file has been generated using `GUANO_reader` function, it can
+be quickly loaded for further analysis. `GUANO_loader` will read the TXT
+file and produce four data frames in the environment:
+
+  - clean\_data\_test: a tidied and sanitised version of the GUANO
+    metadata, with key elements useful for further analyses
+  - raw\_data\_test: a full reproduction of the GUANO metadata of the
+    WAV files
+  - species\_night\_site: counts of species observation per species per
+    night per site
+  - species\_site\_summary: the total number of observations of each
+    species at each monitoring location
+
+<!-- end list -->
+
+``` r
+GUANO_loader(file = path_to_TXT_file, dataset_name = project_name, town.location = )
+```
+
+### Importing Log Files:
+
+These data can be imported using the `log_file_parser` function (see
+`?log_file_parser` for usage details). This function produces four data
+frames in the environment as follows:
+
+  - active\_dates: Y/N output of whether each recorder was active on
+    each night during the monitoring period
+  - Gaps\_test: monitoring gaps for each recorder (used to visualise
+    survey effort in plots)
+  - monthly\_active\_nights: the number of nights that each recorder was
+    active in each month
+  - uptimes: percentage uptime for each recorder throughout the
+    monitoring period

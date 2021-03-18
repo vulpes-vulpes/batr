@@ -57,9 +57,9 @@ GUANO_reader <- function(folderpath, project_name) {
 #' GUANO.loader("C:/Folder/Folder/Project_Name.txt", "Project_Name")
 #'}
 #'@export
-GUANO_loader <- function (file, project_name, town.location = 1) {
+GUANO_loader <- function (file, project_name, location = "SB.Town") {
 
-  # Import the textfile of raw data for the folder:
+  # Import the TXT of raw data for the folder:
   data <- read.table(file, header = T, sep="\t")
 
   # Convert the Timestamp column to Date-Time format:
@@ -82,12 +82,13 @@ GUANO_loader <- function (file, project_name, town.location = 1) {
 
   # Merge Town and SB|Town columns to account for the way different versions of SonoBat name these columns!
   data$Location <- sapply(strsplit(as.character(data$File.Name),"-"), `[`, 1)
-  if (town.location == 1) {
-    data$Location2 <- as.factor(data$SB.Town)
-  } else if (town.location == 2) {
-    data <- dplyr::mutate(data, Location2 = as.factor(ifelse(is.na(Town),as.character(SB.Town), as.character(Town))))
-  } else if (town.location == 3)
-    data$Location2 <- as.factor(data$SB.Location)
+  data$Location2 <- as.factor(data[[location]])
+  #if (town.location == 1) {
+  #  data$Location2 <- as.factor(data$SB.Town)
+  #} else if (town.location == 2) {
+  #  data <- dplyr::mutate(data, Location2 = as.factor(ifelse(is.na(Town),as.character(SB.Town), as.character(Town))))
+  #} else if (town.location == 3)
+  #  data$Location2 <- as.factor(data$SB.Location)
   # Change column names as required:
   #colnames(data)[colnames(data)=="Town"] <- "Location"
   colnames(data)[colnames(data)=="Loc.Position.Lat"] <- "Latitude"
