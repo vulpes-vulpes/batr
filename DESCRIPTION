@@ -1,7 +1,7 @@
 Package: batr
 Type: Package
 Title: Tools for Using Bat Acoustic Monitoring Data in R
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: person("Toby", "Thorne", email = "toby@tobythorne.com",
            role = c("aut", "cre"))
 Description: A collection of tools to import and analyse data from WAV files 
