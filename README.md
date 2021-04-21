@@ -17,7 +17,8 @@ but may be buggy for different use cases. Improvements and additional
 features are planned as time permits. Feedback or contributions are
 welcomed.
 
-\*currently only for the eight bat species in Ontario
+**Note**, the current release, 0.1.0, only functions for the eight bat
+species in Ontario.
 
 ## Installation
 
