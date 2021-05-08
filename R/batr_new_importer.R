@@ -27,15 +27,11 @@
 #'@export
 read_wavs <- function(action, input_path, site_col, data_path = NULL) {
 
-    if (action == "New") {
-      if (!is.null(data_path)) {
-      overwrite <- readline(prompt="Overwrite existing data file? Y/N: ")
-        if (overwrite == "Y" | overwrite == "y") {
-        .new_observations(input_path, site_col, data_path)
-      }
-    } else {
+  if (action == "New" | action == "Add" | action == "Update") {
+    data_path <- .check_data_path(data_path, action)
+  }
+  if (action == "New") {
       .new_observations(input_path, site_col, data_path)
-    }
   } else if (action == "Add") {
     .add_observations(input_path, site_col, data_path)
   } else if (action == "Update") {
@@ -45,22 +41,12 @@ read_wavs <- function(action, input_path, site_col, data_path = NULL) {
   }
 }
 
+
+
 .new_observations <- function(input_path, site_col, data_path) {
   file_list <- .get_file_list(input_path) # Get list of files
   observations <- suppressWarnings(.read_file_GUANO(file_list, site_col)) # Read GUANO
-  if (is.null(data_path)) {
-    save_path <- readline(prompt="No 'data_path' specified. Please input path to save data file (e.g. C/user/directory):")
-    if (!dir.exists(save_path)) {
-      print("Error! Directory does not exist. Exiting, file not saved!.")
-    } else {
-      filename <- readline(prompt="Please input your desired filename:")
-      data_path <- paste(save_path, "/", filename, ".RData", sep = "")
-      save(observations, file = data_path)
-      # assign("observations", observations, envir=globalenv())
-    }
-  } else if (!is.null(data_path)) {
-    save(observations, file = data_path) 
-  } # FIXME Save to data file
+  .save_to_RDATA(observations, data_path)
 }
 
 .add_observations <- function(input_path, site_col, data_path) {
@@ -77,7 +63,7 @@ read_wavs <- function(action, input_path, site_col, data_path = NULL) {
   observations <- rbind(observations_original, observations_new) # Bind original and new data
   observations <- observations[order(observations$File.Name),] # Sort
   rownames(observations) <- NULL # Reset row names
-  save(observations, file = data_path) # FIXME Save to datafile
+  .save_to_RDATA(observations, data_path)
 }
 
 .update_observations <- function(input_path, site_col, data_path) {
@@ -103,7 +89,7 @@ read_wavs <- function(action, input_path, site_col, data_path = NULL) {
   observations <- rbind(observations_original, observations_update) # Bind new and updated rows
   observations <- observations[order(observations$File.Name),] # Reorder by filename
   rownames(observations) <- NULL # Reset row names
-  save(observations, file = data_path) 
+  .save_to_RDATA(observations, data_path)
 }  
 
 .get_file_list <- function(input_path, list = F) {
