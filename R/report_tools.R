@@ -69,7 +69,7 @@ multi_site_short_report <- function(data_path, project_name, species_list) {
 
 .speces_site_plot <- function(observations, active_dates, species = NULL, sites = NULL, text_size = 8, date_label = "%b") {
   
-  if (!is.null(species)) { observations_s <- data.table::setDT(observations)[Species %chin% species] }
+  if (!is.null(species)) { observations_s <- data.table::setDT(observations)[Species %chin% species] } else {observations_s <- observations}
   if (!is.null(sites)) {observations_s <- data.table::setDT(observations_s)[Location %chin% sites] }
   if (!is.null(sites)) {active_dates_s <- data.table::setDT(active_dates)[Location %chin% sites] }
   
