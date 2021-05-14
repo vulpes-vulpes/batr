@@ -56,6 +56,7 @@ log_file_parser("C:/Folder/Folder/Log_Files_Folder", "Project_Name", "2019-01-01
 \seealso{
 Other Import Functions: 
 \code{\link{GUANO_loader}()},
-\code{\link{GUANO_reader}()}
+\code{\link{GUANO_reader}()},
+\code{\link{read_wavs}()}
 }
 \concept{Import Functions}

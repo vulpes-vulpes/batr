@@ -4,7 +4,7 @@
 \alias{GUANO_loader}
 \title{Load Previously Read GUANO Metadata From Text File}
 \usage{
-GUANO_loader(file, project_name, town.location = 1)
+GUANO_loader(file, project_name, location = "SB.Town")
 }
 \arguments{
 \item{file}{Character, a \strong{full path} to a text file created by
@@ -36,6 +36,7 @@ GUANO.loader("C:/Folder/Folder/Project_Name.txt", "Project_Name")
 \seealso{
 Other Import Functions: 
 \code{\link{GUANO_reader}()},
-\code{\link{log_file_parser}()}
+\code{\link{log_file_parser}()},
+\code{\link{read_wavs}()}
 }
 \concept{Import Functions}

@@ -131,6 +131,7 @@ read_wavs <- function(action, input_path, site_col, data_path = NULL) {
   colnames(observations)[colnames(observations)=="Loc.Position.Lat"] <- "Latitude"
   colnames(observations)[colnames(observations)=="Loc.Position.Lon"] <- "Longitude"
   colnames(observations)[colnames(observations)==site_col] <- "Location" # Set location column
+  observations <- observations[!is.na(observations$Location),]
     
   swift_files <- observations[observations$Model == 'Swift',] # Subset files recorded with Anabat Swift
   location_list <- unique(swift_files$Location) # Find locations
@@ -148,6 +149,7 @@ read_wavs <- function(action, input_path, site_col, data_path = NULL) {
   if (exists("swift_files_mod")) {
     observations <- rbind(observations, swift_files_mod) # Replace removed rows with modified rows
   }
+  rm(swift_files_mod, swift_files, location_list, location, location_subset)
   
   observations <- dplyr::select(observations, Timestamp, Species, Location, Latitude, Longitude, Species.Auto.ID, Species.Manual.ID, Night, File.Name, everything())
   return(observations)
