@@ -46,7 +46,7 @@ multi_site_short_report <- function(data_path, project_name, species_list) {
 #'@return A quick summary table of total species observations and survey effort.
 #'
 .quick_summary <- function (observations, active_dates = NULL, species = NULL) {
-  if (!is.null(species)) { observations_s <- data.table::setDT(observations)[Species %chin% species] }
+  if (!is.null(species)) { observations_s <- data.table::setDT(observations)[Species %chin% species] } else {observations_s <- observations}
   observations_s$Loc_Year <- paste(lubridate::year(observations_s$Night), observations_s$Location, sep = " ")
   quick_summary <- as.data.frame.matrix(table(observations_s$Loc_Year, observations_s$Species)) # Create table of Species by Location
   quick_summary <- cbind(Location = rownames(quick_summary), quick_summary) # Fix row names to column
