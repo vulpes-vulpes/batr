@@ -57,7 +57,7 @@ multi_site_short_report <- function(data_path, project_name, species_list) {
   quick_summary <- quick_summary[headers]
   quick_summary$Year = substr(quick_summary$Location, 1, 4)
   quick_summary$Location <- substring(quick_summary$Location, 6, 1000000L)
-  quick_summary$Monitoring_Nights <- sapply(quick_summary$Location, function(l) nrow(active_dates[active_dates$Location==l,]))
+  quick_summary$Monitoring_Nights <- sapply(quick_summary$Location, function(l) nrow(active_dates[active_dates$Location==l & active_dates$Log_Count > 0.5,]))
   
   #div <- sapply(quick_summary$Location, function(l) nrow(active_dates[active_dates$Location==l,])) # , quick_summary$Location)
   #div <- as.data.frame(div)
