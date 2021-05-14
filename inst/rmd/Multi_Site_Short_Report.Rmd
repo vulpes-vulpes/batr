@@ -18,7 +18,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r , include=FALSE}
 load(params$data)
-library (english)
+library(english)
+library(batr)
 ```
 
 # Report for `r params$project` 
@@ -29,12 +30,12 @@ This report was automatically generated from available data on `r params$date`.
 
 `r english::Words(length(unique(observations$Location)))` ultrasonic were deployed between `r min(observations$Night)` and `r max(observations$Night)`, a total of `r max(observations$Night) - min(observations$Night)` nights. The recorders were programmed to record potential bat sounds between 30 mintues prior to dusk until 30 minutes after dawn. The recorders was installed at [LAT/LON], as shown in Figure 1 below. 
 ```{r, echo=FALSE, message=FALSE, fig.cap="Acoustic monitoring locations. Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.", fig.align='center'}
-.map4report <- function(observations) {
-  locations <- as.data.frame(cbind(unique(observations$Longitude), unique(observations$Latitude)))
-  colnames(locations) <- c("Longitude","Latitude")
-  map <- ggmap::qmplot(Longitude, Latitude, data = locations, maptype = "toner-lite", extent = "normal")
-  return(map)
-}
+# .map4report <- function(observations) {
+#   locations <- as.data.frame(cbind(unique(observations$Longitude), unique(observations$Latitude)))
+#   colnames(locations) <- c("Longitude","Latitude")
+#   map <- ggmap::qmplot(Longitude, Latitude, data = locations, maptype = "toner-lite", extent = "normal")
+#   return(map)
+# }
 .map4report(observations)
 ```
 Data were processed by Toronto Zoo Native Bat Conversation Staff. First, files that did not contain potential bat tonal signals were removed from the data, then the files were assigned species identiteis using SonoBat auto-classification software. Staff then manually checked all identifications of Endangered species and five percent of other species to confirm accuracy. 

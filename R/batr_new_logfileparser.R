@@ -1,4 +1,4 @@
-read_logs <- function(log_path, data_path = NULL) {
+read_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, monitoring_end = NULL) {
   
   data_path <- .check_data_path(data_path)
   
@@ -89,6 +89,23 @@ read_logs <- function(log_path, data_path = NULL) {
   } else {
     active_dates <- active_dates
   }
-  active_dates <- subset(active_dates, active_dates$Log_Count > 0)
+  
+  ### Add Gap Dates
+  
+  monitoring_start <- if (is.null(monitoring_start)) {monitoring_start <- min(unique(active_dates$Date))}
+  monitoring_end <- if (is.null(monitoring_end)) {monitoring_end <- max(unique(active_dates$Date))}
+  
+  sites <- as.data.frame(unique(active_dates$Location))
+  colnames(sites) <- c("Location")
+  date_range <- as.data.frame(rep(seq(as.Date(monitoring_start),as.Date(monitoring_end), by = 1), each = length(sites$Location)))
+  colnames(date_range) <- c("Date")
+  sites <- do.call("rbind", replicate(length(unique(date_range$Date)), sites, simplify = FALSE))
+  date_range <- cbind(date_range, sites)
+  # output$Date <- as.Date(output$Date)
+  active_dates <- merge(date_range, active_dates, all.x = T)
+  active_dates$Log_Count[is.na(active_dates$Log_Count)] <- 0
+  
+  
+  # active_dates <- subset(active_dates, active_dates$Log_Count > 0)
   .save_to_RDATA(active_dates, data_path)
 }
