@@ -17,7 +17,8 @@ one_site_short_report <- function(data_path, project_name, species_list) {
 #'@export
 multi_site_short_report <- function(data_path, save_path, project_name, author, species, sites) {
   rmarkdown::render(input = system.file("rmd", "Multi_Site_Short_Report.Rmd", package = "batr"), 
-                    output_file = paste0(save_path, "/" , project_name, ".pdf"),
+                    output_file = project_name,
+                    output_dir = save_path,
                     params = list(project = project_name,
                                   author = author,
                                   species = species,
