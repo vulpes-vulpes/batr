@@ -23,6 +23,8 @@ Imports:
   english(>= 1.2),
   pbapply (>= 1.4),
   ggrepel (>= 0.9.1)
+  rmarkdown (>= 2.8)
+  bookdown (>= 0.22)
 Suggests:
     suncalc (>= 0.5.0),
     knitr,

@@ -15,9 +15,9 @@ one_site_short_report <- function(data_path, project_name, species_list) {
 #' Insert Example!
 #'}
 #'@export
-multi_site_short_report <- function(data_path, project_name, author, species, sites) {
+multi_site_short_report <- function(data_path, save_path, project_name, author, species, sites) {
   rmarkdown::render(input = system.file("rmd", "Multi_Site_Short_Report.Rmd", package = "batr"), 
-                    output_file = paste0("/Users/toby/Documents/0 - Inbox/Bat_Test_Dataset/" , project_name, ".pdf"),
+                    output_file = paste0(save_path, "/" , project_name, ".pdf"),
                     params = list(project = project_name,
                                   author = author,
                                   species = species,
