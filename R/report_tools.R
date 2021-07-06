@@ -48,7 +48,7 @@ multi_site_short_report <- function(data_path, save_path, project_name, author, 
   locations$Latitude <- as.numeric(locations$Latitude)
   locations$Longitude <- as.numeric(locations$Longitude) 
    
-  map <- ggmap::qmplot(x = Longitude, y = Latitude, data = locations, maptype = "toner-lite", extent = "normal", zoom = 5) 
+  map <- ggmap::qmplot(x = Longitude, y = Latitude, data = locations, maptype = "toner-lite", extent = "normal") +
     if (labels == T) {   
              ggrepel::geom_text_repel(data = locations,
             suppressWarnings(ggplot2::aes(label = Location)),
@@ -88,11 +88,11 @@ multi_site_short_report <- function(data_path, save_path, project_name, author, 
   return(quick_summary)
 }
 
-.speces_site_plot <- function(observations, active_dates, species = NULL, sites = NULL, text_size = 8, date_label = "%b") {
+.speces_site_plot <- function(observations, active_dates = NULL, species = NULL, sites = NULL, text_size = 8, date_label = "%b") {
   
   if (!is.null(species)) { observations_s <- data.table::setDT(observations)[Species %chin% species] } else {observations_s <- observations}
   if (!is.null(sites)) {observations_s <- data.table::setDT(observations_s)[Location %chin% sites] }
-  if (!is.null(sites)) {active_dates_s <- data.table::setDT(active_dates)[Location %chin% sites] } else {active_dates_s <- active_dates}
+  if (!is.null(sites) && !is.null(active_dates)) {active_dates_s <- data.table::setDT(active_dates)[Location %chin% sites] } else {active_dates_s <- active_dates}
   
   
   species_night_site <- aggregate(observations_s$Species, list(
@@ -100,49 +100,53 @@ multi_site_short_report <- function(data_path, save_path, project_name, author, 
   names(species_night_site)[names(species_night_site) == "x"] <- "Count"
   
   
-  active_dates_s <- active_dates_s[order(active_dates_s$Location),]
+
   
-  failed_dates <- active_dates_s[which(active_dates_s$Log_Count==0),]
-  #failed_dates$Active <- NULL
-  failed_dates$Gaps <- 0 # Create Gaps Column
-  failed_dates[1,4] <- 1 # Set first row to 1
-  row <- 2 # Set iterator to second row
-  maximum_row <- length(failed_dates$Gaps) + 1 # Calculate maximum
-  while (row < maximum_row) { # While loop to add consequtive labels based on date differneces
-    rowdown <- row - 1 # Create value for row - 1
-    if (failed_dates[row,1] - failed_dates[rowdown,1] == 1) { #If dates are consecutive, set same as row above
-      failed_dates [row,4] <- failed_dates[rowdown,4]
-    } else { # Else add one
-      failed_dates[row,4] <- failed_dates[rowdown,4] + 1
-    }
-    row <- row + 1 # Interate row
-  } # While loop to iterate gap numbers
-  maximum_fail <- max(failed_dates$Gaps) # Calculate number of gaps
-  activity <- failed_dates # Copy dates without recordings to a new data frame
-  activity$Date <- NULL # Remove unnecessary column
-  activity$Log_Count <- NULL # Remove unnecessary column
-  activity <- unique(activity) # Remove duplicate rows
-  fail <- 1 # Create fail variable
-  activity$xmin <- 0 # Create empty column for xmax
-  while (fail < (maximum_fail+1)) {
-    butthead <- failed_dates[failed_dates$Gaps == fail,1]
-    activity[fail,3] <- min(butthead$Date)
-    fail <- fail + 1
-  } # Compute end date for each break
-  activity$xmin <- as.Date(activity$xmin, origin = "1970-01-01") # Convert to date
-  fail <- 1 # Reset fail variable
-  activity$xmax <- 0 # Create empty column for xmin
-  while (fail < (maximum_fail+1)) {
-    butthead <- failed_dates[failed_dates$Gaps == fail,1]
-    activity[fail,4] <- max(butthead$Date)
-    fail <- fail + 1
-  } # Compute start date for each break
-  activity$xmax <- as.Date(activity$xmax, origin = "1970-01-01") # Convert to date
-  activity$ymax <- Inf
-  activity$ymin <- 0
-  activity$Gaps <- NULL
-  #assign(paste("Gaps_", dataset_name, sep = ""),activity,.GlobalEnv)
-  
+  if (!is.null(active_dates)) {
+    
+    active_dates_s <- active_dates_s[order(active_dates_s$Location),]
+    
+    failed_dates <- active_dates_s[which(active_dates_s$Log_Count==0),]
+    #failed_dates$Active <- NULL
+    failed_dates$Gaps <- 0 # Create Gaps Column
+    failed_dates[1,4] <- 1 # Set first row to 1
+    row <- 2 # Set iterator to second row
+    maximum_row <- length(failed_dates$Gaps) + 1 # Calculate maximum
+    while (row < maximum_row) { # While loop to add consequtive labels based on date differneces
+      rowdown <- row - 1 # Create value for row - 1
+      if (failed_dates[row,1] - failed_dates[rowdown,1] == 1) { #If dates are consecutive, set same as row above
+        failed_dates [row,4] <- failed_dates[rowdown,4]
+      } else { # Else add one
+        failed_dates[row,4] <- failed_dates[rowdown,4] + 1
+      }
+      row <- row + 1 # Interate row
+    } # While loop to iterate gap numbers
+    maximum_fail <- max(failed_dates$Gaps) # Calculate number of gaps
+    activity <- failed_dates # Copy dates without recordings to a new data frame
+    activity$Date <- NULL # Remove unnecessary column
+    activity$Log_Count <- NULL # Remove unnecessary column
+    activity <- unique(activity) # Remove duplicate rows
+    fail <- 1 # Create fail variable
+    activity$xmin <- 0 # Create empty column for xmax
+    while (fail < (maximum_fail+1)) {
+      butthead <- failed_dates[failed_dates$Gaps == fail,1]
+      activity[fail,3] <- min(butthead$Date)
+      fail <- fail + 1
+    } # Compute end date for each break
+    activity$xmin <- as.Date(activity$xmin, origin = "1970-01-01") # Convert to date
+    fail <- 1 # Reset fail variable
+    activity$xmax <- 0 # Create empty column for xmin
+    while (fail < (maximum_fail+1)) {
+      butthead <- failed_dates[failed_dates$Gaps == fail,1]
+      activity[fail,4] <- max(butthead$Date)
+      fail <- fail + 1
+    } # Compute start date for each break
+    activity$xmax <- as.Date(activity$xmax, origin = "1970-01-01") # Convert to date
+    activity$ymax <- Inf
+    activity$ymin <- 0
+    activity$Gaps <- NULL
+    #assign(paste("Gaps_", dataset_name, sep = ""),activity,.GlobalEnv)
+  }
   
   # Create labeller to provide more verbose labels on the plot facets
   species.labs <- c("Big Brown Bat", "Eastern Red Bat", "Hoary Bat", "Silver-haired Bat", "Myotis Spp.",
@@ -153,12 +157,10 @@ multi_site_short_report <- function(data_path, save_path, project_name, author, 
   # Create plot
   species_site_plot <- ggplot2::ggplot() +
     ggplot2::geom_bar(data = species_night_site, mapping = ggplot2::aes(x = Night, y = Count, fill = Location), stat = "identity") + #, fill = "black") +
-    ggplot2::scale_y_continuous(name = "Calls per Night", breaks = scales::pretty_breaks(n = 2)) +
-    ggplot2::scale_x_date(name = ggplot2::element_blank(), limits = c(as.Date(min(observations_s$Night)),as.Date(max(observations_s$Night))), breaks = scales::pretty_breaks(), date_breaks = "1 month", date_labels =  date_label) +
+    ggplot2::scale_y_continuous(name = "Calls per Night") + #, breaks = scales::pretty_breaks(n = 2)) +
+    #ggplot2::scale_x_date(name = ggplot2::element_blank(), limits = c(as.Date(min(observations_s$Night)),as.Date(max(observations_s$Night))), breaks = scales::pretty_breaks(), date_breaks = "1 month", date_labels =  date_label) + 
     #date_breaks = "1 month", date_labels =  "%b %Y") + # limits = c(as.Date("2017-05-01."),as.Date("2017-11-30")),
     #ggplot2::ggtitle("Total Activity of Bats") +
-    ggplot2::geom_rect(data=activity, ggplot2::aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, alpha=0.9),
-                       show.legend = FALSE) + # Add gaps if available
     ggplot2::facet_grid(
       Species~Location, scales = "free_y",
       labeller = ggplot2::labeller(Species = species.labs)) +
@@ -170,7 +172,11 @@ multi_site_short_report <- function(data_path, save_path, project_name, author, 
       strip.text = ggplot2::element_text(hjust = 0),
       text = ggplot2::element_text(size=text_size),
       legend.position = "none"
-    ) 
+    ) #+
+    #if (!is.null(active_dates)) {
+    #  ggplot2::geom_rect(data=activity, ggplot2::aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, alpha=0.9),
+    #                     show.legend = FALSE) # Add gaps if available
+    #} 
 
   return(species_site_plot)
 }

@@ -1,8 +1,10 @@
 ---
 header-includes:
-  - \usepackage[scaled]{helvet}
+#  - \usepackage[scaled]{helvet}
   - \usepackage[T1]{fontenc}
-  - \renewcommand\familydefault{\sfdefault}
+#  - \renewcommand\familydefault{\sfdefault}
+  - \renewcommand{\rmdefault}{phv} % Arial
+  - \renewcommand{\sfdefault}{phv} % Arial
   - \usepackage{caption}
   - \usepackage{booktabs}
   - \usepackage{multirow}
@@ -24,22 +26,23 @@ geometry:
 - heightrounded
 fontsize: 11pt
 params:
-  project: Maitland Valley Conservation Authority
+  project: Art Wiebe Site 1
   author: Toronto Zoo Native Bat Conservation Program
   date: !r Sys.Date()
-  data: /Users/toby/Toronto Zoo/Bat Conservation - General/2 - Program Data/1 - Acoustic
-    Monitoring Data/0 - New Format Data/NWMO-SB.RData
+  data: /Users/toby/Desktop/5 Community Science/Community_Science.RData
   species: !r c("Epfu", "Labo", "Laci", "Lano", "Myle", "Mylu", "Myse", "Pesu")
-  site: !r c("Kinghurst Nature Reserve", "Schmidt Lake", "Taylor Drive")
+  site: !r c("Art Wiebe Site 1")
 ---
 
 ---
 title: |
-    | Bat Acoustic Monitoring Results Summary for:
+    | Community Science Bat Monitoring Pilot
+    | Preliminary Results for:
     | **`r params$project`**
 author: |
     | Prepared by:
     | `r params$author`
+    | *Auto-report V1.0*
 ---
 
 ```{r setup, include=FALSE}
@@ -65,14 +68,11 @@ active_dates <- data.table::setDT(active_dates)[Location %chin% params$site]
 
 # About This Document {-}
 
-* The report was automatically generated from available data on `r params$date`
-* Use caution, species knowledge, and common sense while interpreting these results, and consult an experienced bat biologist for further help
-* Acoustic identification is challenging for many bat species, accordingly there may be some inaccuracies in the numbers of observations reported here
-* The number of observations of a species cannot be directly equated to a number of animals: 100 observations could mean that 100 bats observed once or one bat observed 100 times
+Thank you for participating in the 2021 pilot Community Science bat monitoring project by the Toronto Zoo! This report is intended to provide fast feedback about the bats detected on your property. This document was automatically generated from available data on `r params$date`, and is intended to provide a preliminary summary. Full verification of species identifications, and further analysis of the results have not yet taken place and will be communicated at a later date. Please use caution while interpreting these results, and consult with the Toronto Zoo's Native Bat Conservaiton Staff with any questions. 
 
-# Data Collection
+# Data Collection and Analysis
 
-`r english::Words(length(unique(observations$Location)))` ultrasonic recorders were deployed over a period of `r max(observations$Night) - min(observations$Night)` nights between `r min(observations$Night)` and `r max(observations$Night)`. Recorders occasionally fail to record on some nights due to exhausted batteries, full memory cards, or other faults. A list of recorders, precise locations, and the number of nights successfully monitored is displayed in Table \@ref(tab:locs) below. Recorder locations are plotted in Figure \@ref(fig:map) above. 
+`r english::Words(length(unique(observations$Location)))` ultrasonic recorder was deployed over a period of `r max(observations$Night) - min(observations$Night)` nights between `r min(observations$Night)` and `r max(observations$Night)`. Specific location dadta is included in Table \@ref(tab:locs) below.
 
 ```{r locs, echo=FALSE}
 locations <- as.data.frame(cbind(unique(observations$Location), unique(observations$Latitude), unique(observations$Longitude)))
@@ -83,23 +83,26 @@ kable(locations, caption = "Location names and coordinates for ultrasonic record
 kableExtra::kable_styling(latex_options = "hold_position", font_size = 10)
 ```
 
-Data were processed by `r params$author` staff. First, files that did not contain potential bat tonal signals were removed from the data, then the files were assigned species identities using SonoBat auto-classification software. Staff then manually checked all identifications of Endangered species and five percent of other species to confirm accuracy. 
+Data were processed by `r params$author` staff. After initial organisation and labelling the files were scrubbed to remove 'noise' files without any potential bat signals. The remaining files were then assigned species identifications using an automated classifier. This classifier is effective, but not infallible, and manual verification is required before these results are considered final. 
+
+\newpage
 
 # Results
 
-A total of `r length(observations$Species)` combined acoustic observations of `r length(unique(observations$Species))` species were detected during this project. The total number of observations for each species at each monitoring location are given in Table \@ref(tab:species). 
+A total of `r length(observations$Species)` acoustic observations observations of `r length(unique(observations$Species))` species were detected at this location. The total number of observations for each species at each monitoring location are given in Table \@ref(tab:species). 
 
 ```{r species, echo=FALSE}
 qs <- batr:::.quick_summary(observations, active_dates, species = params$species)
 qs$Year <- NULL
 colnames(qs) <- c("", "Big Brown Bat", "Eastern Red Bat", "Hoary Bat", "Silver-haired Bat", "Eastern Small-footed Myotis", "Little Brown Myotis", "Northern Myotis", "Tri-colored Bat", "Number of Nights Monitored")
+qs <- qs[, -c(10, 11)]
 qs <- transpose(qs, keep.names = "Species", make.names = "")
 kable(qs, caption = "Total species observations at each monitoring location.") %>% kableExtra::row_spec(0,bold=TRUE) %>%
 kableExtra::kable_styling(latex_options = "hold_position", font_size = 10)
 ```
 
-Bat activity varied between nights. Nightly activity of each species at each site throughout the monitoring period is presented in Figure \@ref(fig:seasonal) below.
+Bat activity varied between nights. Nightly activity of each species at each site throughout the monitoring period is presented in Figure \@ref(fig:seasonal) below. Please note that the number of observations cannot be directly compared between species: this is because some bats are more easily observed than others (for example loud, low-frequency bats are easier to detect than quiet, high-frequnecy bats). 
 
-```{r seasonal, echo=F, fig.align='center', fig.dim=c(10,13), message=FALSE, warning=FALSE, fig.cap = "Nightly bat observations (coloured bars) by species and monitoring location. Grey blocks indicate time periods when acoustic monitoring did not occur."}
-batr:::.speces_site_plot(observations, active_dates, text_size = 15)
+```{r seasonal, echo=F, fig.align='center', fig.dim=c(10,13), message=FALSE, warning=FALSE, fig.cap = "Nightly bat observations (coloured bars) by species and monitoring location."}
+batr:::.speces_site_plot(observations, text_size = 15)
 ```
