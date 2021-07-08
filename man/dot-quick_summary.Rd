@@ -4,7 +4,7 @@
 \alias{.quick_summary}
 \title{Create quick summary table}
 \usage{
-.quick_summary(observations, active_dates = NULL)
+.quick_summary(observations, active_dates = NULL, species = NULL)
 }
 \arguments{
 \item{observations}{Observations data frame.}

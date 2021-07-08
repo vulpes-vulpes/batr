@@ -1,37 +1,51 @@
-#'Read GUANO Metadata From Files
+#' Read GUANO Metadata From WAV Files
 #'
-#'\code{GUANO_reader} reads available GUANO metadata embedded in a folder of bat
-#'acoustic. wav files processed by SonoBat. It creates a text file output of
-#'this metadata in the parent folder of the files that can be loaded for further
-#'analyses by \code{GUANO_loader}.
+#' \code{import_GUANO} reads GUANO metadata stored in WAV files generated
+#' through bat acoustic monitoring and saves them as a data.frame in an RData
+#' file for easy reference. This function can generate a new RData file, add
+#' GUANO from new files to an existing RData file, or update metadata in an
+#' existing RData file where the metadata of the original files has changed.
 #'
-#'@section Note: This function will take a long time for large datasets. Folders
-#'  containing tens of thousands of files may take several hours to read!
-#'  However, once complete this action does not need to repeated unless any
-#'  changes are made to the original files. For this reason it is recommended to
-#'  complete all manual vetting before proceeding.
+#' @section Note: This function will take a long time for large datasets.
+#'   Folders containing tens of thousands of files may take several hours to
+#'   read! For this reason it is recommended to complete all manual vetting
+#'   before proceeding. However, files with changed metadat can be updated later
+#'   using the "Update" action.
 #'
-#'@family Import Functions
+#' @family Import Functions
 #'
-#'@param folderpath Character, a path to the folder containing the files you
-#'  wish to read the metadata from.
-#'@param project_name Character, a brief and relevant reference phrase that will be used
-#'  to name the text file.
+#' @param action Character. Must equal "New", "Add" or "Update". Use "New" to
+#'   read GUANO from a new set of files and create a fresh RData file. Use "Add"
+#'   to add GUANO from a new set of files to an existing RData file that already
+#'   contains other data. Use "Update" to update an existing RData files from
+#'   WAV that have been previously imported and then had their GUANO metadata
+#'   changed.
 #'
-#'@return A textfile in the parent folder of the files folder.
+#' @param input_path Character. Path to the directory containing the files you
+#'   wish to read the metadata from. Note that sub-directories are also read.
 #'
-#'@examples
-#'\dontrun{
-#' GUANO.reader("C:/Folder/Folder/File_Folder", "Project_NA")
-#'}
-#'@export
-read_wavs <- function(action, input_path, site_col, data_path = NULL) {
+#' @param site_col Character. Name of the GUANO metadata field specifying the
+#'   recording location / site name.
+#'
+#' @param data_path Character. Path to an existing RData file. Optional when
+#'   "New" action is specified (a location will be requested before data are
+#'   read and saved). Required when "Add" or "Update" actions are specified.
+#'
+#' @return An RData file saved in a specified location containing GUANO metadata
+#'   read from WAV files created through bat acoustic monitoring.
+#'
+#' @family import tools
+#'
+#' @examples
+#' \dontrun{#' import_GUANO("New", "C:/Folder/Folder/WAVs_Folder", "Location", "C:/Folder/Folder/Data.RData")}
+#' @export
+import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
 
   if (action == "New" | action == "Add" | action == "Update") {
     data_path <- .check_data_path(data_path, action)
-  }
+  } # Check that a valid action is selected
   if (action == "New") {
-      .new_observations(input_path, site_col, data_path)
+    .new_observations(input_path, site_col, data_path)
   } else if (action == "Add") {
     .add_observations(input_path, site_col, data_path)
   } else if (action == "Update") {
@@ -40,8 +54,6 @@ read_wavs <- function(action, input_path, site_col, data_path = NULL) {
     stop("Invalid action given, please specifiy an action (\"New\", \"Add\" or \"Update\") and try again. See ?read_wavs for more information")
   }
 }
-
-
 
 .new_observations <- function(input_path, site_col, data_path) {
   file_list <- .get_file_list(input_path) # Get list of files
@@ -82,7 +94,6 @@ read_wavs <- function(action, input_path, site_col, data_path = NULL) {
   update_files <- update_files$Full.Path
   update_files <- .get_file_list(update_files, list = T)
   observations_update <- suppressWarnings(.read_file_GUANO(update_files, site_col))
-
   observations_original <- observations[!(observations$File.Name %in% observations_update$File.Name),] # Remove updated rows from original data
   observations_files[setdiff(names(observations_update), names(observations_original))] <- NA # Account for differences in columns
   observations_update[setdiff(names(observations_original), names(observations_update))] <- NA # ^
@@ -110,18 +121,15 @@ read_wavs <- function(action, input_path, site_col, data_path = NULL) {
 }
 
 .read_file_GUANO <- function(file_list, site_col) {
-  
   observations <- do.call(plyr::rbind.fill, (lapply(pbapply::pblapply(as.list(file_list$Full.Path), read.guano), as.data.frame))) # Read GUANO
   observations <- merge(observations, file_list, by.x = "File.Name", by.y = "File.Name") # Add file modified columns to GUNAO df
   observations <- observations[ , !names(observations) %in% c("Full.Path","Anabat.Signature")] # Remove undesired columns
-  
   observations <- within(observations, {
     Night = ifelse(lubridate::hour(observations$Timestamp) > 11, 
                    as.Date(observations$Timestamp, tz = "EST"), 
                    as.Date(observations$Timestamp, tz = "EST") - 1)
   }) # Generate Night column, accounting for observations after midnight
   observations$Night <- as.Date(observations$Night, origin = "1970-01-01") # Set format of date column
-  
   observations = within(observations, {
     Species = ifelse(is.na(observations$Species.Manual.ID), as.character(observations$Species.Auto.ID), as.character(observations$Species.Manual.ID))
   }) # Generate Species column
@@ -132,7 +140,6 @@ read_wavs <- function(action, input_path, site_col, data_path = NULL) {
   colnames(observations)[colnames(observations)=="Loc.Position.Lon"] <- "Longitude"
   colnames(observations)[colnames(observations)==site_col] <- "Location" # Set location column
   observations <- observations[!is.na(observations$Location),]
-    
   swift_files <- observations[observations$Model == 'Swift',] # Subset files recorded with Anabat Swift
   location_list <- unique(swift_files$Location) # Find locations
   for (Location in location_list) {
@@ -150,7 +157,6 @@ read_wavs <- function(action, input_path, site_col, data_path = NULL) {
     observations <- rbind(observations, swift_files_mod) # Replace removed rows with modified rows
   }
   rm(swift_files_mod, swift_files, location_list, location, location_subset)
-  
   observations <- dplyr::select(observations, Timestamp, Species, Location, Latitude, Longitude, Species.Auto.ID, Species.Manual.ID, Night, File.Name, everything())
   return(observations)
 }
