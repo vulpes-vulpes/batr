@@ -1,10 +1,8 @@
 ---
 header-includes:
-#  - \usepackage[scaled]{helvet}
+  - \usepackage[scaled]{helvet}
   - \usepackage[T1]{fontenc}
-#  - \renewcommand\familydefault{\sfdefault}
-  - \renewcommand{\rmdefault}{phv} % Arial
-  - \renewcommand{\sfdefault}{phv} % Arial
+  - \renewcommand\familydefault{\sfdefault}
   - \usepackage{caption}
   - \usepackage{booktabs}
   - \usepackage{multirow}

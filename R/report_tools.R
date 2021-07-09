@@ -9,9 +9,12 @@
 #' Insert Example!
 #'}
 #'@export
-one_site_short_report <- function(data_path, save_path, project_name, author, species, sites) {
+one_site_short_report <- function(data_path, save_path, file_name, project_name, author, species, sites) {
+  if (grepl(" ", file_name)) {
+    stop("File name cannot contain spaces. Please amend and retry.")
+  }
   rmarkdown::render(input = system.file("rmd", "One_Site_Short_Report.Rmd", package = "batr"), 
-                    output_file = project_name,
+                    output_file = file_name,
                     output_dir = save_path,
                     params = list(project = project_name,
                                   author = author,
@@ -31,9 +34,12 @@ one_site_short_report <- function(data_path, save_path, project_name, author, sp
 #' Insert Example!
 #'}
 #'@export
-multi_site_short_report <- function(data_path, save_path, project_name, author, species, sites) {
+multi_site_short_report <- function(data_path, save_path, file_name, project_name, author, species, sites) {
+  if (grepl(" ", file_name)) {
+    stop("File name cannot contain spaces. Please amend and retry.")
+  }
   rmarkdown::render(input = system.file("rmd", "Multi_Site_Short_Report.Rmd", package = "batr"), 
-                    output_file = project_name,
+                    output_file = file_name,
                     output_dir = save_path,
                     params = list(project = project_name,
                                   author = author,
