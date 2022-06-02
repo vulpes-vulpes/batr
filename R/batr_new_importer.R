@@ -126,8 +126,8 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
   observations <- observations[ , !names(observations) %in% c("Full.Path","Anabat.Signature")] # Remove undesired columns
   observations <- within(observations, {
     Night = ifelse(lubridate::hour(observations$Timestamp) > 11, 
-                   as.Date(observations$Timestamp, tz = "EST"), 
-                   as.Date(observations$Timestamp, tz = "EST") - 1)
+                   as.Date(format(as.POSIXct(observations$Timestamp), "%Y-%m-%d"), tz = "EST" ), 
+                   as.Date(format(as.POSIXct(observations$Timestamp), "%Y-%m-%d"), tz = "EST" ) - 1)
   }) # Generate Night column, accounting for observations after midnight
   observations$Night <- as.Date(observations$Night, origin = "1970-01-01") # Set format of date column
   observations = within(observations, {
