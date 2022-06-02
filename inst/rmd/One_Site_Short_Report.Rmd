@@ -67,7 +67,7 @@ active_dates <- data.table::setDT(active_dates)[Location %chin% params$site]
 
 Thank you for participating in the `r lubridate::year(lubridate::now())` pilot Community Science bat monitoring project by the Toronto Zoo! This report is intended to provide fast feedback about the bats detected on your property. This document was automatically generated from available data collected on `r max(observations$Night)`, and is intended to provide a preliminary summary of your monitoring period. Full verification of species identifications, and further analysis of the results have not yet taken place and will be communicated at a later date. Please use caution while interpreting these results, and consult with the Toronto Zoo's Native Bat Conservation Staff with any questions. 
 
-# Data Collection and Analysis
+# 1) Data Collection and Analysis
 
 `r english::Words(length(unique(observations$Location)))` ultrasonic recorder was deployed over a period of `r max(observations$Night) - min(observations$Night)` nights between `r min(observations$Night)` and `r max(observations$Night)`. Specific location data is included in Table \@ref(tab:locs) below.
 
@@ -85,7 +85,7 @@ Data were processed by `r params$author` staff. After initial organisation and l
 
 \newpage
 
-# Results
+# 2) Results
 
 A total of `r length(observations$Species)` acoustic observations observations of `r length(unique(observations$Species))` species were detected at this location. The total number of observations for each species at each monitoring location are given in Table \@ref(tab:species). 
 
