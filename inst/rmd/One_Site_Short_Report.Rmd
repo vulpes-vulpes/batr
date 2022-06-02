@@ -24,7 +24,7 @@ geometry:
 - heightrounded
 fontsize: 11pt
 params:
-  project: "Art Wiebe Si
+  project: Error
   author: Toronto Zoo Native Bat Conservation Program
   date: !r Sys.Date()
   data: /Users/toby/Desktop/5 Community Science/Community_Science.RData
