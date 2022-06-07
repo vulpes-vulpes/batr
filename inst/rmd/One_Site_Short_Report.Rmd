@@ -23,13 +23,14 @@ geometry:
 - left=20mm
 - heightrounded
 fontsize: 11pt
+urlcolor: blue
 params:
   project: Error
   author: Toronto Zoo Native Bat Conservation Program
   date: !r Sys.Date()
-  data: /Users/toby/Desktop/5 Community Science/Community_Science.RData
+  data: /Users/tobythorne/Desktop/Dolf.RData
   species: !r c("Epfu", "Labo", "Laci", "Lano", "Myle", "Mylu", "Myse", "Pesu")
-  site: !r c("Art Wiebe Site 1")
+  site: !r c("Error!")
 ---
 
 ---
@@ -67,7 +68,7 @@ active_dates <- data.table::setDT(active_dates)[Location %chin% params$site]
 
 Thank you for participating in the `r lubridate::year(lubridate::now())` pilot Community Science bat monitoring project by the Toronto Zoo! This report is intended to provide fast feedback about the bats detected on your property. This document was automatically generated from available data collected on `r max(observations$Night)`, and is intended to provide a preliminary summary of your monitoring period. Full verification of species identifications, and further analysis of the results have not yet taken place and will be communicated at a later date. Please use caution while interpreting these results, and consult with the Toronto Zoo's Native Bat Conservation Staff with any questions. 
 
-# 1) Data Collection and Analysis
+# Data Collection and Analysis
 
 `r english::Words(length(unique(observations$Location)))` ultrasonic recorder was deployed over a period of `r max(observations$Night) - min(observations$Night)` nights between `r min(observations$Night)` and `r max(observations$Night)`. Specific location data is included in Table \@ref(tab:locs) below.
 
@@ -85,7 +86,7 @@ Data were processed by `r params$author` staff. After initial organisation and l
 
 \newpage
 
-# 2) Results
+# Results
 
 A total of `r length(observations$Species)` acoustic observations observations of `r length(unique(observations$Species))` species were detected at this location. The total number of observations for each species at each monitoring location are given in Table \@ref(tab:species). 
 
@@ -104,3 +105,33 @@ Bat activity varied between nights. Nightly activity of each species at each sit
 ```{r seasonal, echo=F, fig.align='center', fig.dim=c(10,13), message=FALSE, warning=FALSE, fig.cap = "Nightly bat observations (coloured bars) by species and monitoring location."}
 batr:::.speces_site_plot(observations, text_size = 15)
 ```
+
+\newpage
+
+# Additional Information on Acoustic Analyses
+
+## Timing of Bat Activity
+
+By looking at how early or late a bat shows up to a study location can tell us how far away their roost may be. If we record observations of bat activity right at sunset, there is probably a roost nearby. If we record observations of bat activity later in the night, they probably had to travel a further distance to get to the study location. If bat activity is consistent throughout the night, it may mean the study location is an excellent foraging spot with lots of insects to eat.
+
+## Species Observation
+
+Because each bat species has a unique echolocation call, we can distinguish between species through acoustic monitoring. However, the calls of individuals within a species are difficult to distinguish between one another, so we cannot obtain an accurate abundance of a species. For example, if we have 10 observations of Big Brown Bats on a single night, we cannot tell if that was 10 individual Big Brown Bats flying by the monitor each once, or a single Big Brown Bat flying by the monitor 10 times. Generally, however, the number of observations can tell us about the activity at a study location and that may help to indicate good habitat.
+
+## Spectrograms
+
+Though counter intuitive, we identify bat species by looking at the graph produced by the recorded sound rather than listening to the calls. Some of the features we look at include: the shape of the ticks or pulses, how close together they occur, what frequency they start and end at, and how long the pulses last just to name a few examples. We also need to be able to distinguish what isn’t a bat call and differentiate it from noise, artifact or echoes.
+
+Identifying a bat from a spectrogram can be very challenging as bats change the shape of their call based on the type of environment they are currently in (for example when a bat is flying in an open space, compared to flying in a forest). There are many instances where we cannot ID a recording.
+
+We can also tell whether a bat is, navigating, feeding, or partaking in a social behaviour at the time of recording.
+
+## Examples of Ontario Bats Spectrograms
+
+# Further Resources
+
+To learn more about the individual species of bats here in Ontario visit our blog posts on [migratory](https://adoptapond.wordpress.com/2021/08/04/bats-of-ontario-part-1-migratory-species-wingedwednesdays/) and [non-migratory](https://adoptapond.wordpress.com/2021/08/11/bats-of-ontario-part-2-the-resident-species-wingedwednesdays/) bats.
+  
+Visit [our website](https://www.torontozoo.com/bats) to learn more about the Native Bat Conservation Program!
+
+
