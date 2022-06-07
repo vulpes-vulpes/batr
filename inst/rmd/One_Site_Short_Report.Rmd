@@ -28,7 +28,7 @@ params:
   project: Error
   author: Toronto Zoo Native Bat Conservation Program
   date: !r Sys.Date()
-  data: /Users/tobythorne/Desktop/Dolf.RData
+  data: /error/error
   species: !r c("Epfu", "Labo", "Laci", "Lano", "Myle", "Mylu", "Myse", "Pesu")
   site: !r c("Error!")
 ---
@@ -120,13 +120,19 @@ Because each bat species has a unique echolocation call, we can distinguish betw
 
 ## Spectrograms
 
-Though counter intuitive, we identify bat species by looking at the graph produced by the recorded sound rather than listening to the calls. Some of the features we look at include: the shape of the ticks or pulses, how close together they occur, what frequency they start and end at, and how long the pulses last just to name a few examples. We also need to be able to distinguish what isn’t a bat call and differentiate it from noise, artifact or echoes.
+Though counter intuitive, we identify bat species by looking at the graph produced by the recorded sound rather than listening to the calls (see figure \@ref(fig:spec1) below). Some of the features we look at include: the shape of the ticks or pulses, how close together they occur, what frequency they start and end at, and how long the pulses last just to name a few examples. We also need to be able to distinguish what isn’t a bat call and differentiate it from noise, artifact or echoes.
 
 Identifying a bat from a spectrogram can be very challenging as bats change the shape of their call based on the type of environment they are currently in (for example when a bat is flying in an open space, compared to flying in a forest). There are many instances where we cannot ID a recording.
 
-We can also tell whether a bat is, navigating, feeding, or partaking in a social behaviour at the time of recording.
+We can also tell whether a bat is, navigating, feeding, or partaking in a social behaviour at the time of recording, see figure \@ref(fig:spec2) below for an example!
 
-## Examples of Ontario Bats Spectrograms
+```{r spec1, echo=FALSE, fig.cap="A typical search phase spectrogram for a big brown bat; the x axis displays time in milliseconds and the y axis displays the frequency in kilohertz.", out.width = '100%'}
+knitr::include_graphics(system.file("images", "spectrogram1.png", package = "batr"))
+```
+
+```{r spec2, echo=FALSE, fig.cap="Typical call made during feeding called a “feeding buzz.” See how the calls progressively become steeper and are produced more closely together.", out.width = '100%'}
+knitr::include_graphics(system.file("images", "spectrogram2.png", package = "batr"))
+```
 
 # Further Resources
 
