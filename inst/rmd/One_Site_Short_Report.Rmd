@@ -112,21 +112,25 @@ batr:::.speces_site_plot(observations, text_size = 15)
 
 ## Bats in Ontario
 
-**Big brown bat:** Most commonly observed bat in Southern Ontario and well adapted to urban environments. Bodies are covered in light brown. Females are typically larger than males. Weigh approximately as much as 3-5 toonies (11-25g).
+```{r heads, echo=FALSE, fig.cap="Portraits of bat species found in Ontario.", out.width = '100%'}
+knitr::include_graphics(system.file("images", "Ontario_bat_portraits.png", package = "batr"))
+```
 
-**Hoary bat:** The Hoary bat is Ontario's largest bat species weighing 3-5 toonies (18-39g). The stunning fur colouration and wing patterns help it camouflage amongst tree leaves. It has a furry tail membrane which it uses to keep itself warm. The is one of Ontario's migratory bat species and is most affected by wind farms. They are capable of long-distance flights and occasionally, turn up in Iceland.
+**a) Big brown bat:** Most commonly observed bat in Southern Ontario and well adapted to urban environments. Bodies are covered in light brown. Females are typically larger than males. Weigh approximately as much as 3-5 toonies (11-25g).
 
-**Eastern red bat:** Typically, most bats only bear one pup a year. Red bats are capable of birthing 3-5 young at a time with each weighing about 20-30% of the mother's body weight. This species is also migratory, but will hibernate in mild temperatures underneath the leaflitter. It weighs about 1-2 toonies (7-13g).
+**b) Silver-haired bat:** This bat gets its name from the striking black fur with frosted silver tips on its back. They are one of Ontario's migratory bat species. They roost primarily in trees, but have been found roosting in firewood piles. This bat weighs about 1-2 toonies (8-11g).
 
-**Silver-haired bat:** This bat gets its name from the striking black fur with frosted silver tips on its back. They are one of Ontario's migratory bat species. They roost primarily in trees, but have been found roosting in firewood piles. This bat weighs about 1-2 toonies (8-11g).
+**c) Hoary bat:** The Hoary bat is Ontario's largest bat species weighing 3-5 toonies (18-39g). The stunning fur colouration and wing patterns help it camouflage amongst tree leaves. It has a furry tail membrane which it uses to keep itself warm. The is one of Ontario's migratory bat species and is most affected by wind farms. They are capable of long-distance flights and occasionally, turn up in Iceland.
 
-**Eastern small-footed myotis:** One of Ontario's smallest bats, it differs from the other Myotis by the striking black face mask and wing membrane in contrast to its fur. They roost in rock crevices and can even be found under rocks on talus slopes. They are more prevalent around the Niagara Escarpment. They weigh about as much as a nickel (4-5g).
+**d) Eastern red bat:** Typically, most bats only bear one pup a year. Red bats are capable of birthing 3-5 young at a time with each weighing about 20-30% of the mother's body weight. This species is also migratory, but will hibernate in mild temperatures underneath the leaflitter. It weighs about 1-2 toonies (7-13g).
 
-**Little brown myotis:** Was once Canada's most common bat species, but populations were decimated by a disease called White-nose syndrome (WNS) which only affects hibernating bats. The impact of the disease has decreased since its discovery, but since bats are slow to reproduce, population levels will not re-establish to pre-WNS levels in our lifetime. Little brown myotis are capable of living up to 40 years and weigh about 1-2 toonies (4-11g).
+**e) Tri-colored bat:** This bat gets its name from the distinctly banded fur which are yellow, black, and brown. The forearms on this species are orange-red in colour in comparison with other species. Not much information is available for this species in Ontario. This bat weighs as much as a toonie (7g).
 
-***Northern myotis:** Now considered one of North America's most endangered bat species. Populations have plummeted with some being extirpated from certain regions due to WNS. This bat is a gleaning insectivore, that means it picks insects off of vegetation rather than catching them in the air. Their large ears help them hear their prey. They weigh about 1-2 toonies (6-9g).
+**f) Northern myotis:** Now considered one of North America's most endangered bat species. Populations have plummeted with some being extirpated from certain regions due to WNS. This bat is a gleaning insectivore, that means it picks insects off of vegetation rather than catching them in the air. Their large ears help them hear their prey. They weigh about 1-2 toonies (6-9g).
 
-**Tri-colored bat:** This bat gets its name from the distinctly banded fur which are yellow, black, and brown. The forearms on this species are orange-red in colour in comparison with other species. Not much information is available for this species in Ontario. This bat weighs as much as a toonie (7g).
+**g) Little brown myotis:** Was once Canada's most common bat species, but populations were decimated by a disease called White-nose syndrome (WNS) which only affects hibernating bats. The impact of the disease has decreased since its discovery, but since bats are slow to reproduce, population levels will not re-establish to pre-WNS levels in our lifetime. Little brown myotis are capable of living up to 40 years and weigh about 1-2 toonies (4-11g).
+
+**h) Eastern small-footed myotis:** One of Ontario's smallest bats, it differs from the other Myotis by the striking black face mask and wing membrane in contrast to its fur. They roost in rock crevices and can even be found under rocks on talus slopes. They are more prevalent around the Niagara Escarpment. They weigh about as much as a nickel (4-5g).
 
 ## Acoustic Analyses
 
@@ -146,18 +150,18 @@ Identifying a bat from a spectrogram can be very challenging as bats change the 
 
 We can also tell whether a bat is, navigating, feeding, or partaking in a social behaviour at the time of recording, see figure \@ref(fig:spec2) below for an example!
 
-```{r spec1, echo=FALSE, fig.cap="Typical search phase calls for Ontario bats: a) big brown bat, b) eastern red bat, c) hoary bat, d) silver-haired bat, e) Myotis Spp. and f) tri-colored bat.", out.width = '100%'}
-knitr::include_graphics(system.file("images", "OntarioSpectrogram.png", package = "batr"))
-```
-
-```{r spec2, echo=FALSE, fig.cap="Typical call made during feeding called a “feeding buzz”. Notice how the calls progressively become steeper and are produced more closely together.", out.width = '100%'}
-knitr::include_graphics(system.file("images", "Buzz_Seq.png", package = "batr"))
-```
-
 # Further Resources
 
 To learn more about the individual species of bats here in Ontario visit our blog posts on [migratory](https://adoptapond.wordpress.com/2021/08/04/bats-of-ontario-part-1-migratory-species-wingedwednesdays/) and [non-migratory](https://adoptapond.wordpress.com/2021/08/11/bats-of-ontario-part-2-the-resident-species-wingedwednesdays/) bats.
   
 Visit [our website](https://www.torontozoo.com/bats) to learn more about the Native Bat Conservation Program!
 
+\newpage
 
+```{r spec1, echo=FALSE, fig.cap="Typical search phase calls for Ontario bats.", out.width = '100%'}
+knitr::include_graphics(system.file("images", "Ontario_Bat_Species.png", package = "batr"))
+```
+
+```{r spec2, echo=FALSE, fig.cap="Typical call made during feeding called a “feeding buzz”. Notice how the calls progressively become steeper and are produced more closely together.", out.width = '100%'}
+knitr::include_graphics(system.file("images", "Buzz_Seq.png", package = "batr"))
+```
