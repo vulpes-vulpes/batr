@@ -60,7 +60,7 @@ active_dates <- data.table::setDT(active_dates)[Location %chin% params$site]
 ```
 
 ```{r map, echo=FALSE, message=F, warning=F, fig.cap="Monitoring locations. Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.", fig.align='center', fig.height=4}
-batr:::.map4report(observations)
+# batr:::.map4report(observations)
 ```
 
 
@@ -71,6 +71,8 @@ Thank you for participating in the `r lubridate::year(lubridate::now())` Toronto
 # Data Collection and Analysis
 
 An ultrasonic recorder was deployed at `r unique(observations$Latitude)`, `r unique(observations$Longitude)`, programmed to begin monitoring 30 minutes prior to sunset, and cease 30 minutes after sunrise. During this period, the device monitors ultrasonic frequencies for bat vocalisations, and records them for later analyses. These data were processed by `r params$author` staff to identify the species recorded. After initial organisation and labeling the files were scrubbed to remove 'noise' files without any potential bat signals. The remaining files were then assigned species identifications using an automated classifier. This classifier is effective, but not perfect, and manual verification is required before these results are considered final. 
+
+
 
 \newpage
 
