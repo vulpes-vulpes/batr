@@ -60,35 +60,23 @@ active_dates <- data.table::setDT(active_dates)[Location %chin% params$site]
 ```
 
 ```{r map, echo=FALSE, message=F, warning=F, fig.cap="Monitoring locations. Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.", fig.align='center', fig.height=4}
-# batr:::.map4report(observations)
+batr:::.map4report(observations)
 ```
 
 
 # About This Document {-}
 
-Thank you for participating in the `r lubridate::year(lubridate::now())` pilot Community Science bat monitoring project by the Toronto Zoo! This report is intended to provide fast feedback about the bats detected on your property. This document was automatically generated from available data collected on `r max(observations$Night)`, and is intended to provide a preliminary summary of your monitoring period. Full verification of species identifications, and further analysis of the results have not yet taken place and will be communicated at a later date. Please use caution while interpreting these results, and consult with the Toronto Zoo's Native Bat Conservation Staff with any questions. 
+Thank you for participating in the `r lubridate::year(lubridate::now())` Toronto Zoo Community Science bat monitoring project! This report is intended to provide fast feedback about the bats detected on your property. This document was automatically generated and is intended to provide a preliminary summary of your monitoring period. Full verification of species identifications, and further analysis of the results have not yet taken place and will be communicated at a later date. Please use caution while interpreting these results, and consult with the Toronto Zoo's Native Bat Conservation Staff with any questions. 
 
 # Data Collection and Analysis
 
-`r english::Words(length(unique(observations$Location)))` ultrasonic recorder was deployed over a period of `r max(observations$Night) - min(observations$Night)` nights between `r min(observations$Night)` and `r max(observations$Night)`. Specific location data is included in Table \@ref(tab:locs) below.
-
-```{r locs, echo=FALSE}
-locations <- as.data.frame(cbind(unique(observations$Location), unique(observations$Latitude), unique(observations$Longitude)))
-locations$uptime <- max(observations$Night) - min(observations$Night)
-# locations$uptime<- sapply(locations$V1, function(l) nrow(active_dates[active_dates$Location==l & active_dates$Log_Count > 0.5,]))
-# locations$uptime <- ifelse(locations$uptime < (max(observations$Night) - min(observations$Night)), locations$uptime, (max(observations$Night) - min(observations$Night)) )
-colnames(locations) <- c("Location", "Latitude", "Longitude", "Nights Monitored")
-kable(locations, caption = "Location details for the acousitc data included in this report.") %>% kableExtra::row_spec(0,bold=TRUE) %>%
-kableExtra::kable_styling(latex_options = "hold_position", font_size = 10)
-```
-
-Data were processed by `r params$author` staff. After initial organisation and labeling the files were scrubbed to remove 'noise' files without any potential bat signals. The remaining files were then assigned species identifications using an automated classifier. This classifier is effective, but not perfect, and manual verification is required before these results are considered final. 
+An ultrasonic recorder was deployed at `r unique(observations$Latitude)`, `r unique(observations$Longitude)`, programmed to begin monitoring 30 minutes prior to sunset, and cease 30 minutes after sunrise. During this period, the device monitors ultrasonic frequencies for bat vocalisations, and records them for later analyses. These data were processed by `r params$author` staff to identify the species recorded. After initial organisation and labeling the files were scrubbed to remove 'noise' files without any potential bat signals. The remaining files were then assigned species identifications using an automated classifier. This classifier is effective, but not perfect, and manual verification is required before these results are considered final. 
 
 \newpage
 
 # Results
 
-A total of `r length(observations$Species)` acoustic observations of `r length(unique(observations$Species))` species were detected at this location. The total number of observations for each species at each monitoring location are given in Table \@ref(tab:species). Note that "Myotis Spp." indicates an observation of a bat from the *Myotis* genus that was not confidnetly identifed to species level. 
+A total of `r length(observations$Species)` acoustic observations of `r length(unique(observations$Species))` species were detected at this location. The total number of observations for each species at each monitoring location are given in Table \@ref(tab:species). Note that "Myotis Spp." indicates an observation of a bat from the *Myotis* genus that was not confidently identified to species level. 
 ```{r species, echo=FALSE}
 qs <- batr:::.quick_summary(observations, active_dates, species = params$species)
 qs$Year <- NULL
@@ -116,21 +104,21 @@ batr:::.speces_site_plot(observations, text_size = 15)
 knitr::include_graphics(system.file("images", "Ontario_bat_portraits.png", package = "batr"))
 ```
 
-**a) Big brown bat:** Most commonly observed bat in Southern Ontario and well adapted to urban environments. Bodies are covered in light brown. Females are typically larger than males. Weigh approximately as much as 3-5 toonies (11-25g).
+**a) Big brown bat:** Most commonly observed bat in Southern Ontario and well adapted to urban environments. Bodies are covered in light brown. Females are typically larger than males. Weigh approximately as much as 3–5 toonies (11–25 g).
 
-**b) Silver-haired bat:** This bat gets its name from the striking black fur with frosted silver tips on its back. They are one of Ontario's migratory bat species. They roost primarily in trees, but have been found roosting in firewood piles. This bat weighs about 1-2 toonies (8-11g).
+**b) Silver-haired bat:** This bat gets its name from the striking black fur with frosted silver tips on its back. They are one of Ontario's migratory bat species. They roost primarily in trees, but have been found roosting in firewood piles. This bat weighs about 1–2 toonies (8–11 g).
 
-**c) Hoary bat:** The Hoary bat is Ontario's largest bat species weighing 3-5 toonies (18-39g). The stunning fur colouration and wing patterns help it camouflage amongst tree leaves. It has a furry tail membrane which it uses to keep itself warm. The is one of Ontario's migratory bat species and is most affected by wind farms. They are capable of long-distance flights and occasionally, turn up in Iceland.
+**c) Hoary bat:** The Hoary bat is Ontario's largest bat species weighing 3–5 toonies (18–39 g). The stunning fur colouration and wing patterns help it camouflage amongst tree leaves. It has a furry tail membrane which it uses to keep itself warm. The is one of Ontario's migratory bat species and is most affected by wind farms. They are capable of long-distance flights and occasionally, turn up in Iceland.
 
-**d) Eastern red bat:** Typically, most bats only bear one pup a year. Red bats are capable of birthing 3-5 young at a time with each weighing about 20-30% of the mother's body weight. This species is also migratory, but will hibernate in mild temperatures underneath the leaflitter. It weighs about 1-2 toonies (7-13g).
+**d) Eastern red bat:** Typically, most bats only bear one pup a year. Red bats are capable of birthing 3–5 young at a time with each weighing about 20–30 % of the mother's body weight. This species is also migratory, but will hibernate in mild temperatures underneath the leaflitter. It weighs about 1-2 toonies (7–13 g).
 
-**e) Tri-colored bat:** This bat gets its name from the distinctly banded fur which are yellow, black, and brown. The forearms on this species are orange-red in colour in comparison with other species. Not much information is available for this species in Ontario. This bat weighs as much as a toonie (7g).
+**e) Tri-colored bat:** This bat gets its name from the distinctly banded fur which are yellow, black, and brown. The forearms on this species are orange-red in colour in comparison with other species. Not much information is available for this species in Ontario. This bat weighs as much as a toonie (7 g).
 
-**f) Northern myotis:** Now considered one of North America's most endangered bat species. Populations have plummeted with some being extirpated from certain regions due to WNS. This bat is a gleaning insectivore, that means it picks insects off of vegetation rather than catching them in the air. Their large ears help them hear their prey. They weigh about 1-2 toonies (6-9g).
+**f) Northern myotis:** Now considered one of North America's most endangered bat species. Populations have plummeted with some being extirpated from certain regions due to white-nose syndrome. This bat is a gleaning insectivore, that means it picks insects off of vegetation rather than catching them in the air. Their large ears help them hear their prey. They weigh about 1–2 toonies (6–9 g).
 
-**g) Little brown myotis:** Was once Canada's most common bat species, but populations were decimated by a disease called White-nose syndrome (WNS) which only affects hibernating bats. The impact of the disease has decreased since its discovery, but since bats are slow to reproduce, population levels will not re-establish to pre-WNS levels in our lifetime. Little brown myotis are capable of living up to 40 years and weigh about 1-2 toonies (4-11g).
+**g) Little brown myotis:** Was once Canada's most common bat species, but populations were decimated by a disease called white-nose syndrome which only affects hibernating bats. The impact of the disease has decreased since its discovery, but since bats are slow to reproduce, population levels will not re-establish to pre white-nose syndrome levels in our lifetime. Little brown myotis are capable of living up to 40 years and weigh about 1–2 toonies (4–11 g).
 
-**h) Eastern small-footed myotis:** One of Ontario's smallest bats, it differs from the other Myotis by the striking black face mask and wing membrane in contrast to its fur. They roost in rock crevices and can even be found under rocks on talus slopes. They are more prevalent around the Niagara Escarpment. They weigh about as much as a nickel (4-5g).
+**h) Eastern small-footed myotis:** One of Ontario's smallest bats, it differs from the other Myotis by the striking black face mask and wing membrane in contrast to its fur. They roost in rock crevices and can even be found under rocks on talus slopes. They are more prevalent around the Niagara Escarpment. They weigh about as much as a nickel (4–5 g).
 
 ## Acoustic Analyses
 
