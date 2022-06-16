@@ -106,13 +106,13 @@ batr:::.speces_site_plot(observations, text_size = 15)
 knitr::include_graphics(system.file("images", "Ontario_bat_portraits.png", package = "batr"))
 ```
 
-**a) Big brown bat:** Most commonly observed bat in Southern Ontario and well adapted to urban environments. Bodies are covered in light brown. Females are typically larger than males. Weigh approximately as much as 3–5 toonies (11–25 g).
+**a) Big brown bat:** Most commonly observed bat in Southern Ontario and well adapted to urban environments. Bodies are covered in light brown fur. Females are typically larger than males. Weigh approximately as much as 3–5 toonies (11–25 g).
 
 **b) Silver-haired bat:** This bat gets its name from the striking black fur with frosted silver tips on its back. They are one of Ontario's migratory bat species. They roost primarily in trees, but have been found roosting in firewood piles. This bat weighs about 1–2 toonies (8–11 g).
 
 **c) Hoary bat:** The Hoary bat is Ontario's largest bat species weighing 3–5 toonies (18–39 g). The stunning fur colouration and wing patterns help it camouflage amongst tree leaves. It has a furry tail membrane which it uses to keep itself warm. The is one of Ontario's migratory bat species and is most affected by wind farms. They are capable of long-distance flights and occasionally, turn up in Iceland.
 
-**d) Eastern red bat:** Typically, most bats only bear one pup a year. Red bats are capable of birthing 3–5 young at a time with each weighing about 20–30 % of the mother's body weight. This species is also migratory, but will hibernate in mild temperatures underneath the leaflitter. It weighs about 1-2 toonies (7–13 g).
+**d) Eastern red bat:** Typically, most bats only bear one pup a year. Red bats are capable of birthing 3–5 young at a time with each weighing about 20–30 % of the mother's body weight. This species is also migratory, but will hibernate in mild temperatures underneath the leaf litter. It weighs about 1-2 toonies (7–13 g).
 
 **e) Tri-colored bat:** This bat gets its name from the distinctly banded fur which are yellow, black, and brown. The forearms on this species are orange-red in colour in comparison with other species. Not much information is available for this species in Ontario. This bat weighs as much as a toonie (7 g).
 
