@@ -66,6 +66,11 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
   observations_original <- observations # Rename current observations for clarity
   rm(observations) # Remove current observations df for clarity
   observations_new <- .get_file_list(input_path) # Get list observations in input director
+  if (sum(observations_new$File.Name %in% observations_original$File.Name, na.rm = TRUE) == length(observations_new$File.Name)) { 
+    stop("All of the files you are trying to add already exist in the data file. No files will be imported, please use the Update action of import_GUANO to update existing files.")
+  } else if (sum(observations_new$File.Name %in% observations_original$File.Name, na.rm = TRUE) != 0) {
+    warning("Some of the data you are trying to add already exists in the data file. Only files that do not currently exist will be imported. Please use the Update action of import_GUANO to update existing files")
+  } # Check whether the new files already exist in the data file, and warn / exit if they do. 
   observations_new <- observations_new[!(observations_new$File.Name %in% observations_original$File.Name),] # Remove directory observations already present in current data
   observations_new <-suppressWarnings(.read_file_GUANO(observations_new, site_col)) # Read GUANO for new files
   #observations_new <- merge(observations_new2, observations_new, by.x = "File.Name", by.y = "File.Name") # Combine GUANO and file metadata
