@@ -122,7 +122,7 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
 
 .read_file_GUANO <- function(file_list, site_col) {
   observations <- do.call(plyr::rbind.fill, (lapply(pbapply::pblapply(as.list(file_list$Full.Path), read.guano), as.data.frame))) # Read GUANO
-  .missing_data_checker(observations) # Call missing data checker to exit and inform user if required columns are missing or incomplete
+  .missing_data_checker(observations, site_col) # Call missing data checker to exit and inform user if required columns are missing or incomplete
   observations <- merge(observations, file_list, by.x = "File.Name", by.y = "File.Name") # Add file modified columns to GUNAO df
   observations <- observations[ , !names(observations) %in% c("Full.Path","Anabat.Signature")] # Remove undesired columns
   observations <- within(observations, {
@@ -160,7 +160,7 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
   return(observations)
 }
 
-.missing_data_checker <- function(observations) {
+.missing_data_checker <- function(observations, site_col) {
   if(site_col %in% colnames(observations)) {
     message("Location Data Present, proceeding.")
   } else {
