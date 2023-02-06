@@ -29,7 +29,7 @@
   }
 }
 
-.check_data_path <- function (data_path, action = "NULL") {
+.check_data_path <- function (data_path, action) {
   if (is.null(data_path)) {
     save_path <- readline(prompt="No 'data_path' specified. Please input path to save data file (e.g. \"C/user/directory\"):")
     if (!dir.exists(save_path)) {
