@@ -122,6 +122,7 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
 
 .read_file_GUANO <- function(file_list, site_col) {
   observations <- do.call(plyr::rbind.fill, (lapply(pbapply::pblapply(as.list(file_list$Full.Path), read.guano), as.data.frame))) # Read GUANO
+  .missing_data_checker(observations) # Call missing data checker to exit and inform user if required columns are missing or incomplete
   observations <- merge(observations, file_list, by.x = "File.Name", by.y = "File.Name") # Add file modified columns to GUNAO df
   observations <- observations[ , !names(observations) %in% c("Full.Path","Anabat.Signature")] # Remove undesired columns
   observations <- within(observations, {
@@ -133,9 +134,7 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
   observations = within(observations, {
     Species = ifelse(is.na(observations$Species.Manual.ID), as.character(observations$Species.Auto.ID), as.character(observations$Species.Manual.ID))
   }) # Generate Species column
-  
   # observations <- observations[observations$Species %in% species_list, ] # Remove rows without species in species list
-  
   colnames(observations)[colnames(observations)=="Loc.Position.Lat"] <- "Latitude"
   colnames(observations)[colnames(observations)=="Loc.Position.Lon"] <- "Longitude"
   colnames(observations)[colnames(observations)==site_col] <- "Location" # Set location column
@@ -159,4 +158,30 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
   rm(swift_files_mod, swift_files, location_list, location, location_subset)
   observations <- dplyr::select(observations, Timestamp, Species, Location, Latitude, Longitude, Species.Auto.ID, Species.Manual.ID, Night, File.Name, everything())
   return(observations)
+}
+
+.missing_data_checker <- function(observations) {
+  if(site_col %in% colnames(observations)) {
+    message("Location Data Present, proceeding.")
+  } else {
+    stop("Some or all location data (your site_col) are missing, please check and try again.")
+  } # Check if location column exists and exits if not
+  
+  if("Species.Auto.ID" %in% colnames(observations) && sum(is.na(observations$Species.Auto.ID)) == 0) {
+    message("Full Species Auto ID data present, proceeding.")
+  } else if("Species.Manual.ID" %in% colnames(observations) && sum(is.na(observations$Species.Manual.ID)) == 0) {
+    message("Full Manual Auto ID data present, proceeding.")
+  } else {
+    stop("Incomplete Species ID data found, please check and try again.")
+  } # Check is species ID data (either automated or manual) exists and has no NAs, and exits if not
+  
+  if("Loc.Position.Lat" %in% colnames(observations)) {
+    if (sum(is.na(observations$Loc.Position.Lat)) != 0) {
+      stop("Some files are missing Lat Lon data, please check and try again")
+    } else {
+      message("Lat Lon data present, proceeding.")
+    }
+  } else {
+    stop("No Lat Lon data found, please check and try again.")
+  } # Check is species ID column exists and has no NAs, and exits if not
 }
