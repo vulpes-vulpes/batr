@@ -84,10 +84,11 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
 }
 
 .update_observations <- function(input_path, site_col, data_path) {
-  directory_files <- .get_file_list(input_path) # Get input file list
   load(data_path) # Load existing data
   observations_files <- observations[, c("File.Name", "File.Path", "File.Modified")] # Trim existing data to relevant columns
+  rm(observations) # Remove current observations df for clarity
   names(observations_files)[1:3] <- c("File.Name","Observations.Path", "Observations.Modified") # Rename existing data columns for clarify
+  directory_files <- .get_file_list(input_path) # Get input file list
   files_comparison <- merge(directory_files, observations_files, by = "File.Name", all = T) # Merge new and existing data frames by filename
   files_comparison <- files_comparison[!is.na(files_comparison$Full.Path),]
   files_comparison$update <- ifelse(mapply(function(x, y) {isTRUE(all.equal(x, y))}, files_comparison$File.Modified, files_comparison$Observations.Modified), "N", 
