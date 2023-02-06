@@ -29,6 +29,7 @@ GUANO_reader <- function(folderpath, project_name) {
   data <- guano::read.guano.dir(folderpath, recursive = TRUE) # Extract GUANO metadata
   write.table(data, paste(folderpath, "/", project_name, ".txt", sep = ""), sep="\t", row.names = F) # Save to text file
   message("Data Extraction Complete!")
+  warning("This approach to data importing has been retired. Please update to using import_GUANO function. This method will be removed in future.")
 }
 
 #'Load Previously Read GUANO Metadata From Text File
@@ -168,6 +169,7 @@ GUANO_loader <- function (file, project_name, location = "SB.Town") {
 
   species_night_site$Day_of_Year <- lubridate::yday(species_night_site$Night)
   assign(paste("species_night_site_", project_name, sep = ""), species_night_site, envir=globalenv())
+  warning("This approach to data importing has been retired. Please update to using import_GUANO function. This method will be removed in future.")
 }
 
 #'Import and Interpret Wildlife Acoustics and Anabat Log Files
@@ -393,4 +395,5 @@ log_file_parser <- function(path, dataset_name, monitoring_start, monitoring_end
   uptimes$Real_Up <- NULL # Remove superfluous columns
   uptimes$Total_Up <- NULL # Remove superfluous columns
   assign(paste("uptimes", dataset_name, sep = ""),uptimes,.GlobalEnv) # Calculate uptime for monitoring period
+  warning("This approach to data importing has been retired. Please update to using import_GUANO function. This method will be removed in future.")
 }
