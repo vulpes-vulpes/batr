@@ -6,8 +6,13 @@
 #'
 #'@family Manual Vetting Functions
 #'
-#'@param data_path Character. Path to the directory containing the files you
-#'   wish to read the from. Note that sub-directories are also read.
+#'@param data_path Character. Path to an existing RData file for the data set
+#'  you wish to manually vet.
+#'@param WAV_directory Character, the parent directory containing original WAV
+#'  files. \strong{Note: Right now the data within this directory must have the
+#'  same structure (i.e. exactly the same organisation of sub-directories) as
+#'  originally used to create the RData file. However, by specifying the parent
+#'  directory you can account for moving between systems.}
 #'@param save_directory Character, the destination where selected files will be
 #'  copied to
 #'@param species_list Character, a single species or list in the form of four
@@ -26,7 +31,7 @@
 #' manual_vet_extractor("raw_data_project", "C:/Folder/Folder/File_Folder")
 #'}
 #'@export
-manual_vet_extractor <- function(data_path, save_directory, species_list, percentage = 0.05, no_manual = FALSE) {
+manual_vet_extractor <- function(data_path, WAV_directory, save_directory, species_list, percentage = 0.05, no_manual = FALSE) {
   .check_data_path(data_path)
   load(data_path)
   dataset <- observations
@@ -40,6 +45,7 @@ manual_vet_extractor <- function(data_path, save_directory, species_list, percen
     if(!dir.exists(paste(save_directory,"/Five_Percent/",i,sep=""))) # Does species folder exist within 5% folder?
       dir.create(paste(save_directory,"/Five_Percent/",i,sep="")) # If not then create it.
     temp_dataset <- dataset[ sample( which( dataset$Species == i ) , (sum(dataset$Species == i)*percentage) ) , ] # Create a temporary dataset with a random 5% of the rows for species.
-    file.copy(temp_dataset$File.Path,paste(save_directory,"/Five_Percent/",i,sep="")) # Copy the five percent subset to the previuosly created species folder.
+    file.copy(paste(WAV_directory,"/",temp_dataset$Local.Path,sep = ""),
+              paste(save_directory,"/Five_Percent/",i,sep="")) # Copy the five percent subset to the previously created species folder.
   }
 }
