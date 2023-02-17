@@ -6,10 +6,10 @@
 #' GUANO from new files to an existing RData file, or update metadata in an
 #' existing RData file where the metadata of the original files has changed.
 #'
-#' @section Note: This function will take a long time for large datasets.
+#' @section Note: This function will take a long time for large data sets.
 #'   Folders containing tens of thousands of files may take several hours to
 #'   read! For this reason it is recommended to complete all manual vetting
-#'   before proceeding. However, files with changed metadat can be updated later
+#'   before proceeding. However, files with changed metadata can be updated later
 #'   using the "Update" action.
 #'
 #' @family Import Functions
