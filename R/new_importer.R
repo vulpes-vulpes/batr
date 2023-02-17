@@ -173,6 +173,22 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
   } else {
     stop("Some or all location data (your site_col) are missing, please check and try again.")
   } # Check if location column exists and exits if not
+
+  if((site_col %in% colnames(observations)) == FALSE) {
+    stop("Location data (i.e. your specified site_col) is missing from all files. Please check and try again.")
+  } else if (sum(is.na(observations[[site_col]])) != 0) {
+    message("Error: Some files are missing Location (site_col) data. 
+      Would you like to see a list of files with missing data?")
+    report <- readline(prompt="y/n:")
+    if (report == "y" | report == "Y") {
+      missing_files <- observations[is.na(observations[[site_col]]),]
+      missing_files <- missing_files$File.Name
+      print(missing_files)
+      message("Ending due to missing Location (site_col) data. No files have been imported")
+    }
+  } else {
+    message("Lat Lon data present, proceeding.")
+  }
   
   if("Species.Auto.ID" %in% colnames(observations) && sum(is.na(observations$Species.Auto.ID)) == 0) {
     message("Full Species Auto ID data present, proceeding.")
@@ -182,13 +198,19 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
     stop("Incomplete Species ID data found, please check and try again.")
   } # Check is species ID data (either automated or manual) exists and has no NAs, and exits if not
   
-  if("Loc.Position.Lat" %in% colnames(observations)) {
-    if (sum(is.na(observations$Loc.Position.Lat)) != 0) {
-      stop("Some files are missing Lat Lon data, please check and try again")
-    } else {
-      message("Lat Lon data present, proceeding.")
-    }
+  if(("Loc.Position.Lat" %in% colnames(observations)) == FALSE) {
+    stop("Lat Lon data is missing from all files. Please check and try again.")
+  } else if (sum(is.na(observations$Loc.Position.Lat)) != 0) {
+      message("Error: Some files are missing Lat Lon data. 
+      Would you like to see a list of files with missing data?")
+      report <- readline(prompt="y/n:")
+      if (report == "y" | report == "Y") {
+        missing_files <- observations[is.na(observations$Loc.Position.Lat),]
+        missing_files <- missing_files$File.Name
+        print(missing_files)
+        message("Ending due to missing Lat Lon data. No files have been imported")
+      }
   } else {
-    stop("No Lat Lon data found, please check and try again.")
+    message("Lat Lon data present, proceeding.")
+    }
   } # Check is species ID column exists and has no NAs, and exits if not
-}
