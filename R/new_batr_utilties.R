@@ -29,24 +29,32 @@
   }
 }
 
-.check_data_path <- function (data_path, action = NULL) {
-  if (is.null(data_path)) {
+.check_data_path <- function (data_path = NULL, action = FALSE) {
+  if (is.null(data_path) && action == "New") {
     save_path <- readline(prompt="No 'data_path' specified. Please input path to save data file (e.g. \"C/user/directory\"):")
     if (!dir.exists(save_path)) {
-      stop("Error! Directory does not exist. Exiting, file not saved!.")
+      stop("Directory does not exist. Exiting, file not saved!.")
     } else {
       filename <- readline(prompt="Please input your desired filename:")
       data_path <- paste(save_path, "/", filename, ".RData", sep = "")
-    }
-  } else if (sub('.*\\.', '', data_path) != "RData"){
-      stop("Error! Invalid data_path specified. Check that a valid .RDATA file is specified, or leave blank to create a new file.")
+    } # If action is New and no data path exists ask for data path and filename
+  } else if (is.null(data_path) && action != "New") {
+    stop("No file path specified, please specify a path and try again.")
+  } # Exit if data path isn't specified for non New actions
+  else if (!file.exists(data_path) && action == FALSE) {
+    stop("Specified file does not exist, please try again."
+    ) # If no action and file doesn't exist then end
+  } else if (sub('.*\\.', '', data_path) != "RData" && action == FALSE) {
+    stop("Invalid data_path specified. Please supply a valid .RDATA file.") # If no action and file not valid then end
   } else if ((sub('.*\\.', '', data_path) == "RData") && action == "New"){
-      overwrite <- readline(prompt="Overwrite existing data file? Y/N: ")
-      if (overwrite == "Y" | overwrite == "y") {
-        data_path <- data_path
-      } else {
-        stop("No overwrite selected. Exiting, no files saved.")
-      }
+    overwrite <- readline(prompt="Overwrite existing data file? Y/N: ")
+    if (overwrite == "Y" | overwrite == "y") {
+      data_path <- data_path
+    } else {
+      stop("No overwrite selected. Exiting, no files saved.")
+    } # If data path is valid but action is new check about overwriting
+  } else if (sub('.*\\.', '', data_path) != "RData"){
+    stop("Invalid data_path specified. Check that a valid .RDATA file is specified, or leave blank to create a new file.")
   }
   return(data_path)
 }
