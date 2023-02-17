@@ -168,12 +168,6 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
 }
 
 .missing_data_checker <- function(observations, site_col) {
-  if(site_col %in% colnames(observations)) {
-    message("Location Data Present, proceeding.")
-  } else {
-    stop("Some or all location data (your site_col) are missing, please check and try again.")
-  } # Check if location column exists and exits if not
-
   if((site_col %in% colnames(observations)) == FALSE) {
     stop("Location data (i.e. your specified site_col) is missing from all files. Please check and try again.")
   } else if (sum(is.na(observations[[site_col]])) != 0) {
@@ -187,8 +181,8 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
       message("Ending due to missing Location (site_col) data. No files have been imported")
     }
   } else {
-    message("Lat Lon data present, proceeding.")
-  }
+    message("Location data present, proceeding.")
+  }  # Check if location column exists and exits if not
   
   if("Species.Auto.ID" %in% colnames(observations) && sum(is.na(observations$Species.Auto.ID)) == 0) {
     message("Full Species Auto ID data present, proceeding.")
