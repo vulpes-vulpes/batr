@@ -13,7 +13,7 @@
 #'   with other data if added to an existing RData file
 #' @export
 #'
-#' @family import tools
+#' @family species tools
 #'
 #' @examples \dontrun{set_species_list(c("Epfu", "Labo"), "C:/Folder/Folder/Data.RData")}
 set_species_list <- function(species_list, data_path) {
@@ -36,7 +36,7 @@ set_species_list <- function(species_list, data_path) {
 #' @return A vector of the saved Species List, if one exists.
 #' @export
 #'
-#' @family import tools
+#' @family species tools
 #'
 #' @examples \dontrun{set_species_list("C:/Folder/Folder/Data.RData")}
 show_species_list <- function(data_path) {
@@ -47,19 +47,18 @@ show_species_list <- function(data_path) {
   } else {
    "Species List not found." 
   }
-} # Reveal a set species list if present
+} # Return a Complete Species List From an RData File
 
-#' Show a Species List that has been saved into an RData File
-#'
-#' Reveals a Species List that has been saved into an existing Rdata file.
+#' Returns a data frame listing all unique species identifications included in a
+#' dataset in an RData file
 #'
 #' @param data_path Character. Path to an RData file to add activity data to.
 #'   Optional, a save location will be created before data are saved.
 #'
-#' @return A vector of the saved Species List, if one exists.
+#' @return A data frame containing all unique species identifications.
 #' @export
 #'
-#' @family import tools
+#' @family species tools
 #'
 #' @examples \dontrun{set_species_list("C:/Folder/Folder/Data.RData")}
 list_all_species <- function(data_path) {
