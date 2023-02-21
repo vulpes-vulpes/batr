@@ -58,3 +58,22 @@
   }
   return(data_path)
 }
+
+.location_subsetter <- function(location_list, data_path) {
+  if (exists("location_list") && !is.null(location_list)) {
+    message("Location list found, using to subset (clear saved list to change).")
+    observations_test <- observations[observations$Location %in% location_list,]
+  } else if (is.null(location_list) | !exists("location_list")) {
+    message("No location list specified, would you like to set one? Select y to set a location list, select no to proceed with all locations included.")
+    setlist <- readline(prompt = "y/n:")
+    if (setlist == "y" | setlist == "Y") {
+      location_list <- .location_requester(data_path)
+      observations_test <- observations[observations$Location %in% location_list,]
+    } else if (setlist == "n" | setlist == "N") {
+      message("Proceeding with all available locations.")
+    } else {
+      stop("Input not recognised, please try again.")
+    }  
+  }
+}
+

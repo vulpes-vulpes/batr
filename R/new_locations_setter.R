@@ -76,3 +76,11 @@ list_all_locations <- function(data_path) {
     stop("No locations found, please check the data and try again.")
   }
 } # Reveal a set species list if present
+
+.location_requester <- function(data_path) {
+  message("Please supply a list of locations separated by commas (e.g. \"Location 1, Location 2\")).")
+  location_list <- readline(prompt = "List:")
+  location_list <- as.vector(unlist(strsplit(location_list, ", ")))
+  set_location_list(location_list, data_path)
+  return(location_list)
+}
