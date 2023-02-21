@@ -49,4 +49,30 @@ show_species_list <- function(data_path) {
   }
 } # Reveal a set species list if present
 
-
+#' Show a Species List that has been saved into an RData File
+#'
+#' Reveals a Species List that has been saved into an existing Rdata file.
+#'
+#' @param data_path Character. Path to an RData file to add activity data to.
+#'   Optional, a save location will be created before data are saved.
+#'
+#' @return A vector of the saved Species List, if one exists.
+#' @export
+#'
+#' @family import tools
+#'
+#' @examples \dontrun{set_species_list("C:/Folder/Folder/Data.RData")}
+list_all_species <- function(data_path) {
+  .check_data_path(data_path)
+  load(data_path)
+  if (exists("observations")) {
+  all_species <- unique(observations$Species)
+  } else {
+    stop("No observations found, please check RData file.")
+  }
+  if (length(all_species) > 0) {
+    assign("species_list", as.data.frame(all_species), envir=globalenv())
+  } else {
+    stop("No species found, please check the data and try again.")
+  }
+} # Reveal a set species list if present
