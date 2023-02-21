@@ -82,5 +82,6 @@ list_all_locations <- function(data_path) {
   location_list <- readline(prompt = "List:")
   location_list <- as.vector(unlist(strsplit(location_list, ", ")))
   set_location_list(location_list, data_path)
-  return(location_list)
+  .save_to_RDATA(location_list, data_path)
+  return(location_list) # Function to request a list of locations for subsetting: returns a vector of locations and adds to the specified RData file
 }
