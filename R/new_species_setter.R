@@ -70,7 +70,7 @@ list_all_species <- function(data_path) {
     stop("No observations found, please check RData file.")
   }
   if (length(all_species) > 0) {
-    assign("species_list", as.data.frame(all_species), envir=globalenv())
+    assign("all_species", as.data.frame(all_species), envir=globalenv())
   } else {
     stop("No species found, please check the data and try again.")
   }
