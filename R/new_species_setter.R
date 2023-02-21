@@ -75,3 +75,15 @@ list_all_species <- function(data_path) {
     stop("No species found, please check the data and try again.")
   }
 } # Reveal a set species list if present
+
+.species_requester <- function(data_path) {
+  message("Please supply a list of species separated by commas (e.g. \"Species 1, Species 2\")).")
+  species_list <- readline(prompt = "List:")
+  species_list <- as.vector(unlist(strsplit(species_list, ", ")))
+  set_species_list(species_list, data_path)
+  .save_to_RDATA(species_list, data_path)
+  return(species_list) # Function to request a list of species for subsetting: returns a vector of species and adds to the specified RData file
+}
+
+
+
