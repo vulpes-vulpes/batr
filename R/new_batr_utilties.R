@@ -62,7 +62,7 @@
 .location_subsetter <- function(location_list, data_path) {
   if (exists("location_list") && !is.null(location_list)) {
     message("Location list found, using to subset (clear saved list to change).")
-    observations_test <- observations[observations$Location %in% location_list,]
+    observations_test <- observations[observations$Location %in% location_list,] # Check if there is a location list saved in the RData file and use to subset if so
   } else if (is.null(location_list) | !exists("location_list")) {
     message("No location list specified, would you like to set one? Select y to set a location list, select no to proceed with all locations included.")
     setlist <- readline(prompt = "y/n:")
@@ -73,7 +73,25 @@
       message("Proceeding with all available locations.")
     } else {
       stop("Input not recognised, please try again.")
-    }  
+    } # If there is not an existing location list, ask whether one is needed and call a function to create and then subset if so, use all locations if no
+  }
+}
+
+.species_subsetter <- function(species_list, data_path) {
+  if (exists("species_list") && !is.null(species_list)) {
+    message("Species list found, using to subset (clear saved list to change).")
+    observations_test <- observations[observations$species %in% species_list,] # Check if there is a species list saved in the RData file and use to subset if so
+  } else if (is.null(species_list) | !exists("species_list")) {
+    message("No species list specified, would you like to set one? Select y to set a species list, select no to proceed with all species included.")
+    setlist <- readline(prompt = "y/n:")
+    if (setlist == "y" | setlist == "Y") {
+      species_list <- .species_requester(data_path)
+      observations_test <- observations[observations$species %in% species_list,]
+    } else if (setlist == "n" | setlist == "N") {
+      message("Proceeding with all available species.")
+    } else {
+      stop("Input not recognised, please try again.")
+    } # If there is not an existing species list, ask whether one is needed and call a function to create and then subset if so, use all species if no
   }
 }
 
