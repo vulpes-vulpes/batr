@@ -177,8 +177,8 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
     if (report == "y" | report == "Y") {
       missing_files <- observations[is.na(observations[[site_col]]),]
       missing_files <- missing_files$File.Name
-      print(missing_files)
       message("Ending due to missing Location (site_col) data. No files have been imported")
+      assign("files_missing_locations", as.data.frame(missing_files), envir=globalenv())
     }
   } else {
     message("Location data present, proceeding.")
@@ -201,8 +201,8 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
       if (report == "y" | report == "Y") {
         missing_files <- observations[is.na(observations$Loc.Position.Lat),]
         missing_files <- missing_files$File.Name
-        print(missing_files)
         message("Ending due to missing Lat Lon data. No files have been imported")
+        assign("files_missing_latlon", as.data.frame(missing_files), envir=globalenv())
       }
   } else {
     message("Lat Lon data present, proceeding.")

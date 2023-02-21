@@ -25,7 +25,7 @@
 #' manual_vet_extractor("raw_data_project", "C:/Folder/Folder/File_Folder")
 #'}
 #'@export
-manual_vet_extractor <- function(dataset, directory, species_list = c("Epfu", "Labo", "Laci", "Lano"), percentage = 0.05, no_manual = FALSE) {
+manual_vet_extractor_old <- function(dataset, directory, species_list = c("Epfu", "Labo", "Laci", "Lano"), percentage = 0.05, no_manual = FALSE) {
   if(no_manual == TRUE)
     dataset <- dataset[is.na(dataset$Species.Manual.ID),]
   dataset <- dataset[!is.na(dataset$Species),]
