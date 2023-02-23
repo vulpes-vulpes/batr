@@ -184,13 +184,13 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
     message("Location data present, proceeding.")
   }  # Check if location column exists and exits if not
   
-  if("Species.Auto.ID" %in% colnames(observations) && sum(is.na(observations$Species.Auto.ID)) == 0) {
-    message("Full Species Auto ID data present, proceeding.")
-  } else if("Species.Manual.ID" %in% colnames(observations) && sum(is.na(observations$Species.Manual.ID)) == 0) {
-    message("Full Manual Auto ID data present, proceeding.")
-  } else {
-    stop("Incomplete Species ID data found, please check and try again.")
-  } # Check is species ID data (either automated or manual) exists and has no NAs, and exits if not
+  #if("Species.Auto.ID" %in% colnames(observations) && sum(is.na(observations$Species.Auto.ID)) == 0) {
+  #  message("Full Species Auto ID data present, proceeding.")
+  #} else if("Species.Manual.ID" %in% colnames(observations) && sum(is.na(observations$Species.Manual.ID)) == 0) {
+  #  message("Full Manual Auto ID data present, proceeding.")
+  #} else {
+  #  stop("Incomplete Species ID data found, please check and try again.")
+  #} # Check is species ID data (either automated or manual) exists and has no NAs, and exits if not
   
   if(("Loc.Position.Lat" %in% colnames(observations)) == FALSE) {
     stop("Lat Lon data is missing from all files. Please check and try again.")
