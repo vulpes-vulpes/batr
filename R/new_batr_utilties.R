@@ -109,3 +109,12 @@
   }
 }
 
+.monitoring_start_finder <- function(dataset) {
+  monitoring_start <- min(dataset$Night)
+  return(monitoring_start)
+}
+
+.monitoring_end_finder <- function(dataset) {
+  monitoring_end <- max(dataset$Night)
+  return(monitoring_end)
+}

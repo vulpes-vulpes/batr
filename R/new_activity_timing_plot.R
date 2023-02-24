@@ -39,7 +39,13 @@ first_observations_plot <- function(data_path, species, timezone,
   load(data_path)
   dataset <- .location_subsetter(data_path)
   dataset <- dataset[which(dataset$Species==species),] #subset the species
-  dataset <- dplyr::select(dataset, Night, Species, Location, Latitude, Longitude, Timestamp) # trim colums for sanity  
+  dataset <- dplyr::select(dataset, Night, Species, Location, Latitude, Longitude, Timestamp) # trim column for sanity 
+  if (is.null(monitoring_start)) {
+    monitoring_start <- .monitoring_start_finder(dataset)
+  }
+  if (is.null(monitoring_end)) {
+    monitoring_end <- .monitoring_end_finder(dataset)
+  }
   #dataset$Timestamp2 <- lubridate::force_tz(dataset$Timestamp, timezone)
   dataset$Time_PM <- dataset$Timestamp
   dataset$Time_PM <- ifelse(lubridate::hour(dataset$Time_PM) < 12, NA, dataset$Time_PM) # Change morning observations to NA
@@ -56,12 +62,6 @@ first_observations_plot <- function(data_path, species, timezone,
   locations <- dataset[!duplicated(dataset$Location),]
   locations$Time_PM <- NULL
   locations$date <- NULL
-  if (is.null(monitoring_start)) {
-    monitoring_start <- .monitoring_start_finder(dataset)
-  }
-  if (is.null(monitoring_end)) {
-    monitoring_end <- .monitoring_end_finder(dataset)
-  }
   dataset <- padr::pad(dataset, by = "date", start_val = as.Date(monitoring_start),
                        end_val = as.Date(monitoring_end), group = "Location")
   dataset <- merge(dataset, locations, by = "Location", all.x = T)
@@ -110,14 +110,4 @@ first_observations_plot <- function(data_path, species, timezone,
   #assign(paste(species, "_first_observation_plot_", project_name, sep = ""), species_site_aggregated_plot, envir=globalenv())
   # Output plot to environment
   return(first_observations_plot)
-}
-
-.monitoring_start_finder <- function(dataset) {
-  monitoring_start <- min(dataset$date)
-  return(monitoring_start)
-}
-
-.monitoring_end_finder <- function(dataset) {
-  monitoring_end <- max(dataset$date)
-  return(monitoring_end)
 }
