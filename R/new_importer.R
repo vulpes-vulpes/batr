@@ -39,29 +39,29 @@
 #' @examples
 #' \dontrun{#' import_GUANO("New", "C:/Folder/Folder/WAVs_Folder", "Location", "C:/Folder/Folder/Data.RData")}
 #' @export
-import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
+import_GUANO <- function(action, input_path, site_col, timezone, data_path = NULL) {
 
   if (action == "New" | action == "Add" | action == "Update") {
     data_path <- .check_data_path(data_path, action)
   } # Check that a valid action is selected
   if (action == "New") {
-    .new_observations(input_path, site_col, data_path)
+    .new_observations(input_path, site_col, timezone, data_path)
   } else if (action == "Add") {
-    .add_observations(input_path, site_col, data_path)
+    .add_observations(input_path, site_col, timezone, data_path)
   } else if (action == "Update") {
-    .update_observations(input_path, site_col, data_path)
+    .update_observations(input_path, site_col, timezone, data_path)
   } else {
     stop("Invalid action given, please specifiy an action (\"New\", \"Add\" or \"Update\") and try again. See ?read_wavs for more information")
   }
 }
 
-.new_observations <- function(input_path, site_col, data_path) {
+.new_observations <- function(input_path, site_col, timezone, data_path) {
   file_list <- .get_file_list(input_path) # Get list of files
-  observations <- suppressWarnings(.read_file_GUANO(file_list, site_col)) # Read GUANO
+  observations <- suppressWarnings(.read_file_GUANO(file_list, site_col, timezone)) # Read GUANO
   .save_to_RDATA(observations, data_path)
 }
 
-.add_observations <- function(input_path, site_col, data_path) {
+.add_observations <- function(input_path, site_col, timezone, data_path) {
   load(data_path) # Load current data
   observations_original <- observations # Rename current observations for clarity
   rm(observations) # Remove current observations df for clarity
@@ -72,7 +72,7 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
     warning("Some of the data you are trying to add already exists in the data file. Only files that do not currently exist will be imported. Please use the Update action of import_GUANO to update existing files")
   } # Check whether the new files already exist in the data file, and warn / exit if they do. 
   observations_new <- observations_new[!(observations_new$File.Name %in% observations_original$File.Name),] # Remove directory observations already present in current data
-  observations_new <-suppressWarnings(.read_file_GUANO(observations_new, site_col)) # Read GUANO for new files
+  observations_new <-suppressWarnings(.read_file_GUANO(observations_new, site_col, timezone)) # Read GUANO for new files
   #observations_new <- merge(observations_new2, observations_new, by.x = "File.Name", by.y = "File.Name") # Combine GUANO and file metadata
   #observations_new <- observations_new[, which(names(observations_new) != "Full.Path")] # Remove duplicate column
   observations_original[setdiff(names(observations_new), names(observations_original))] <- NA # Prepare for column differences in tables
@@ -99,7 +99,7 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
   }
   update_files <- update_files$Full.Path
   update_files <- .get_file_list(update_files, list = T)
-  observations_update <- suppressWarnings(.read_file_GUANO(update_files, site_col))
+  observations_update <- suppressWarnings(.read_file_GUANO(update_files, site_col, timezone))
   observations_original <- observations[!(observations$File.Name %in% observations_update$File.Name),] # Remove updated rows from original data
   observations_files[setdiff(names(observations_update), names(observations_original))] <- NA # Account for differences in columns
   observations_update[setdiff(names(observations_original), names(observations_update))] <- NA # ^
@@ -127,7 +127,7 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
   return(file_list)
 }
 
-.read_file_GUANO <- function(file_list, site_col) {
+.read_file_GUANO <- function(file_list, site_col, timezone) {
   observations <- do.call(plyr::rbind.fill, (lapply(pbapply::pblapply(as.list(file_list$Full.Path), read.guano), as.data.frame))) # Read GUANO
   .missing_data_checker(observations, site_col) # Call missing data checker to exit and inform user if required columns are missing or incomplete
   observations <- merge(observations, file_list, by.x = "File.Name", by.y = "File.Name") # Add file modified columns to GUNAO df
@@ -138,6 +138,7 @@ import_GUANO <- function(action, input_path, site_col, data_path = NULL) {
                    as.Date(format(as.POSIXct(observations$Timestamp), "%Y-%m-%d"), tz = "EST" ) - 1)
   }) # Generate Night column, accounting for observations after midnight
   observations$Night <- as.Date(observations$Night, origin = "1970-01-01") # Set format of date column
+  observations$Timestamp <- lubridate::force_tz(observations$Timestamp, timezone)
   observations = within(observations, {
     Species = ifelse(is.na(observations$Species.Manual.ID), as.character(observations$Species.Auto.ID), as.character(observations$Species.Manual.ID))
   }) # Generate Species column
