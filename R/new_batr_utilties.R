@@ -63,11 +63,11 @@
   if (!is.null(dataset)) {
     observations <- dataset
   } else {observations <- observations} # Check if a subsetted dataset already exists and use this for further subsetting if not
-  if (exists("location_list") && !is.null(location_list)) {
+  if (exists("location_list")) {
     message("Location list found, using to subset (clear saved list to change).")
     dataset <- observations[observations$Location %in% location_list,]
     return(dataset) # Check if there is a location list saved in the RData file and use to subset if so
-  } else if (is.null(location_list) | !exists("location_list")) {
+  } else {
     message("No location list specified, would you like to set one? Select y to set a location list, select no to proceed with all locations included.")
     setlist <- readline(prompt = "y/n:")
     if (setlist == "y" | setlist == "Y") {
@@ -76,6 +76,8 @@
       return(dataset)
     } else if (setlist == "n" | setlist == "N") {
       message("Proceeding with all available locations.")
+      dataset <- observations
+      return(dataset)
     } else {
       stop("Input not recognised, please try again.")
     } # If there is not an existing location list, ask whether one is needed and call a function to create and then subset if so, use all locations if no
@@ -86,7 +88,7 @@
   if (!is.null(dataset)) {
     observations <- dataset
   } else {observations <- observations} # Check if a subsetted dataset already exists and use this for further subsetting if not
-  if (exists("species_list") && !is.null(species_list)) {
+  if (exists("species_list")) {
     message("Species list found, using to subset (clear saved list to change).")
     dataset <- observations[observations$Species %in% species_list,] 
     return(dataset) # Check if there is a species list saved in the RData file and use to subset if so
@@ -99,6 +101,8 @@
       return(dataset)
     } else if (setlist == "n" | setlist == "N") {
       message("Proceeding with all available species.")
+      dataset <- observations
+      return(dataset)
     } else {
       stop("Input not recognised, please try again.")
     } # If there is not an existing species list, ask whether one is needed and call a function to create and then subset if so, use all species if no
