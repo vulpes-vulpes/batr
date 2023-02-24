@@ -125,9 +125,9 @@ species_site_aggregated_plot <- function(dataset, project_name, monitoring_start
 #'@examples
 #'\dontrun{
 #' species_daily_site_plot(species_night_site_projectname, "Project Name", "Mylu", "2019-01-01", "2019-12-31")
-#'}
+#'
 #'@export
-species_daily_site_plot <- function(dataset, project_name, species, monitoring_start, monitoring_end,
+old_species_daily_site_plot <- function(dataset, project_name, species, monitoring_start, monitoring_end,
                                     gaps = NULL,  survey_year = NULL, save_directory = NULL, title = TRUE,
                                     y_scale = "free_y", width = 25, height = 20, text_size = 8, date_label = "%b") {
   # Subset to selected species
