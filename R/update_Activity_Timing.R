@@ -31,7 +31,7 @@
 #'@return A plot as an object in the current envrionment, and a saved image if
 #'  selected.
 #'@export
-first_observations_plot <- function(dataset, project_name, species, monitoring_start, monitoring_end, gaps = NULL, location = NULL,
+old_first_observations_plot <- function(dataset, project_name, species, monitoring_start, monitoring_end, gaps = NULL, location = NULL,
                                     survey_year = NULL, timezone = 'EST', text_size = 8, date_label = "%b", save_directory = NULL) {
   species_subset <- dataset[which(dataset$Species==species),] #subset the species
   if (!is.null(survey_year)) {
