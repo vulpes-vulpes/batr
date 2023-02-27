@@ -123,8 +123,7 @@ species_site_aggregated_plot <- function(dataset, project_name, monitoring_start
 #'  selected.
 #'
 #'@examples
-#'\dontrun{
-#' species_daily_site_plot(species_night_site_projectname, "Project Name", "Mylu", "2019-01-01", "2019-12-31")
+#'\dontrun{species_daily_site_plot(species_night_site_projectname, "Project Name", "Mylu", "2019-01-01", "2019-12-31")}
 #'
 #'@export
 old_species_daily_site_plot <- function(dataset, project_name, species, monitoring_start, monitoring_end,

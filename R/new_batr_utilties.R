@@ -60,9 +60,11 @@
 }
 
 .location_subsetter <- function(data_path, dataset = NULL) {
+  load(data_path)
   if (!is.null(dataset)) {
     observations <- dataset
-  } else {observations <- observations} # Check if a subsetted dataset already exists and use this for further subsetting if not
+  } else {
+    observations <- observations} # Check if a subsetted dataset already exists and use this for further subsetting if not
   if (exists("location_list")) {
     message("Location list found, using to subset (clear saved list to change).")
     dataset <- observations[observations$Location %in% location_list,]
@@ -85,9 +87,11 @@
 }
 
 .species_subsetter <- function(data_path, dataset = NULL) {
+  load(data_path)
   if (!is.null(dataset)) {
     observations <- dataset
-  } else {observations <- observations} # Check if a subsetted dataset already exists and use this for further subsetting if not
+  } else {
+    observations <- observations} # Check if a subsetted dataset already exists and use this for further subsetting if not
   if (exists("species_list")) {
     message("Species list found, using to subset (clear saved list to change).")
     dataset <- observations[observations$Species %in% species_list,] 

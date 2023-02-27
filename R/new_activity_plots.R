@@ -43,7 +43,7 @@
 species_daily_site_plot <- function(data_path, species, monitoring_start = NULL,
                                     monitoring_end = NULL, gaps = NULL, 
                                     save_directory = NULL, y_scale = "free_y", 
-                                    width = 25, height = 20, text_size = 8,
+                                    width = 15.9, height = 8.43, text_size = 10,
                                     date_label = "%b", title = FALSE) {
   # Subset to selected species
   #species_subset <- dataset[which(dataset$Species==species),]
@@ -52,7 +52,7 @@ species_daily_site_plot <- function(data_path, species, monitoring_start = NULL,
   #}
   # Import data
   .check_data_path(data_path) # Check the data path provided
-  load(data_path) # Load the data path
+  # load(data_path) # Load the data path
   dataset <- .location_subsetter(data_path) # Offer to subset locations
   dataset <- dataset[which(dataset$Species==species),] #subset the species
   # Create count table
@@ -90,7 +90,7 @@ species_daily_site_plot <- function(data_path, species, monitoring_start = NULL,
   }
   # Save plot to a specified folder if requested
   if (!is.null(save_directory)) {
-    ggplot2::ggsave(paste(save_directory, "/", species, "_daily_site_plot_", project_name, ".png", sep = ""), width = width, height = height, units = "cm")
+    ggplot2::ggsave(paste(save_directory, "/", species, "_daily_site_plot_", ".png", sep = ""), width = width, height = height, units = "cm")
   }
   # Save plot to a specified folder if requested
   #if (!is.null(save_directory)) {
