@@ -66,6 +66,7 @@ species_daily_site_plot(species_night_site_projectname, "Project Name", "Mylu", 
 Other Basic Plots: 
 \code{\link{monitoring_effort_plot}()},
 \code{\link{multi_species_daily_site_plot}()},
+\code{\link{old_species_daily_site_plot}()},
 \code{\link{species_daily_site_plot}()},
 \code{\link{species_site_aggregated_plot}()}
 }

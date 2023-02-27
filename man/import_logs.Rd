@@ -65,8 +65,6 @@ there were no bats, or because the monitor had run out of batteries...
 }
 \seealso{
 Other import tools: 
-\code{\link{import_GUANO}()},
-\code{\link{set_species_list}()},
-\code{\link{show_species_list}()}
+\code{\link{import_GUANO}()}
 }
 \concept{import tools}

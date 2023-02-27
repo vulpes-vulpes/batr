@@ -70,6 +70,7 @@ Other Basic Plots:
 \code{\link{monitoring_effort_plot}()},
 \code{\link{monthly_activity_plot}()},
 \code{\link{multi_species_daily_site_plot}()},
+\code{\link{old_species_daily_site_plot}()},
 \code{\link{species_daily_site_plot}()}
 }
 \concept{Basic Plots}

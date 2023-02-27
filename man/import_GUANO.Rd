@@ -4,7 +4,7 @@
 \alias{import_GUANO}
 \title{Read GUANO Metadata From WAV Files}
 \usage{
-import_GUANO(action, input_path, site_col, data_path = NULL)
+import_GUANO(action, input_path, site_col, timezone, data_path = NULL)
 }
 \arguments{
 \item{action}{Character. Must equal "New", "Add" or "Update". Use "New" to
@@ -36,10 +36,10 @@ GUANO from new files to an existing RData file, or update metadata in an
 existing RData file where the metadata of the original files has changed.
 }
 \section{Note}{
- This function will take a long time for large datasets.
+ This function will take a long time for large data sets.
   Folders containing tens of thousands of files may take several hours to
   read! For this reason it is recommended to complete all manual vetting
-  before proceeding. However, files with changed metadat can be updated later
+  before proceeding. However, files with changed metadata can be updated later
   using the "Update" action.
 }
 
@@ -53,9 +53,7 @@ Other Import Functions:
 \code{\link{log_file_parser}()}
 
 Other import tools: 
-\code{\link{import_logs}()},
-\code{\link{set_species_list}()},
-\code{\link{show_species_list}()}
+\code{\link{import_logs}()}
 }
 \concept{Import Functions}
 \concept{import tools}

@@ -26,9 +26,8 @@ will ask for it.
 \dontrun{set_species_list(c("Epfu", "Labo"), "C:/Folder/Folder/Data.RData")}
 }
 \seealso{
-Other import tools: 
-\code{\link{import_GUANO}()},
-\code{\link{import_logs}()},
+Other species tools: 
+\code{\link{list_all_species}()},
 \code{\link{show_species_list}()}
 }
-\concept{import tools}
+\concept{species tools}
