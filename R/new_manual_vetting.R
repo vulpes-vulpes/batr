@@ -32,7 +32,7 @@ manual_vet_extractor <- function(data_path, WAV_directory, save_directory, speci
   .check_data_path(data_path)
   #load(data_path)
   dataset <- .location_subsetter(data_path)
-  dataset <- .species_subsetter(data_path, dataset)
+  # dataset <- .species_subsetter(data_path, dataset)
   # dataset <- observations # rename for ease
   if(no_manual == TRUE) {
     dataset <- dataset[is.na(dataset$Species.Manual.ID),]

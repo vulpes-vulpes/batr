@@ -32,11 +32,6 @@ summary_table <- function(data_path,
       if(!species %in% colnames(species_site_summary)) {species_site_summary[,species] <- 0}
     }
   }
-  
-  if(isTRUE(all_myotis)) {
-    
-  }
-  
   #species_site_summary$`All Myotis` <- rowSums(species_site_summary[, c("Mylu", "Myle", "Myse", "Mysp")])
   #species_site_summary$Year = substr(species_site_summary$Location, 1, 4)
   #species_site_summary$Location <- substring(species_site_summary$Location, 6, 1000000L)
@@ -46,7 +41,7 @@ summary_table <- function(data_path,
   species_site_summary[x,1] = "Totals"
   #colnames(species_site_summary)[colnames(species_site_summary) == 'Location2'] <- 'Location'
   #species_site_summary <- species_site_summary[c("Location", "Epfu", "Labo", "Laci", "Lano", "Myle", "Mylu", "Myse", "Mysp", "All Myotis", "Pesu")]
-  assign(paste("species_site_summary", sep = ""), species_site_summary, envir=globalenv())
+  assign("summary_table", species_site_summary, envir=globalenv())
 }
 
 
