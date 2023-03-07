@@ -90,7 +90,7 @@ species_daily_site_plot <- function(data_path, species, monitoring_start = NULL,
   }
   # Save plot to a specified folder if requested
   if (!is.null(save_directory)) {
-    ggplot2::ggsave(paste(save_directory, "/", species, "_daily_site_plot_", ".png", sep = ""), width = width, height = height, units = "cm")
+    ggplot2::ggsave(paste(save_directory, "/", species, "_daily_site_plot.png", sep = ""), width = width, height = height, units = "cm")
   }
   # Save plot to a specified folder if requested
   #if (!is.null(save_directory)) {
