@@ -1,0 +1,105 @@
+---
+header-includes:
+  - \usepackage[scaled]{helvet}
+  - \usepackage[T1]{fontenc}
+  - \renewcommand\familydefault{\sfdefault}
+  - \usepackage{caption}
+  - \usepackage{booktabs}
+  - \usepackage{multirow}
+  - \usepackage{setspace}
+  - \usepackage{subcaption}
+  - \usepackage{tikz}
+  - \usepackage{float}
+  - \usepackage{setspace}
+output:
+  bookdown::pdf_document2: 
+    toc: false
+    fig_caption: yes
+    keep_tex: yes
+    includes:
+      in_header: header.tex
+geometry:
+- top=20mm
+- left=20mm
+- heightrounded
+fontsize: 11pt
+params:
+  project: Maitland Valley Conservation Authority
+  author: Toronto Zoo Native Bat Conservation Program
+  date: !r Sys.Date()
+  data: /Users/toby/Toronto Zoo/Bat Conservation - General/2 - Program Data/1 - Acoustic
+    Monitoring Data/0 - New Format Data/NWMO-SB.RData
+  species: !r c("Epfu", "Labo", "Laci", "Lano", "Myle", "Mylu", "Myse", "Pesu")
+  site: !r c("Kinghurst Nature Reserve", "Schmidt Lake", "Taylor Drive")
+---
+
+---
+title: |
+    | Bat Acoustic Monitoring Results Summary for:
+    | **`r params$project`**
+author: |
+    | Prepared by:
+    | `r params$author`
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r , include=FALSE}
+load(params$data)
+library(english)
+library(batr)
+library(data.table)
+library(knitr)
+options(knitr.table.format = "latex") 
+observations <- data.table::setDT(observations)[Species %chin% params$species]
+observations <- data.table::setDT(observations)[Location %chin% params$site]
+active_dates <- data.table::setDT(active_dates)[Location %chin% params$site]
+```
+
+```{r map, echo=FALSE, message=F, warning=F, fig.cap="Monitoring locations. Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.", fig.align='center', fig.height=4}
+batr:::.map4report(observations)
+```
+
+
+# About This Document {-}
+
+* The report was automatically generated from available data on `r params$date`
+* Use caution, species knowledge, and common sense while interpreting these results, and consult an experienced bat biologist for further help
+* Acoustic identification is challenging for many bat species, accordingly there may be some inaccuracies in the numbers of observations reported here
+* The number of observations of a species cannot be directly equated to a number of animals: 100 observations could mean that 100 bats observed once or one bat observed 100 times
+
+# Data Collection
+
+`r english::Words(length(unique(observations$Location)))` ultrasonic recorders were deployed over a period of `r max(observations$Night) - min(observations$Night)` nights between `r min(observations$Night)` and `r max(observations$Night)`. Recorders occasionally fail to record on some nights due to exhausted batteries, full memory cards, or other faults. A list of recorders, precise locations, and the number of nights successfully monitored is displayed in Table \@ref(tab:locs) below. Recorder locations are plotted in Figure \@ref(fig:map) above. 
+
+```{r locs, echo=FALSE}
+locations <- as.data.frame(cbind(unique(observations$Location), unique(observations$Latitude), unique(observations$Longitude)))
+locations$uptime<- sapply(locations$V1, function(l) nrow(active_dates[active_dates$Location==l & active_dates$Log_Count > 0.5,]))
+locations$uptime <- ifelse(locations$uptime < (max(observations$Night) - min(observations$Night)), locations$uptime, (max(observations$Night) - min(observations$Night)) )
+colnames(locations) <- c("Location", "Latitude", "Longitude", "Nights Monitored")
+kable(locations, caption = "Location names and coordinates for ultrasonic recorders included in these data.") %>% kableExtra::row_spec(0,bold=TRUE) %>%
+kableExtra::kable_styling(latex_options = "hold_position", font_size = 10)
+```
+
+Data were processed by `r params$author` staff. First, files that did not contain potential bat tonal signals were removed from the data, then the files were assigned species identities using SonoBat auto-classification software. Staff then manually checked all identifications of Endangered species and five percent of other species to confirm accuracy. 
+
+# Results
+
+A total of `r length(observations$Species)` combined acoustic observations of `r length(unique(observations$Species))` species were detected during this project. The total number of observations for each species at each monitoring location are given in Table \@ref(tab:species). 
+
+```{r species, echo=FALSE}
+qs <- batr:::.quick_summary(observations, active_dates, species = params$species)
+qs$Year <- NULL
+colnames(qs) <- c("", "Big Brown Bat", "Eastern Red Bat", "Hoary Bat", "Silver-haired Bat", "Eastern Small-footed Myotis", "Little Brown Myotis", "Northern Myotis", "Tri-colored Bat", "Number of Nights Monitored")
+qs <- transpose(qs, keep.names = "Species", make.names = "")
+kable(qs, caption = "Total species observations at each monitoring location.") %>% kableExtra::row_spec(0,bold=TRUE) %>%
+kableExtra::kable_styling(latex_options = "hold_position", font_size = 10)
+```
+
+Bat activity varied between nights. Nightly activity of each species at each site throughout the monitoring period is presented in Figure \@ref(fig:seasonal) below.
+
+```{r seasonal, echo=F, fig.align='center', fig.dim=c(10,13), message=FALSE, warning=FALSE, fig.cap = "Nightly bat observations (coloured bars) by species and monitoring location. Grey blocks indicate time periods when acoustic monitoring did not occur."}
+batr:::.speces_site_plot(observations, active_dates, text_size = 15)
+```
