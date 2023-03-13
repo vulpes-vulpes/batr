@@ -9,29 +9,76 @@
 The goal of batr is to streamline analyses and reporting of bat acoustic
 monitoring data containing [GUANO metadata](https://guano-md.org/). The
 package includes code to extract GUANO data directly from attributed WAV
-files, and to create summaries, plots and analyses.
+files, and to create summaries, plots, and analyses.
 
-The package is currently a work in progress. The basic functions work\*,
-but may be buggy for different use cases. Improvements and additional
-features are planned as time permits. Feedback or contributions are
-welcomed.
+The package has been written as part of and to support conservation
+research by the [Toronto Zoo’s Native Bat Conservation
+Program](https://www.torontozoo.com/bats), and is shared here in case it
+benefits anyone else. It remains a work in progress and feedback and
+contributions are welcome.
 
-**Note: the current release, 0.1.0, only functions for the eight bat
-species in Ontario.**
+Check development progress and latest changes [here](ADDME).
+
+## Winter 2023 Update
+
+A major update was released in Winter 2023 which involves a significant
+shift in philosophy and rewrite of functionality. This broke all the old
+functions, which are now depreciated but still present for the time
+being. However, the trade off is that lots of things work better. New
+features:
+
+- Integrated GUANO code directly (credit, as always to [David
+  Riggs](https://github.com/riggsd/guano-r)) to streamline installation
+  and data import
+- Streamlined data import and storage approach: you now store the entire
+  project in a single RDATA file that is easier to manage
+- Added the ability to add extra data to an existing RDATA file rather
+  than recreating from scratch as before, and to update the RDATA file
+  when GUANO in the original WAV files changes
+- Works with **any** species codes in your GUANO, i.e. it is no longer
+  hard-coded to only work with the eight bat species of Ontario
+
+If anyone out there wants the old version (0.1.0) you can find it here
+[here](https://github.com/vulpes-vulpes/batr/releases/tag/v0.1.0) and
+the documentation [here](ADDME). Note that this version is hard-coded
+for Ontario bat species only.
 
 ## Installation
 
-Development is ongoing, but you can install the current version from
-[GitHub](https://github.com/) with:
+Install the current version from [GitHub](https://github.com/) using the
+following code:
 
 ``` r
 # install.packages("devtools")
 devtools::install_github("vulpes-vulpes/batr")
 ```
 
+## Prerequisite: GUANO
+
+This package is designed to function with bat acoustic monitoring data,
+in the form of a collection of WAV files, that have been processed to
+add species identifications and other descriptive information as
+metadata. Specifically, the metadata should use the [GUANO
+specification](https://github.com/riggsd/guano-spec/blob/master/guano_specification.md)
+(thanks to David Riggs for creating this standard), which us used by
+most modern bat recording devices and analysis software. At minimum your
+files need to have the following columns for batr to use them:
+
+- Species information in the form of species codes (e.g. “Epfu” for big
+  brown bat, *Eptesicus fuscus*), either in “Species.Auto.ID” or
+  “Species.Manual.ID”, or both, in which case manual ID is taken in
+  preference over auto ID to create a “Species” Column on import
+- Site names: a data field containing a unique reference name for each
+  site where data was collected, this is specified by name as the
+  “site_col” on import using the import_GUANO function
+- Timestamp
+- Latitude, with decimal latitude (can be called “Loc.Position.Lat” or
+  just “Latitude”, if you have the former it will be renamed on import)
+- Longitude, as above
+
 ## Using batr
 
-### Formatting Data For Import:
+### Importing Your Data
 
 #### Primary Data (WAV files):
 
@@ -51,7 +98,7 @@ following GUANO fields at minimum:
   users may choose their own field for these data and inform batr when
   using the `GUANO_loader` function)
 
-#### Tertiary Data (Recorder log / summary files):
+#### Tertiary Data (recorder log / summary files):
 
 Most automated bat acoustic monitoring hardware produce some form of log
 file to track device activity, errors etc. These files contain valuable
