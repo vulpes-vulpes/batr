@@ -78,12 +78,12 @@ An ultrasonic recorder was deployed at `r unique(observations$Latitude)`, `r uni
 
 # Results
 
-A total of `r length(observations$Species)` acoustic observations of `r length(unique(observations$Species))` species were detected at this location. The total number of observations for each species at each monitoring location are given in Table \@ref(tab:species). Note that "Myotis Spp." indicates an observation of a bat from the *Myotis* genus that was not confidently identified to species level. 
+A total of `r length(observations$Species)` acoustic observations of `r length(unique(observations$Species))` species were detected at this location. The total number of observations for each species at each monitoring location are given in Table \@ref(tab:species). 
 ```{r species, echo=FALSE}
 qs <- batr:::.quick_summary(observations, active_dates, species = params$species)
 qs$Year <- NULL
 qs$Monitoring_Nights <- NULL
-colnames(qs) <- c("", "Big Brown Bat", "Eastern Red Bat", "Hoary Bat", "Silver-haired Bat", "Eastern Small-footed Myotis", "Little Brown Myotis", "Northern Myotis", "Myotis Spp.", "Tri-colored Bat")
+colnames(qs) <- c("", "Big Brown Bat", "Eastern Red Bat", "Hoary Bat", "Silver-haired Bat", "Eastern Small-footed Myotis", "Little Brown Myotis", "Northern Myotis", "Tri-colored Bat")
 #qs <- qs[, -c(10, 11)]
 qs <- transpose(qs, keep.names = "Species", make.names = "")
 kable(qs, caption = "Total species observations at the monitoring location.") %>% kableExtra::row_spec(0,bold=TRUE) %>%
