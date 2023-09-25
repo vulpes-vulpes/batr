@@ -3,6 +3,7 @@
 export("%>%")
 export(GUANO_loader)
 export(GUANO_reader)
+export(comsci_report)
 export(first_observations_plot)
 export(high_frequency_extractor)
 export(import_GUANO)

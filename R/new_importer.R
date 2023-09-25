@@ -30,6 +30,8 @@
 #' @param data_path Character. Path to an existing RData file. Optional when
 #'   "New" action is specified (a location will be requested before data are
 #'   read and saved). Required when "Add" or "Update" actions are specified.
+#'   
+#' @param fast_import Option to increase import speed (experimental).
 #'
 #' @return An RData file saved in a specified location containing GUANO metadata
 #'   read from WAV files created through bat acoustic monitoring.
@@ -39,40 +41,40 @@
 #' @examples
 #' \dontrun{#' import_GUANO("New", "C:/Folder/Folder/WAVs_Folder", "Location", "C:/Folder/Folder/Data.RData")}
 #' @export
-import_GUANO <- function(action, input_path, site_col, timezone, data_path = NULL) {
+import_GUANO <- function(action, input_path, site_col, timezone, data_path = NULL, fast_import = F) {
 
   if (action == "New" | action == "Add" | action == "Update") {
     data_path <- .check_data_path(data_path, action)
   } # Check that a valid action is selected
   if (action == "New") {
-    .new_observations(input_path, site_col, timezone, data_path)
+    .new_observations(input_path, site_col, timezone, data_path, fast_import)
   } else if (action == "Add") {
-    .add_observations(input_path, site_col, timezone, data_path)
+    .add_observations(input_path, site_col, timezone, data_path, fast_import)
   } else if (action == "Update") {
-    .update_observations(input_path, site_col, timezone, data_path)
+    .update_observations(input_path, site_col, timezone, data_path, fast_import)
   } else {
     stop("Invalid action given, please specifiy an action (\"New\", \"Add\" or \"Update\") and try again. See ?read_wavs for more information")
   }
 }
 
-.new_observations <- function(input_path, site_col, timezone, data_path) {
-  file_list <- .get_file_list(input_path) # Get list of files
-  observations <- suppressWarnings(.read_file_GUANO(file_list, site_col, timezone)) # Read GUANO
+.new_observations <- function(input_path, site_col, timezone, data_path, fast_import) {
+  file_list <- .get_file_list(input_path, fast_import) # Get list of files
+  observations <- suppressWarnings(.read_file_GUANO(file_list, site_col, timezone, fast_import)) # Read GUANO
   .save_to_RDATA(observations, data_path)
 }
 
-.add_observations <- function(input_path, site_col, timezone, data_path) {
+.add_observations <- function(input_path, site_col, timezone, data_path, fast_import) {
   load(data_path) # Load current data
   observations_original <- observations # Rename current observations for clarity
   rm(observations) # Remove current observations df for clarity
-  observations_new <- .get_file_list(input_path) # Get list observations in input director
+  observations_new <- .get_file_list(input_path, fast_import = F) # Get list observations in input director
   if (sum(observations_new$File.Name %in% observations_original$File.Name, na.rm = TRUE) == length(observations_new$File.Name)) { 
     stop("All of the files you are trying to add already exist in the data file. No files will be imported, please use the Update action of import_GUANO to update existing files.")
   } else if (sum(observations_new$File.Name %in% observations_original$File.Name, na.rm = TRUE) != 0) {
     warning("Some of the data you are trying to add already exists in the data file. Only files that do not currently exist will be imported. Please use the Update action of import_GUANO to update existing files")
   } # Check whether the new files already exist in the data file, and warn / exit if they do. 
   observations_new <- observations_new[!(observations_new$File.Name %in% observations_original$File.Name),] # Remove directory observations already present in current data
-  observations_new <-suppressWarnings(.read_file_GUANO(observations_new, site_col, timezone)) # Read GUANO for new files
+  observations_new <-suppressWarnings(.read_file_GUANO(observations_new, site_col, timezone, fast_import = F)) # Read GUANO for new files
   #observations_new <- merge(observations_new2, observations_new, by.x = "File.Name", by.y = "File.Name") # Combine GUANO and file metadata
   #observations_new <- observations_new[, which(names(observations_new) != "Full.Path")] # Remove duplicate column
   observations_original[setdiff(names(observations_new), names(observations_original))] <- NA # Prepare for column differences in tables
@@ -83,12 +85,12 @@ import_GUANO <- function(action, input_path, site_col, timezone, data_path = NUL
   .save_to_RDATA(observations, data_path)
 }
 
-.update_observations <- function(input_path, site_col, data_path) {
+.update_observations <- function(input_path, site_col, data_path, fast_import = F) {
   load(data_path) # Load existing data
   observations_files <- observations[, c("File.Name", "File.Path", "File.Modified")] # Trim existing data to relevant columns
   rm(observations) # Remove current observations df for clarity
   names(observations_files)[1:3] <- c("File.Name","Observations.Path", "Observations.Modified") # Rename existing data columns for clarify
-  directory_files <- .get_file_list(input_path) # Get input file list
+  directory_files <- .get_file_list(input_path, fast_import = F) # Get input file list
   files_comparison <- merge(directory_files, observations_files, by = "File.Name", all = T) # Merge new and existing data frames by file name
   files_comparison <- files_comparison[!is.na(files_comparison$Full.Path),]
   files_comparison$update <- ifelse(mapply(function(x, y) {isTRUE(all.equal(x, y))}, files_comparison$File.Modified, files_comparison$Observations.Modified), "N", 
@@ -99,7 +101,7 @@ import_GUANO <- function(action, input_path, site_col, timezone, data_path = NUL
   }
   update_files <- update_files$Full.Path
   update_files <- .get_file_list(update_files, list = T)
-  observations_update <- suppressWarnings(.read_file_GUANO(update_files, site_col, timezone))
+  observations_update <- suppressWarnings(.read_file_GUANO(update_files, site_col, timezone, fast_import = F))
   observations_original <- observations[!(observations$File.Name %in% observations_update$File.Name),] # Remove updated rows from original data
   observations_files[setdiff(names(observations_update), names(observations_original))] <- NA # Account for differences in columns
   observations_update[setdiff(names(observations_original), names(observations_update))] <- NA # ^
@@ -109,26 +111,44 @@ import_GUANO <- function(action, input_path, site_col, timezone, data_path = NUL
   .save_to_RDATA(observations, data_path)
 }  
 
-.get_file_list <- function(input_path, list = F) {
+.get_file_list <- function(input_path, list = F, fast_import = F) {
   if (list == F) {
-    file_list_full <- list.files(input_path, full.names = TRUE, recursive = TRUE, pattern = ".wav")
-    file_list_short <- list.files(input_path, full.names = FALSE, recursive = TRUE, pattern = ".wav")
+    message("Making list of available WAV files.")
+    if (fast_import == T) {
+      message("Using fast file reading!")
+      file_list_full <- system(sprintf('find "%s" -name "*.wav"', input_path), intern=T) # Faster system call to get file list
+      file_list_short <- sub('.*\\/', '', file_list_full)
+    } else {
+      message("Using slow file reading :(")
+      file_list_full <- list.files(input_path, full.names = TRUE, recursive = TRUE, pattern = ".wav")
+      file_list_short <- list.files(input_path, full.names = FALSE, recursive = TRUE, pattern = ".wav")
+    }
   } else {
     file_list <- input_path
   }
+  message("Adding file modified times to list.")
   file_list <- cbind(file=file_list_short,
-                   dir=file_list_full,
-                   data.frame(file.info(file_list_full), row.names =NULL),
-                   stringsAsFactors=FALSE)
+                     dir=file_list_full,
+                     data.frame(file.info(file_list_full), row.names =NULL),
+                     stringsAsFactors=FALSE)
   file_list$filename <- sub('.*\\/', '', file_list$file)
   file_list <- file_list[, c("filename", 'file', 'dir', "mtime")]
   names(file_list)[1:4] <- c("File.Name", "Local.Path", "Full.Path", "File.Modified")
   file_list$File.Modified <- as.numeric(file_list$File.Modified)
+  message("File list complete, moving to next step.")
   return(file_list)
 }
 
-.read_file_GUANO <- function(file_list, site_col, timezone) {
-  observations <- do.call(plyr::rbind.fill, (lapply(pbapply::pblapply(as.list(file_list$Full.Path), read.guano), as.data.frame))) # Read GUANO
+.read_file_GUANO <- function(file_list, site_col, timezone, fast_import = F) {
+  if (fast_import == T) {
+    message("Fast import selected: setting up multisession.")
+    future::plan(multisession)
+    message("Reading WAV files, please wait...")
+    observations <- do.call(plyr::rbind.fill, (future.apply::future_lapply(future.apply::future_lapply(as.list(file_list$Full.Path), read.guano), as.data.frame))) # Read GUANO
+  } else {
+    message("Reading WAV files, please wait...")
+    observations <- do.call(plyr::rbind.fill, (lapply(pbapply::pblapply(as.list(file_list$Full.Path), read.guano), as.data.frame))) # Read GUANO
+  }
   .missing_data_checker(observations, site_col) # Call missing data checker to exit and inform user if required columns are missing or incomplete
   observations <- merge(observations, file_list, by.x = "File.Name", by.y = "File.Name") # Add file modified columns to GUNAO df
   observations <- observations[ , !names(observations) %in% c("Full.Path","Anabat.Signature")] # Remove undesired columns

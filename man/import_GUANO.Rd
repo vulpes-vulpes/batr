@@ -4,7 +4,14 @@
 \alias{import_GUANO}
 \title{Read GUANO Metadata From WAV Files}
 \usage{
-import_GUANO(action, input_path, site_col, timezone, data_path = NULL)
+import_GUANO(
+  action,
+  input_path,
+  site_col,
+  timezone,
+  data_path = NULL,
+  fast_import = F
+)
 }
 \arguments{
 \item{action}{Character. Must equal "New", "Add" or "Update". Use "New" to
@@ -23,6 +30,8 @@ recording location / site name.}
 \item{data_path}{Character. Path to an existing RData file. Optional when
 "New" action is specified (a location will be requested before data are
 read and saved). Required when "Add" or "Update" actions are specified.}
+
+\item{fast_import}{Option to increase import speed (experimental).}
 }
 \value{
 An RData file saved in a specified location containing GUANO metadata
