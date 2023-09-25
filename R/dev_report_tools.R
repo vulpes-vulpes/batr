@@ -20,8 +20,39 @@ one_site_short_report <- function(data_path, save_path, file_name, project_name,
                                   author = author,
                                   species = species,
                                   site = sites,
-                                  data = data_path))
+                                  data = data_path),
+                    clean = TRUE)
 }
+
+#'Create Com. Sci.Report(s)
+#'
+#'@param RData file
+#'
+#'@return A PDF report. 
+#'
+#'@examples
+#'\dontrun{
+#' Insert Example!
+#'}
+#'@export
+comsci_report <- function(data_path, save_path, sites, author, species) {
+  for (site in sites) {
+    file_name <- sub(" ", "_", site)
+    rmarkdown::render(input = system.file("rmd", "One_Site_Short_Report.Rmd", package = "batr"), 
+                      output_file = file_name,
+                      output_dir = save_path,
+                      params = list(project = site,
+                                    author = author,
+                                    species = species,
+                                    site = site,
+                                    data = data_path),
+                      clean = TRUE)  
+  }
+}  
+  
+
+
+
 
 #'Create Multi Site Report
 #'
