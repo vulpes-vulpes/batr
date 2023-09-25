@@ -147,7 +147,7 @@ import_GUANO <- function(action, input_path, site_col, timezone, data_path = NUL
 .read_file_GUANO <- function(file_list, site_col, timezone, fast_import = F) {
   if (fast_import == T) {
     message("Fast import selected: setting up multisession.")
-    future::plan(multisession)
+    future::plan(future::multisession)
     message("Reading WAV files, please wait...")
     observations <- do.call(plyr::rbind.fill, (future.apply::future_lapply(future.apply::future_lapply(as.list(file_list$Full.Path), read.guano), as.data.frame))) # Read GUANO
   } else {
