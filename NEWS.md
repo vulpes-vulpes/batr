@@ -7,3 +7,9 @@
 ## New Features:
 
 - Added a NEWS file for updates :) 
+
+# batr: 0.2.1
+
+## New Features:
+
+- Added option to increase WAV file import speeds by adding "fast_import = T" to import_GUANO.
