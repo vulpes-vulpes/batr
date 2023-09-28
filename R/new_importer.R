@@ -111,7 +111,7 @@ import_GUANO <- function(action, input_path, site_col, timezone, data_path = NUL
   .save_to_RDATA(observations, data_path)
 }  
 
-.get_file_list <- function(input_path, list = F, fast_import = F) {
+.get_file_list <- function(input_path, fast_import = F, list = F) {
   if (list == F) {
     message("Making list of available WAV files.")
     if (fast_import == T) {
@@ -130,6 +130,7 @@ import_GUANO <- function(action, input_path, site_col, timezone, data_path = NUL
     }
   } else {
     file_list <- input_path
+    message("WTF!!!")
   }
   message("Adding file modified times to list.")
   file_list <- cbind(file=file_list_short,
