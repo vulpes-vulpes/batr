@@ -111,6 +111,7 @@ read.guano <- function(filename) {
       md[[key]] <- val
     }
     if ("Loc Position" %in% names(md)) {
+      md[["Loc Position"]] <- gsub('\t', ' ', md[["Loc Position"]])
       coords <- lapply(strsplit(md[["Loc Position"]], " "), as.double)[[1]]
       md[["Loc Position Lat"]] <- coords[1]
       md[["Loc Position Lon"]] <- coords[2]
