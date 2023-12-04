@@ -28,7 +28,7 @@
 #' manual_vet_extractor("raw_data_project", "C:/Folder/Folder/File_Folder")
 #'}
 #'@export
-manual_vet_extractor <- function(data_path, WAV_directory, save_directory, species_list, percentage = 0.05, no_manual = FALSE) {
+manual_vet_extractor <- function(data_path, WAV_directory, save_directory, species_list, percentage = 0.05, no_manual = FALSE, fast_import = F) {
   .check_data_path(data_path)
   #load(data_path)
   dataset <- .location_subsetter(data_path)
@@ -37,9 +37,9 @@ manual_vet_extractor <- function(data_path, WAV_directory, save_directory, speci
   if(no_manual == TRUE) {
     dataset <- dataset[is.na(dataset$Species.Manual.ID),]
   } # drop observations with existing manual IDs if selected
-  dataset <- dataset[!is.na(dataset$Species),] # drop observations without speices
+  dataset <- dataset[!is.na(dataset$Species),] # drop observations without species
   message("Matching observations to WAV files.")
-  WAV_directory_files <- .get_file_list(WAV_directory) # get file list from the directory of WAV files
+  WAV_directory_files <- .get_file_list(WAV_directory, fast_import) # get file list from the directory of WAV files
   dataset2 <- merge(dataset, WAV_directory_files, by = "File.Name", all.x = T) # merge the list of observations with the list of WAV files provided
   if (sum(is.na(dataset2$Full.Path)) != 0) {
     message("Error: cannot locate WAV files for some observations in the specified WAV_directory. 
