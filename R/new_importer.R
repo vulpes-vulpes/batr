@@ -67,7 +67,7 @@ import_GUANO <- function(action, input_path, site_col, timezone, data_path = NUL
   load(data_path) # Load current data
   observations_original <- observations # Rename current observations for clarity
   rm(observations) # Remove current observations df for clarity
-  observations_new <- .get_file_list(input_path, fast_import = F) # Get list observations in input director
+  observations_new <- .get_file_list(input_path, fast_import) # Get list observations in input director
   if (sum(observations_new$File.Name %in% observations_original$File.Name, na.rm = TRUE) == length(observations_new$File.Name)) { 
     stop("All of the files you are trying to add already exist in the data file. No files will be imported, please use the Update action of import_GUANO to update existing files.")
   } else if (sum(observations_new$File.Name %in% observations_original$File.Name, na.rm = TRUE) != 0) {
