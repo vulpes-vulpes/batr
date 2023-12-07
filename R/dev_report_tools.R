@@ -50,10 +50,6 @@ comsci_report <- function(data_path, save_path, sites, author, species) {
   }
 }  
   
-
-
-
-
 #'Create Multi Site Report
 #'
 #'@param RData file

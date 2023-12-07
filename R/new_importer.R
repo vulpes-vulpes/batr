@@ -117,7 +117,7 @@ import_GUANO <- function(action, input_path, site_col, timezone, data_path = NUL
     if (fast_import == T) {
       message("Using fast file reading!")
       if (.Platform$OS.type == "unix") {
-        file_list_full <- system(sprintf('find "%s" -name "*.wav"', input_path), intern=T) # Faster system call to get file list
+        file_list_full <- system(sprintf('find "%s" -name "*.wav"', input_path), intern=T) # Faster system call to get file list on Unix
       } else if (.Platform$OS.type == "windows") {
         file_list_full <- shell(sprintf('dir /s /b "%s\\*.wav"', input_path), intern=T) # System call for Windows environments
         file_list_full <- gsub("\\\\", "/", file_list_full)
