@@ -41,7 +41,7 @@
 #'
 #'
 species_daily_site_plot <- function(data_path, species, monitoring_start = NULL,
-                                    monitoring_end = NULL, gaps = NULL, 
+                                    monitoring_end = NULL, gaps = FALSE, 
                                     save_directory = NULL, y_scale = "free_y", 
                                     width = 15.9, height = 8.43, text_size = 10,
                                     date_label = "%b", title = FALSE) {
@@ -81,8 +81,10 @@ species_daily_site_plot <- function(data_path, species, monitoring_start = NULL,
       strip.text = ggplot2::element_text(hjust = 0),
       text = ggplot2::element_text(size=text_size)
     ) +
-    if(!is.null(gaps)) {
-      ggplot2::geom_rect(data=gaps, ggplot2::aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, alpha=0.9),
+    if(isTRUE(gaps)) {
+      gap_list <- batr:::.plot_gap_calculator(active_dates)
+      ggplot2::geom_rect(data=gap_list, 
+                         ggplot2::aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, alpha=0.9),
                          show.legend = FALSE)
     }
   if(isTRUE(title)) {

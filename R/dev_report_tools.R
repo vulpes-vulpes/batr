@@ -81,7 +81,7 @@ multi_site_short_report <- function(data_path, save_path, file_name, project_nam
   locations$Latitude <- as.numeric(locations$Latitude)
   locations$Longitude <- as.numeric(locations$Longitude) 
    
-  map <- ggmap::qmplot(x = Longitude, y = Latitude, data = locations, maptype = "toner-lite", extent = "normal") +
+  map <- ggmap::qmplot(x = Longitude, y = Latitude, data = locations, maptype = "stamen_toner_background", extent = "normal") +
     if (labels == T) {   
              ggrepel::geom_text_repel(data = locations,
             suppressWarnings(ggplot2::aes(label = Location)),
@@ -111,6 +111,7 @@ multi_site_short_report <- function(data_path, save_path, file_name, project_nam
   quick_summary <- quick_summary[headers]
   quick_summary$Year = substr(quick_summary$Location, 1, 4)
   quick_summary$Location <- substring(quick_summary$Location, 6, 1000000L)
+  
   quick_summary$Monitoring_Nights <- sapply(quick_summary$Location, function(l) nrow(active_dates[active_dates$Location==l & active_dates$Log_Count > 0.5,]))
   
   #div <- sapply(quick_summary$Location, function(l) nrow(active_dates[active_dates$Location==l,])) # , quick_summary$Location)
