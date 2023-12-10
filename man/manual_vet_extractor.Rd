@@ -10,7 +10,8 @@ manual_vet_extractor(
   save_directory,
   species_list,
   percentage = 0.05,
-  no_manual = FALSE
+  no_manual = FALSE,
+  fast_import = F
 )
 }
 \arguments{
