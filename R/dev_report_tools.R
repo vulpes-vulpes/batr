@@ -38,7 +38,7 @@ one_site_short_report <- function(data_path, save_path, file_name, project_name,
 comsci_report <- function(data_path, save_path, sites, author, species) {
   for (site in sites) {
     file_name <- sub(" ", "_", site)
-    rmarkdown::render(input = system.file("rmd", "One_Site_Short_Report.Rmd", package = "batr"), 
+    rmarkdown::render(input = system.file("rmd", "BBAM_Report.Rmd", package = "batr"), 
                       output_file = file_name,
                       output_dir = save_path,
                       params = list(project = site,
@@ -200,9 +200,10 @@ multi_site_short_report <- function(data_path, save_path, file_name, project_nam
     ggplot2::geom_hline(yintercept=0) +
     ggplot2::theme_classic() +
     ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5),
+      plot.title = ggplot2::element_blank(),
       strip.background = ggplot2::element_blank(),
       strip.text = ggplot2::element_text(hjust = 0),
+      strip.text.x = ggplot2::element_blank(),
       text = ggplot2::element_text(size=text_size),
       legend.position = "none"
     ) #+

@@ -1,0 +1,159 @@
+---
+header-includes:
+  - \usepackage[scaled]{helvet}
+  - \usepackage[T1]{fontenc}
+  - \renewcommand\familydefault{\sfdefault}
+  - \usepackage{caption}
+  - \usepackage{booktabs}
+  - \usepackage{multirow}
+  - \usepackage{setspace}
+  - \usepackage{subcaption}
+  - \usepackage{tikz}
+  - \usepackage{float}
+  - \usepackage{setspace}
+output:
+  bookdown::pdf_document2: 
+    toc: false
+    fig_caption: yes
+    keep_tex: yes
+    includes:
+      in_header: header.tex
+geometry:
+- top=20mm
+- left=20mm
+- heightrounded
+fontsize: 11pt
+urlcolor: blue
+params:
+  project: Error
+  author: Toronto Zoo Native Bat Conservation Program
+  date: !r Sys.Date()
+  data: /error/error
+  species: !r c("Epfu", "Labo", "Laci", "Lano", "Myle", "Mylu", "Myse", "Mysp", "Pesu")
+  site: !r c("Error!")
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r , include=FALSE}
+load(params$data)
+library(english)
+library(batr)
+library(data.table)
+library(knitr)
+options(knitr.table.format = "latex") 
+observations <- data.table::setDT(observations)[Species %chin% params$species]
+observations <- data.table::setDT(observations)[Location %chin% params$site]
+active_dates <- data.table::setDT(active_dates)[Location %chin% params$site]
+```
+
+```{r map, echo=FALSE, message=F, warning=F, fig.cap="Monitoring locations. Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.", fig.align='center', fig.height=4}
+# batr:::.map4report(observations)
+```
+
+---
+title: |
+    | Backyard Bat Acoustic Monitoring 
+    | Preliminary Results for:
+    | **`r unique(observations$SB.Recorded.By)`**
+subtitle: |
+    | Recorded between `r min(observations$Night)` and `r max(observations$Night)`  
+author: |
+    | Prepared by:
+    | `r params$author`
+---
+
+# About This Document {-}
+
+Thank you for participating in the `r lubridate::year(lubridate::now())` Backyard Bat Acoustics Monitoring project! This report is intended to provide fast feedback about the bats detected on your property. This document was automatically generated and is intended to provide a preliminary summary of your monitoring period. Full verification of species identifications, and further analysis of the results have not yet taken place and will be communicated at a later date. Please use caution while interpreting these results, and consult with the `r params$author` with any questions. 
+
+# Data Collection and Analysis
+
+An ultrasonic recorder was deployed at `r unique(observations$Latitude)`, `r unique(observations$Longitude)`, programmed to begin monitoring 30 minutes prior to sunset, and cease 30 minutes after sunrise. During this period, the device monitors ultrasonic frequencies for bat vocalisations, and records them for later analyses. These data were processed by `r params$author` to identify the species recorded. After initial organisation and labeling the files were scrubbed to remove 'noise' files without any potential bat signals. The remaining files were then assigned species identifications using an automated classifier. This classifier is effective, but not perfect, and manual verification is required before these results are considered final. 
+
+
+
+\newpage
+
+# Results
+
+A total of `r length(observations$Species)` acoustic observations of `r length(unique(observations$Species))` species were detected at this location. The total number of observations for each species at each monitoring location are given in Table \@ref(tab:species). 
+```{r species, echo=FALSE}
+qs <- batr:::.quick_summary(observations, active_dates, species = params$species)
+qs$Year <- NULL
+qs$Monitoring_Nights <- NULL
+colnames(qs) <- c("", "Big Brown Bat", "Eastern Red Bat", "Hoary Bat", "Silver-haired Bat", "Eastern Small-footed Myotis", "Little Brown Myotis", "Northern Myotis", "Tri-colored Bat")
+#qs <- qs[, -c(10, 11)]
+qs <- transpose(qs, keep.names = "Species", make.names = "")
+colnames(qs) <- c("Species", "Total")
+kable(qs, caption = "Total species observations at the monitoring location.") %>% kableExtra::row_spec(0,bold=TRUE) %>%
+kableExtra::kable_styling(latex_options = "hold_position", font_size = 10)
+```
+
+Bat activity varied between nights. Nightly activity of each species at each site throughout the monitoring period is presented in Figure \@ref(fig:seasonal) below. Please note that the number of observations cannot be directly compared between species: this is because some bats are more easily recorded than others (for example: loud, low-frequency bats are easier to detect than quiet, high-frequency bats). 
+
+```{r seasonal, echo=F, fig.align='center', fig.dim=c(10,13), message=FALSE, warning=FALSE, fig.cap = "Nightly bat observations (coloured bars) by species and monitoring location."}
+batr:::.speces_site_plot(observations, text_size = 15)
+```
+
+\newpage
+
+# Additional Information
+
+## Bats in Ontario
+
+```{r heads, echo=FALSE, fig.cap="Portraits of bat species found in Ontario.", out.width = '100%'}
+knitr::include_graphics(system.file("images", "Ontario_bat_portraits.png", package = "batr"))
+```
+
+**a) Big brown bat:** Most commonly observed bat in Southern Ontario and well adapted to urban environments. Bodies are covered in light brown fur. Females are typically larger than males. Weigh approximately as much as 3–5 toonies (11–25 g).
+
+**b) Silver-haired bat:** This bat gets its name from the striking black fur with frosted silver tips on its back. They are one of Ontario's migratory bat species. They roost primarily in trees, but have been found roosting in firewood piles. This bat weighs about 1–2 toonies (8–11 g).
+
+**c) Hoary bat:** The Hoary bat is Ontario's largest bat species weighing 3–5 toonies (18–39 g). The stunning fur colouration and wing patterns help it camouflage amongst tree leaves. It has a furry tail membrane which it uses to keep itself warm. The is one of Ontario's migratory bat species and is most affected by wind farms. They are capable of long-distance flights and occasionally, turn up in Iceland.
+
+**d) Eastern red bat:** Typically, most bats only bear one pup a year. Red bats are capable of birthing 3–5 young at a time with each weighing about 20–30 % of the mother's body weight. This species is also migratory, but will hibernate in mild temperatures underneath the leaf litter. It weighs about 1-2 toonies (7–13 g).
+
+**e) Tri-colored bat:** This bat gets its name from the distinctly banded fur which are yellow, black, and brown. The forearms on this species are orange-red in colour in comparison with other species. Not much information is available for this species in Ontario. This bat weighs as much as a toonie (7 g).
+
+**f) Northern myotis:** Now considered one of North America's most endangered bat species. Populations have plummeted with some being extirpated from certain regions due to white-nose syndrome. This bat is a gleaning insectivore, that means it picks insects off of vegetation rather than catching them in the air. Their large ears help them hear their prey. They weigh about 1–2 toonies (6–9 g).
+
+**g) Little brown myotis:** Was once Canada's most common bat species, but populations were decimated by a disease called white-nose syndrome which only affects hibernating bats. The impact of the disease has decreased since its discovery, but since bats are slow to reproduce, population levels will not re-establish to pre white-nose syndrome levels in our lifetime. Little brown myotis are capable of living up to 40 years and weigh about 1–2 toonies (4–11 g).
+
+**h) Eastern small-footed myotis:** One of Ontario's smallest bats, it differs from the other Myotis by the striking black face mask and wing membrane in contrast to its fur. They roost in rock crevices and can even be found under rocks on talus slopes. They are more prevalent around the Niagara Escarpment. They weigh about as much as a nickel (4–5 g).
+
+## Acoustic Analyses
+
+### Timing of Bat Activity
+
+Looking at how early or late a bat shows up to a study location can tell us how far away their roost may be. If we record observations of bat activity right at sunset, there is probably a roost nearby. If we record observations of bat activity later in the night, they probably had to travel a further distance to get to the study location. If bat activity is consistent throughout the night, it may mean the study location is an excellent foraging spot with lots of insects to eat.
+
+### Species Observation
+
+As each bat species has a unique echolocation call, we can distinguish between species through acoustic monitoring. However, the calls of individuals within a species are difficult to distinguish between one another, so we cannot obtain an accurate abundance of a species. For example, if we have 10 observations of Big Brown Bats on a single night, we cannot tell if that was 10 individual big brown bats flying by the monitor once, or a single big brown bat flying by the monitor 10 times. Generally, however, the number of observations can tell us about the activity at a study location and that may help to indicate good habitat.
+
+### Spectrograms
+
+Though counterintuitive, we identify bat species by looking at the graph produced by the recorded sound rather than listening to the calls (see figure \@ref(fig:spec1) below). Some of the features we look at include: the shape of the ticks or pulses, how close together they occur, what frequency they start and end at, and how long the pulses last. We also need to be able to distinguish what isn’t a bat call and differentiate it from noise, artifact or echoes.
+
+Identifying a bat from a spectrogram can be very challenging as bats change the shape of their call based on the type of environment they are currently in (for example when a bat is flying in an open space, compared to flying in a forest). There are many instances where we cannot identify a recording to species.
+
+We can also tell whether a bat is, navigating, feeding, or partaking in a social behaviour at the time of recording, see figure \@ref(fig:spec2) below for an example!
+
+# Further Resources
+
+To learn more about the individual species of bats here in Ontario visit our blog posts on [migratory](https://adoptapond.wordpress.com/2021/08/04/bats-of-ontario-part-1-migratory-species-wingedwednesdays/) and [non-migratory](https://adoptapond.wordpress.com/2021/08/11/bats-of-ontario-part-2-the-resident-species-wingedwednesdays/) bats.
+  
+Visit [our website](https://www.torontozoo.com/bats) to learn more about the Native Bat Conservation Program!
+
+\newpage
+
+```{r spec1, echo=FALSE, fig.cap="Typical search phase calls for Ontario bats.", out.width = '100%'}
+knitr::include_graphics(system.file("images", "Ontario_Bat_Species.png", package = "batr"))
+```
+
+```{r spec2, echo=FALSE, fig.cap="Typical call made during feeding called a “feeding buzz”. Notice how the calls progressively become steeper and are produced more closely together.", out.width = '100%'}
+knitr::include_graphics(system.file("images", "Buzz_Seq.png", package = "batr"))
+```
