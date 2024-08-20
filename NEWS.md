@@ -13,3 +13,9 @@
 ## New Features:
 
 - Added option to increase WAV file import speeds by adding "fast_import = T" to import_GUANO.
+
+# batr: 0.2.2
+
+## Bug Fixes
+
+- Fixed the Wildlife Acoustics Log File importer to measure monitor activity by night instead of by date.

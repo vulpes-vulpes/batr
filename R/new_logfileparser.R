@@ -59,11 +59,18 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
     logs <- data.table::rbindlist(pbapply::pbsapply(WA_file_list, data.table::fread, simplify = FALSE, select = c("DATE", "TIME")),
                     use.names = TRUE, idcol = "FileName", fill = T)
     names(logs)[names(logs) == 'DATE'] <- 'Date' # Fix name of date column
-    logs <- subset(logs, Date != "DATE")
     logs$Date = lubridate::ymd(logs$Date) # Convert dates from factor to 'dates'
+    logs$Time <- as.POSIXct(logs$TIME,format="%H:%M:%S") # Convert times to POSIXct format
+    logs <- within(logs, {
+      Night = ifelse(lubridate::hour(logs$Time) > 11, 
+                     as.Date(format(as.POSIXct(logs$Date), "%Y-%m-%d"), tz = "EST" ), 
+                     as.Date(format(as.POSIXct(logs$Date), "%Y-%m-%d"), tz = "EST" ) - 1)
+    }) # Create night column
+    logs$Night <- as.Date(logs$Night) # Convert to date format
+    # logs <- subset(logs, Date != "DATE") Don't know what this does
     message("Extracting location names:")
     logs$Location <- pbapply::pbsapply(strsplit(pbapply::pbsapply(strsplit(logs$FileName, split="/"), tail, n=1),"-"), `[`, 1)
-    active_dates <- as.data.frame(table(logs$Date,logs$Location)) # Create table of dates
+    active_dates <- as.data.frame(table(logs$Night,logs$Location)) # Create table of dates
     colnames(active_dates) <- c("Date","Location","Log_Count") # Rename columns sensibly
     active_dates$Date = lubridate::ymd(active_dates$Date) # Convert dates to dates again
     rm(logs)
