@@ -66,7 +66,7 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
                      as.Date(format(as.POSIXct(logs$Date), "%Y-%m-%d"), tz = "EST" ), 
                      as.Date(format(as.POSIXct(logs$Date), "%Y-%m-%d"), tz = "EST" ) - 1)
     }) # Create night column
-    logs$Night <- as.Date(logs$Night) # Convert to date format
+    logs$Night <- lubridate::ymd(logs$Night) # Convert to date format
     # logs <- subset(logs, Date != "DATE") Don't know what this does
     message("Extracting location names:")
     logs$Location <- pbapply::pbsapply(strsplit(pbapply::pbsapply(strsplit(logs$FileName, split="/"), tail, n=1),"-"), `[`, 1)
