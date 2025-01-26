@@ -47,8 +47,6 @@
 #' #' import_logs("C:/Folder/Folder/logss_Folder", "C:/Folder/Folder/Data.RData", "2021-01-01", "2021-12-31)
 #' }
 #'
-log_path <- "/Users/tobythorne/Documents/3 - Personal Projects/batr/Testing/Log Files"
-
 import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, monitoring_end = NULL) {
   data_path <- .check_data_path(data_path)
   wa_file_list <- list.files(log_path,
