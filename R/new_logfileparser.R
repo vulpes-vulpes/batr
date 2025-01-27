@@ -26,6 +26,9 @@
 #'   match the site name assigned in the GUANO metadata of the corresponding WAV
 #'   files so they can be matched.
 #'
+#'   \strong{Anabat Ranger:} These files should be organised in the same way as
+#'   those of the Anabat Swift described above.
+#'
 #' @param log_path Character. Path to directory containing log files generated
 #'   by a Wildlife Acoustics SM3 or SM4 or Titley Anabat Swift bat recorder,
 #'   organised as outlined above.
@@ -48,7 +51,7 @@
 #' }
 #'
 import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, monitoring_end = NULL) {
-  data_path <- .check_data_path(data_path)
+  data_path <- .check_data_path(data_path, action = "New", object = "active_dates")
   wa_file_list <- list.files(log_path,
     recursive = TRUE,
     pattern = "*.txt",
