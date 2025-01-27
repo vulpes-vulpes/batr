@@ -47,7 +47,7 @@ high_frequency_extractor("C:/Folder/Files_Folder/sonobat_output.txt", "C:/Folder
 }
 \seealso{
 Other Manual Vetting Functions: 
-\code{\link{manual_vet_extractor_old}()},
-\code{\link{manual_vet_extractor}()}
+\code{\link{manual_vet_extractor}()},
+\code{\link{manual_vet_extractor_old}()}
 }
 \concept{Manual Vetting Functions}

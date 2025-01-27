@@ -57,10 +57,15 @@ there were no bats, or because the monitor had run out of batteries...
   each site should be placed in their own sub-folder. The folder name should
   match the site name assigned in the GUANO metadata of the corresponding WAV
   files so they can be matched.
+
+  \strong{Anabat Ranger:} These files should be organised in the same way as
+  those of the Anabat Swift described above.
 }
 
 \examples{
-\dontrun{#' import_logs("C:/Folder/Folder/logss_Folder", "C:/Folder/Folder/Data.RData", "2021-01-01", "2021-12-31)}
+\dontrun{
+#' import_logs("C:/Folder/Folder/logss_Folder", "C:/Folder/Folder/Data.RData", "2021-01-01", "2021-12-31)
+}
 
 }
 \seealso{
