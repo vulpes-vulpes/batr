@@ -145,7 +145,7 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
   output$Active <- NA
   row_iterator <- 1
   for (file in output$swift_file_list) {
-    file_data <- read.csv(file)
+    file_data <- read.csv(file, header = TRUE)
     mic_fails <- length(grep("Status: Check microphone", file_data[, 3]))
     files <- length(grep("FILE", file_data[, 2]))
     recording <- any(grepl("Status: Recording now", file_data[, 3]))
@@ -181,7 +181,7 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
   # there are 4 columns
   # adjusted pattern matching for Ranger
   for (file in output$ranger_file_list) {
-    file_data <- read.csv(file)
+    file_data <- read.csv(file, header = FALSE, col.names = c("Date", "Message-Type", "Function", "Note"))
     mic_fails <- length(grep(
       "Status: Check mic",
       file_data[, 4]
@@ -207,12 +207,6 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
   output$Active <- NULL
   return(output)
 }
-
-
-
-
-
-
 
 .gap_generator <- function(active_dates, monitoring_start, monitoring_end) {
   monitoring_start <- if (is.null(monitoring_start)) {

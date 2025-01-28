@@ -27,35 +27,23 @@
 }
 
 .check_data_path <- function(data_path = NULL, action = FALSE, object = NULL) {
-  # If no action specified, check if data_path is valid and return if so
-  if (!is.null(data_path) && action == FALSE && is.null(object)) {
-    is_rdata_file <- (sub(".*\\.", "", data_path) == "RData")
-    if (is_rdata_file == TRUE) {
+  is_rdata_file <- (sub(".*\\.", "", data_path) == "RData")
+  file_exists <- file.exists(data_path)
+  if (action == FALSE && is.null(object)) {
+    if (is_rdata_file == TRUE && file_exists == TRUE) {
+      return(data_path)
+    } else if (is_rdata_file == TRUE && file_exists == FALSE) {
+      warning("Specified .RData file does not exist.")
       return(data_path)
     } else {
-      stop("Invalid data_path specified. Please supply a valid .RDATA file.")
+      stop("Invalid data_path specified. Please supply a valid .RDATA file or.")
     }
   }
-  # If action is New and data_path is null create new data_path and return
-  if (is.null(data_path) && action == "New") {
-    save_path <- readline(
-      prompt =
-        "No 'data_path' specified. Please input path to save data file (e.g., \"C/user/directory\"):"
-    )
-    if (!dir.exists(save_path)) {
-      stop("Directory does not exist. Exiting, file not saved!.")
-    } else {
-      filename <- readline(prompt = "Please input your desired filename:")
-      data_path <- paste(save_path, "/", filename, ".RData", sep = "")
-      return(data_path)
-    }
-  }
-  # If data_path exists and object is specified, check for and confirm overwrite
-  if (!is.null(data_path) && !is.null(object)) {
-    if (file.exists(data_path)) {
+  if (!is.null(object)) {
+    if (is_rdata_file == TRUE && file_exists == TRUE) {
       load(data_path)
       if (exists(object)) {
-        overwrite <- readline(prompt = paste("Object", object, "already exists in this file. Overwrite? Y/N: "))
+        overwrite <- readline(prompt = paste("Object", object, "already exists in this file. Overwrite? Y/N?"))
         if (overwrite == "Y" || overwrite == "y") {
           return(data_path)
         } else {
@@ -64,8 +52,8 @@
       } else {
         return(data_path)
       }
-    } else {
-      stop("Specified file does not exist, please try again.")
+    } else if (is_rdata_file == TRUE && file_exists == FALSE) {
+      return(data_path)
     }
   }
 }
