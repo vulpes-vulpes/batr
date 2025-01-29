@@ -36,7 +36,7 @@ GUANO.loader("C:/Folder/Folder/Project_Name.txt", "Project_Name")
 \seealso{
 Other Import Functions: 
 \code{\link{GUANO_reader}()},
-\code{\link{import_GUANO}()},
+\code{\link{import_guano}()},
 \code{\link{log_file_parser}()}
 }
 \concept{Import Functions}

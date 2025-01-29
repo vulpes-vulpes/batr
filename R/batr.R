@@ -6,6 +6,5 @@
 #' future loading. It calculates summary data and basic plots.
 #'
 #'
-#' @docType package
 #' @name batr
-NULL
+"_PACKAGE"
