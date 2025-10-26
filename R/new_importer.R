@@ -133,7 +133,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   .save_to_RDATA(observations, data_path)
 }
 
-.get_file_list <- function(input_path, fast_import = FALSE, list = FALSE) {
+.get_file_list <- function(input_path, fast_import, list = FALSE) {
   if (list == FALSE) {
     message("Making list of available WAV files.")
     if (fast_import == TRUE) {
@@ -152,7 +152,6 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     }
   } else {
     file_list <- input_path
-    message("WTF!!!")
   }
   message("Adding file modified times to list.")
   file_list <- cbind(
@@ -235,11 +234,11 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     Latitude,
     Longitude,
     Species.Auto.ID,
-    Species.Manual.ID,
-    Night,
-    File.Name,
-    everything()
+    dplyr::everything()
   )
+  if ("Species.Manual.ID" %in% colnames(observations)) {
+    observations <- dplyr::select(observations, Species.Manual.ID, dplyr::everything())
+  }
   return(observations)
 }
 
