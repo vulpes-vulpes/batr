@@ -70,6 +70,6 @@ there were no bats, or because the monitor had run out of batteries...
 }
 \seealso{
 Other import tools: 
-\code{\link{import_GUANO}()}
+\code{\link{import_guano}()}
 }
 \concept{import tools}
