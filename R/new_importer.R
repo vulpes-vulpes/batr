@@ -160,8 +160,14 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   .save_to_RDATA(observations, data_path)
 }
 
-.get_file_list <- function(input_path, fast_import, list = FALSE) {
-  if (list == FALSE) {
+.get_file_list <- function(input_path, fast_import = TRUE, list = FALSE) {
+  # Identify if input_path is already a character vector of file paths and reformat if so
+  if (list) {
+    file_list_full <- as.character(input_path)
+    if (length(file_list_full) == 0) stop("No files provided in 'input_path' when list=TRUE")
+    file_list_short <- sub(".*/", "", file_list_full)
+    # Otherwise, read files from directory
+  } else {
     message("Making list of available WAV files.")
     if (fast_import == TRUE) {
       message("Using fast file reading!")
@@ -174,25 +180,28 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
       file_list_short <- sub(".*\\/", "", file_list_full)
     } else {
       message("Using slow file reading :(")
-      file_list_full <- list.files(input_path, full.names = TRUE, recursive = TRUE, pattern = ".wav")
-      file_list_short <- list.files(input_path, full.names = FALSE, recursive = TRUE, pattern = ".wav")
+      file_list_full <- list.files(input_path, pattern = wav_pattern, full.names = TRUE, recursive = TRUE, perl = TRUE)
+      file_list_short <- sub(".*/", "", file_list_full)
     }
-  } else {
-    file_list_full <- input_path
-    file_list_short <- sub(".*\\/", "", file_list_full)
   }
-  message("Adding file modified times to list.")
-  file_list <- cbind(
-    file = file_list_short,
-    dir = file_list_full,
-    data.frame(file.info(file_list_full), row.names = NULL),
+
+  # Handle case of no files found
+  if (length(file_list_full) == 0) {
+    message("No WAV files found.")
+    return(data.frame(File.Name = character(), Local.Path = character(), Full.Path = character(), File.Modified = numeric(), stringsAsFactors = FALSE))
+  }
+
+  # Create file list data.frame
+  fileinfo <- file.info(file_list_full)
+  file_list <- data.frame(
+    File.Name = file_list_short,
+    Full.Path = file_list_full,
+    File.Modified = as.numeric(fileinfo$mtime),
     stringsAsFactors = FALSE
   )
-  file_list$filename <- sub(".*\\/", "", file_list$file)
-  file_list <- file_list[, c("filename", "file", "dir", "mtime")]
-  names(file_list)[1:4] <- c("File.Name", "Local.Path", "Full.Path", "File.Modified")
-  file_list$File.Modified <- as.numeric(file_list$File.Modified)
-  message("File list complete, moving to next step.")
+
+  # Return file list
+  message("File list complete.")
   return(file_list)
 }
 
