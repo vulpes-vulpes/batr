@@ -160,8 +160,61 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   .save_to_RDATA(observations, data_path)
 }
 
+#' Single-pass WAV discovery with modification times (fast path)
+#'
+#' Uses OS-native tools to return both full paths and mtimes in one traversal.
+#' Falls back to caller on empty/failed execution.
+#' @keywords internal
+.get_file_list_singlepass <- function(input_path) {
+  mk_empty <- function() data.frame(Full.Path = character(), File.Modified = numeric(), stringsAsFactors = FALSE)
+
+  if (.Platform$OS.type == "unix") {
+    root <- shQuote(input_path)
+    cmd_mac <- sprintf("find %s -type f -iname '*.wav' -exec stat -f '%s' {} +", root, "%m\t%N")
+    out <- tryCatch(system(cmd_mac, intern = TRUE), error = function(e) character(0))
+    if (length(out) == 0) {
+      cmd_lin <- sprintf("find %s -type f -iname '*.wav' -exec stat -c '%s' {} +", root, "%Y\t%n")
+      out <- tryCatch(system(cmd_lin, intern = TRUE), error = function(e) character(0))
+    }
+    if (length(out) == 0) {
+      return(mk_empty())
+    }
+    sp <- strsplit(out, "\t", fixed = TRUE)
+    mt <- suppressWarnings(vapply(sp, function(z) as.numeric(z[1]), numeric(1)))
+    fp <- vapply(sp, function(z) if (length(z) >= 2) z[2] else NA_character_, character(1))
+    ok <- !is.na(mt) & !is.na(fp)
+    if (!any(ok)) {
+      return(mk_empty())
+    }
+    return(data.frame(Full.Path = fp[ok], File.Modified = mt[ok], stringsAsFactors = FALSE))
+  } else if (.Platform$OS.type == "windows") {
+    ps_quote <- function(x) sprintf("'%s'", gsub("'", "''", x, fixed = TRUE))
+    ps <- sprintf(
+      "$p = Get-ChildItem -LiteralPath %s -Recurse -File -Filter *.wav; $p | ForEach-Object { '{0}`t{1}' -f $_.FullName, ([DateTimeOffset]$_.LastWriteTimeUtc).ToUnixTimeSeconds() }",
+      ps_quote(input_path)
+    )
+    cmd <- sprintf('powershell -NoProfile -Command "%s"', ps)
+    out <- tryCatch(shell(cmd, intern = TRUE, translate = FALSE), error = function(e) character(0))
+    if (length(out) == 0) {
+      return(mk_empty())
+    }
+    sp <- strsplit(out, "\t", fixed = TRUE)
+    fp <- vapply(sp, function(z) if (length(z) >= 1) z[1] else NA_character_, character(1))
+    fp <- gsub("\\\\", "/", fp)
+    mt <- suppressWarnings(vapply(sp, function(z) if (length(z) >= 2) as.numeric(z[2]) else NA_real_, numeric(1)))
+    ok <- !is.na(mt) & !is.na(fp)
+    if (!any(ok)) {
+      return(mk_empty())
+    }
+    return(data.frame(Full.Path = fp[ok], File.Modified = mt[ok], stringsAsFactors = FALSE))
+  } else {
+    return(mk_empty())
+  }
+}
+
 .get_file_list <- function(input_path, fast_import = TRUE, list = FALSE) {
   # Identify if input_path is already a character vector of file paths and reformat if so
+  wav_pattern <- "\\.wav$"
   if (list) {
     file_list_full <- as.character(input_path)
     if (length(file_list_full) == 0) stop("No files provided in 'input_path' when list=TRUE")
@@ -170,17 +223,27 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   } else {
     message("Making list of available WAV files.")
     if (fast_import == TRUE) {
-      message("Using fast file reading!")
-      if (.Platform$OS.type == "unix") {
-        file_list_full <- system(sprintf('find "%s" -name "*.wav"', input_path), intern = TRUE) # Unix system call
-      } else if (.Platform$OS.type == "windows") {
-        file_list_full <- shell(sprintf('dir /s /b "%s\\*.wav"', input_path), intern = TRUE) # Windows system call
-        file_list_full <- gsub("\\\\", "/", file_list_full)
+      message("Using fast file reading (single pass)...")
+      fast_df <- .get_file_list_singlepass(input_path)
+      if (nrow(fast_df) > 0) {
+        file_list_full <- fast_df$Full.Path
+        file_list_short <- sub(".*\\/", "", file_list_full)
+        file_list <- data.frame(
+          File.Name = file_list_short,
+          Full.Path = file_list_full,
+          File.Modified = fast_df$File.Modified,
+          stringsAsFactors = FALSE
+        )
+        message("File list complete.")
+        return(file_list)
+      } else {
+        message("Fast single-pass discovery failed or returned no results. Falling back to list.files().")
+        file_list_full <- list.files(input_path, pattern = wav_pattern, full.names = TRUE, recursive = TRUE, ignore.case = TRUE)
+        file_list_short <- sub(".*/", "", file_list_full)
       }
-      file_list_short <- sub(".*\\/", "", file_list_full)
     } else {
-      message("Using slow file reading :(")
-      file_list_full <- list.files(input_path, pattern = wav_pattern, full.names = TRUE, recursive = TRUE, perl = TRUE)
+      message("Using slow file reading.")
+      file_list_full <- list.files(input_path, pattern = wav_pattern, full.names = TRUE, recursive = TRUE, ignore.case = TRUE)
       file_list_short <- sub(".*/", "", file_list_full)
     }
   }
@@ -191,12 +254,14 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     return(data.frame(File.Name = character(), Local.Path = character(), Full.Path = character(), File.Modified = numeric(), stringsAsFactors = FALSE))
   }
 
+  # Get file modification times (use file.info here to avoid extra system calls on fallback)
+  file_modified <- as.numeric(file.info(file_list_full)$mtime)
+
   # Create file list data.frame
-  fileinfo <- file.info(file_list_full)
   file_list <- data.frame(
     File.Name = file_list_short,
     Full.Path = file_list_full,
-    File.Modified = as.numeric(fileinfo$mtime),
+    File.Modified = file_modified,
     stringsAsFactors = FALSE
   )
 
@@ -333,7 +398,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   swift_files <- observations[observations$Model == "Swift", ] # Subset files recorded with Anabat Swift
   location_list <- unique(swift_files$Location) # Find locations
   for (location in location_list) {
-    location_subset <- swift_files[swift_files$Location == Location, ] # Subset once more by location
+    location_subset <- swift_files[swift_files$Location == location, ] # Subset once more by location
     location_subset$Latitude <- location_subset[1, "Latitude"] # Replace all lat values with first instance
     location_subset$Longitude <- location_subset[1, "Longitude"] # Replace all lon values with first instance
     if (!exists("swift_files_mod")) {
@@ -346,7 +411,8 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   if (exists("swift_files_mod")) {
     observations <- rbind(observations, swift_files_mod) # Replace removed rows with modified rows
   }
-  rm(swift_files_mod, swift_files, location_list, location, location_subset)
+  rm(swift_files, location_list, location, location_subset)
+  if (exists("swift_files_mod")) rm(swift_files_mod)
   observations <- dplyr::select(
     observations,
     Timestamp,
