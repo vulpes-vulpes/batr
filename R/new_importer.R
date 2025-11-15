@@ -35,7 +35,9 @@
 #'   "New" action is specified (a location will be requested before data are
 #'   read and saved). Required when "Add" or "Update" actions are specified.
 #'
-#' @param fast_import Option to increase import speed (experimental).
+#' @param fast_import Logical (default: TRUE). When TRUE, uses optimized single-pass
+#'   system calls to rapidly discover WAV files and their modification times. When
+#'   FALSE, uses standard R functions (slower but more portable).
 #'
 #' @return An RData file saved in a specified location containing GUANO metadata
 #'   read from WAV files created through bat acoustic monitoring.
@@ -44,7 +46,13 @@
 #'
 #' @examples
 #' \dontrun{
-#' #' import_guano("New", "C:/Folder/Folder/WAVs_Folder", "Location", "C:/Folder/Folder/Data.RData")
+#' # New import (cross-platform paths)
+#' import_guano("New", "path/to/wav/files", "Location", 
+#'              "America/New_York", "path/to/data.RData")
+#' 
+#' # Windows example
+#' import_guano("New", "C:/Folder/WAVs", "Location", 
+#'              "America/New_York", "C:/Folder/Data.RData")
 #' }
 #' @export
 import_guano <- function(action, input_path, site_col, timezone, data_path = NULL, fast_import = TRUE) {
@@ -380,39 +388,44 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   observations$Timestamp <- as.POSIXct(observations$Timestamp)
   observations$Timestamp <- lubridate::force_tz(observations$Timestamp, tzone = timezone)
 
-  # Compute Night: if local hour > 11 then use that date, else date - 1
+  # Compute Night: recordings after noon (11:59:59) belong to that night,
+  # recordings before noon belong to the previous night. This convention
+  # matches standard bat monitoring practice where a "night" spans from
+  # noon-to-noon rather than midnight-to-midnight.
   local_ts <- lubridate::with_tz(observations$Timestamp, tzone = timezone)
   local_date <- as.Date(local_ts)
   observations$Night <- ifelse(lubridate::hour(local_ts) > 11, local_date, local_date - 1)
   observations$Night <- as.Date(observations$Night, origin = "1970-01-01")
-  observations <- within(observations, {
-    Species <- ifelse(is.na(observations$Species.Manual.ID), # nolint: object_name_linter.
-      as.character(observations$Species.Auto.ID),
-      as.character(observations$Species.Manual.ID)
+  
+  # Generate Species column: prefer manual ID over auto ID
+  observations <- dplyr::mutate(observations,
+    Species = dplyr::if_else(is.na(Species.Manual.ID),
+      as.character(Species.Auto.ID),
+      as.character(Species.Manual.ID)
     )
-  }) # Generate Species column
-  # observations <- observations[observations$Species %in% species_list, ] # Remove rows without species in species list
+  )
 
   colnames(observations)[colnames(observations) == site_col] <- "Location" # Set location column
   observations <- observations[!is.na(observations$Location), ]
-  swift_files <- observations[observations$Model == "Swift", ] # Subset files recorded with Anabat Swift
-  location_list <- unique(swift_files$Location) # Find locations
-  for (location in location_list) {
-    location_subset <- swift_files[swift_files$Location == location, ] # Subset once more by location
-    location_subset$Latitude <- location_subset[1, "Latitude"] # Replace all lat values with first instance
-    location_subset$Longitude <- location_subset[1, "Longitude"] # Replace all lon values with first instance
-    if (!exists("swift_files_mod")) {
-      swift_files_mod <- location_subset
-    } else {
-      swift_files_mod <- rbind(swift_files_mod, location_subset)
-    } # Create modified observations.frame if it doesn't exist, or apend if it does
+  
+  # For Anabat Swift files: standardize lat/lon to first value per location
+  # (Swift files often have inconsistent GPS readings at the same physical location)
+  swift_files <- observations[observations$Model == "Swift", ]
+  if (nrow(swift_files) > 0) {
+    swift_files <- swift_files %>%
+      dplyr::group_by(Location) %>%
+      dplyr::mutate(
+        Latitude = dplyr::first(Latitude),
+        Longitude = dplyr::first(Longitude)
+      ) %>%
+      dplyr::ungroup()
+    
+    # Replace Swift rows with standardized versions
+    observations <- dplyr::bind_rows(
+      observations[observations$Model != "Swift", ],
+      swift_files
+    )
   }
-  observations <- observations[!(observations$Model == "Swift"), ] # Remove modified rows
-  if (exists("swift_files_mod")) {
-    observations <- rbind(observations, swift_files_mod) # Replace removed rows with modified rows
-  }
-  rm(swift_files, location_list, location, location_subset)
-  if (exists("swift_files_mod")) rm(swift_files_mod)
   observations <- dplyr::select(
     observations,
     Timestamp,
