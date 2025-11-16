@@ -1,5 +1,5 @@
 Package: batr
-Type: PACKAGE
+Type: Package
 Title: Tools for Using Bat Acoustic Monitoring Data in R
 Version: 0.2.2
 Authors@R: person("Toby", "Thorne", email = "toby@tobythorne.com",
