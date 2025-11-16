@@ -47,12 +47,16 @@
 #' @examples
 #' \dontrun{
 #' # New import (cross-platform paths)
-#' import_guano("New", "path/to/wav/files", "Location", 
-#'              "America/New_York", "path/to/data.RData")
-#' 
+#' import_guano(
+#'   "New", "path/to/wav/files", "Location",
+#'   "America/New_York", "path/to/data.RData"
+#' )
+#'
 #' # Windows example
-#' import_guano("New", "C:/Folder/WAVs", "Location", 
-#'              "America/New_York", "C:/Folder/Data.RData")
+#' import_guano(
+#'   "New", "C:/Folder/WAVs", "Location",
+#'   "America/New_York", "C:/Folder/Data.RData"
+#' )
 #' }
 #' @export
 import_guano <- function(action, input_path, site_col, timezone, data_path = NULL, fast_import = TRUE) {
@@ -67,36 +71,96 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     .update_observations(input_path, site_col, timezone, data_path, fast_import)
   } else {
     stop(
-      "Invalid action given, please specifiy an action (\"New\", \"Add\" or \"Update\") and try again. ",
-      "See ?read_wavs for more information"
+      "Invalid action given, please specify an action (\"New\", \"Add\" or \"Update\") and try again. ",
+      "See ?import_guano for more information."
     )
   }
 }
 
+#' Validate timezone string
+#' @keywords internal
+.validate_timezone <- function(timezone) {
+  if (!timezone %in% OlsonNames()) {
+    stop(
+      "Invalid timezone: '", timezone, "'.\n",
+      "Please use a valid timezone from OlsonNames().\n",
+      "Common examples: 'America/New_York', 'America/Los_Angeles', 'Europe/London', 'UTC'."
+    )
+  }
+  invisible(TRUE)
+}
+
+#' Validate input path exists
+#' @keywords internal
+.validate_input_path <- function(input_path) {
+  if (!dir.exists(input_path)) {
+    stop(
+      "Input path does not exist: '", input_path, "'.\n",
+      "Please check the path and try again."
+    )
+  }
+  invisible(TRUE)
+}
+
 .new_observations <- function(input_path, site_col, timezone, data_path, fast_import) {
+  .validate_timezone(timezone)
+  .validate_input_path(input_path)
+
+  message("\n========== Starting New Import ==========")
+  start_time <- Sys.time()
+
   file_list <- .get_file_list(input_path, fast_import)
   observations <- .read_file_guano(file_list, site_col, timezone, fast_import)
   .save_to_RDATA(observations, data_path)
+
+  elapsed <- round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 1)
+  message("\n========== Import Complete ==========")
+  message(sprintf(
+    "Processed %d observations from %d files in %s seconds.",
+    nrow(observations), nrow(file_list), elapsed
+  ))
+  message(sprintf("Data saved to: %s", data_path))
+
+  invisible(NULL)
 }
 
 .add_observations <- function(input_path, site_col, timezone, data_path, fast_import) {
+  .validate_timezone(timezone)
+  .validate_input_path(input_path)
+
+  message("\n========== Starting Add Import ==========")
+  start_time <- Sys.time()
+
   # Load existing data into local env to avoid polluting global env
+  message("Loading existing data from: ", data_path)
   env <- new.env()
   load(data_path, envir = env)
   if (!exists("observations", envir = env)) {
-    stop("Loaded RData does not contain an object named 'observations'")
+    stop(
+      "Loaded RData does not contain an object named 'observations'.\n",
+      "Please ensure you are loading a valid GUANO import file."
+    )
   }
   original_observations <- env$observations
+  message(sprintf("Existing data contains %d observations.", nrow(original_observations)))
 
   # Get candidate files (file list only)
   candidate_files <- .get_file_list(input_path, fast_import)
   # Determine which files are truly new
   is_existing <- candidate_files$File.Name %in% original_observations$File.Name
+  n_duplicate <- sum(is_existing)
+
   if (all(is_existing)) {
-    stop("All of the files you are trying to add already exist in the data file. No files will be imported. Please use the Update action.")
+    stop(
+      "All ", nrow(candidate_files), " files already exist in the data file.\n",
+      "No new files to import. Use action='Update' to refresh existing files."
+    )
   }
   if (any(is_existing)) {
-    warning("Some files exist already; only new files will be imported.")
+    message(sprintf(
+      "Found %d duplicate files (skipping). Importing %d new files.",
+      n_duplicate, sum(!is_existing)
+    ))
   }
   files_to_import <- candidate_files[!is_existing, , drop = FALSE]
 
@@ -115,14 +179,35 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
 
   # Save updated data
   .save_to_RDATA(observations, data_path)
+
+  elapsed <- round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 1)
+  message("\n========== Add Complete ==========")
+  message(sprintf("Added %d new observations in %s seconds.", nrow(observations_new), elapsed))
+  message(sprintf("Total observations in dataset: %d", nrow(observations)))
+  message(sprintf("Data saved to: %s", data_path))
+
+  invisible(NULL)
 }
 
 .update_observations <- function(input_path, site_col, timezone, data_path, fast_import) {
+  .validate_timezone(timezone)
+  .validate_input_path(input_path)
+
+  message("\n========== Starting Update Import ==========")
+  start_time <- Sys.time()
+
   # Load existing data into local env to avoid polluting global env
+  message("Loading existing data from: ", data_path)
   env <- new.env()
   load(data_path, envir = env)
-  if (!exists("observations", envir = env)) stop("RData does not contain 'observations'.")
+  if (!exists("observations", envir = env)) {
+    stop(
+      "RData does not contain 'observations'.\n",
+      "Please ensure you are loading a valid GUANO import file."
+    )
+  }
   observations_all <- env$observations
+  message(sprintf("Existing data contains %d observations.", nrow(observations_all)))
 
   # Keep key file metadata
   observations_files <- observations_all[, c("File.Name", "File.Path", "File.Modified")]
@@ -166,12 +251,183 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
 
   # Save updated data
   .save_to_RDATA(observations, data_path)
+
+  elapsed <- round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 1)
+  message("\n========== Update Complete ==========")
+  message(sprintf("Updated %d observations in %s seconds.", nrow(update_files), elapsed))
+  message(sprintf("Total observations in dataset: %d", nrow(observations)))
+  message(sprintf("Data saved to: %s", data_path))
+
+  invisible(NULL)
 }
 
-#' Single-pass WAV discovery with modification times (fast path)
+#' Create Species Column from Manual/Auto IDs
 #'
-#' Uses OS-native tools to return both full paths and mtimes in one traversal.
-#' Falls back to caller on empty/failed execution.
+#' Generates a unified Species column by preferring manual IDs over automatic IDs.
+#' Handles cases where one or both ID columns are missing.
+#'
+#' @param observations Data.frame containing GUANO metadata.
+#'
+#' @return Data.frame with added \code{Species} column.
+#'
+#' @keywords internal
+.create_species_column <- function(observations) {
+  has_manual <- "Species.Manual.ID" %in% colnames(observations)
+  has_auto <- "Species.Auto.ID" %in% colnames(observations)
+
+  if (!has_manual && !has_auto) {
+    warning("Neither Species.Manual.ID nor Species.Auto.ID found in metadata. ",
+      "Species column will be NA.",
+      call. = FALSE
+    )
+    observations$Species <- NA_character_
+  } else if (has_manual && !has_auto) {
+    observations$Species <- as.character(observations$Species.Manual.ID)
+  } else if (!has_manual && has_auto) {
+    observations$Species <- as.character(observations$Species.Auto.ID)
+  } else {
+    # Both exist: prefer manual, fall back to auto
+    observations <- dplyr::mutate(observations,
+      Species = dplyr::if_else(is.na(Species.Manual.ID),
+        as.character(Species.Auto.ID),
+        as.character(Species.Manual.ID)
+      )
+    )
+  }
+
+  return(observations)
+}
+
+#' Standardize GPS Coordinates for Anabat Swift Files
+#'
+#' Anabat Swift devices often record slightly inconsistent GPS readings at the
+#' same physical location. This function standardizes all coordinates for a given
+#' location to the first recorded value.
+#'
+#' @param observations Data.frame containing processed observations.
+#'
+#' @return Data.frame with standardized coordinates for Swift files.
+#'
+#' @keywords internal
+.standardize_swift_locations <- function(observations) {
+  # Check if Model column exists
+  if (!"Model" %in% colnames(observations)) {
+    return(observations)
+  }
+
+  swift_files <- observations[observations$Model == "Swift", ]
+  if (nrow(swift_files) == 0) {
+    return(observations)
+  }
+
+  message(sprintf("Standardizing coordinates for %d Anabat Swift recordings...", nrow(swift_files)))
+
+  swift_files <- swift_files %>%
+    dplyr::group_by(Location) %>%
+    dplyr::mutate(
+      Latitude = dplyr::first(Latitude),
+      Longitude = dplyr::first(Longitude)
+    ) %>%
+    dplyr::ungroup()
+
+  # Replace Swift rows with standardized versions
+  observations <- dplyr::bind_rows(
+    observations[observations$Model != "Swift", ],
+    swift_files
+  )
+
+  return(observations)
+}
+
+#' Harmonize Location Column Name Variations
+#'
+#' Handles different naming conventions for latitude/longitude in GUANO metadata.
+#' Merges data when both variants exist (preferring capitalized versions).
+#'
+#' @param observations Data.frame containing GUANO metadata.
+#'
+#' @return Data.frame with standardized \code{Latitude} and \code{Longitude} columns.
+#'
+#' @keywords internal
+.harmonize_location_columns <- function(observations) {
+  # Handle latitude variants
+  if ("Loc.Position.latitude" %in% colnames(observations)) {
+    if ("Loc.Position.Lat" %in% colnames(observations)) {
+      # Both exist: merge data using coalesce (prefer capitalized)
+      lat_primary <- suppressWarnings(as.numeric(as.character(observations$Loc.Position.Lat)))
+      lat_alt <- suppressWarnings(as.numeric(as.character(observations$Loc.Position.latitude)))
+      observations$Loc.Position.Lat <- dplyr::coalesce(lat_primary, lat_alt)
+    } else {
+      # Only lowercase exists, rename to capitalized
+      colnames(observations)[colnames(observations) == "Loc.Position.latitude"] <- "Loc.Position.Lat"
+    }
+    # Drop lowercase after merge/rename
+    if ("Loc.Position.latitude" %in% colnames(observations)) {
+      observations[["Loc.Position.latitude"]] <- NULL
+    }
+  }
+
+  # Handle longitude variants
+  if ("Loc.Position.longitude" %in% colnames(observations)) {
+    if ("Loc.Position.Lon" %in% colnames(observations)) {
+      # Both exist: merge data using coalesce (prefer capitalized)
+      lon_primary <- suppressWarnings(as.numeric(as.character(observations$Loc.Position.Lon)))
+      lon_alt <- suppressWarnings(as.numeric(as.character(observations$Loc.Position.longitude)))
+      observations$Loc.Position.Lon <- dplyr::coalesce(lon_primary, lon_alt)
+    } else {
+      # Only lowercase exists, rename to capitalized
+      colnames(observations)[colnames(observations) == "Loc.Position.longitude"] <- "Loc.Position.Lon"
+    }
+    # Drop lowercase after merge/rename
+    if ("Loc.Position.longitude" %in% colnames(observations)) {
+      observations[["Loc.Position.longitude"]] <- NULL
+    }
+  }
+
+  # Rename to final standard names
+  if ("Loc.Position.Lat" %in% colnames(observations)) {
+    colnames(observations)[colnames(observations) == "Loc.Position.Lat"] <- "Latitude"
+  }
+  if ("Loc.Position.Lon" %in% colnames(observations)) {
+    colnames(observations)[colnames(observations) == "Loc.Position.Lon"] <- "Longitude"
+  }
+
+  # Ensure numeric types for final columns
+  if ("Latitude" %in% colnames(observations)) {
+    observations$Latitude <- suppressWarnings(as.numeric(as.character(observations$Latitude)))
+  }
+  if ("Longitude" %in% colnames(observations)) {
+    observations$Longitude <- suppressWarnings(as.numeric(as.character(observations$Longitude)))
+  }
+
+  return(observations)
+}
+
+#' Single-pass WAV Discovery with Modification Times
+#'
+#' Uses OS-native tools (find + stat on Unix/macOS, PowerShell on Windows) to
+#' discover WAV files and retrieve their modification times in a single traversal.
+#' This is significantly faster than separate discovery and stat operations.
+#'
+#' @param input_path Character. Path to the root directory to search.
+#'
+#' @return A data.frame with columns:
+#'   \describe{
+#'     \item{Full.Path}{Character. Absolute path to each WAV file.}
+#'     \item{File.Modified}{Numeric. Unix timestamp (seconds since epoch) of last modification.}
+#'   }
+#'   Returns an empty data.frame (0 rows) if no files are found or system calls fail.
+#'
+#' @details
+#' Platform-specific implementations:
+#' \itemize{
+#'   \item \strong{Unix/macOS}: Uses \code{find -iname '*.wav' -exec stat ...}
+#'         Tries BSD format first (macOS), then GNU format (Linux).
+#'   \item \strong{Windows}: Uses PowerShell \code{Get-ChildItem} with \code{LastWriteTimeUtc}.
+#' }
+#'
+#' All searches are case-insensitive to match both .wav and .WAV extensions.
+#'
 #' @keywords internal
 .get_file_list_singlepass <- function(input_path) {
   mk_empty <- function() data.frame(Full.Path = character(), File.Modified = numeric(), stringsAsFactors = FALSE)
@@ -220,20 +476,52 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   }
 }
 
+#' Get List of WAV Files with Metadata
+#'
+#' Discovers WAV files in a directory tree and retrieves their modification times.
+#' Can operate in fast mode (system calls) or standard mode (R functions).
+#'
+#' @param input_path Character. Either a directory path to search (when \code{list=FALSE})
+#'   or a character vector of file paths (when \code{list=TRUE}).
+#' @param fast_import Logical. If TRUE, uses optimized single-pass system calls.
+#'   If FALSE, uses standard R \code{list.files()} and \code{file.info()}.
+#' @param list Logical. If TRUE, treats \code{input_path} as a vector of file paths
+#'   rather than a directory to search.
+#'
+#' @return A data.frame with columns:
+#'   \describe{
+#'     \item{File.Name}{Character. Basename of each file.}
+#'     \item{Full.Path}{Character. Absolute path to each file.}
+#'     \item{File.Modified}{Numeric. Unix timestamp of last modification.}
+#'   }
+#'
+#' @details
+#' When \code{fast_import=TRUE}, attempts single-pass discovery. If this fails,
+#' automatically falls back to standard R functions with a warning message.
+#'
+#' @keywords internal
 .get_file_list <- function(input_path, fast_import = TRUE, list = FALSE) {
   # Identify if input_path is already a character vector of file paths and reformat if so
   wav_pattern <- "\\.wav$"
   if (list) {
     file_list_full <- as.character(input_path)
-    if (length(file_list_full) == 0) stop("No files provided in 'input_path' when list=TRUE")
+    if (length(file_list_full) == 0) {
+      stop("No files provided in 'input_path' when list=TRUE.")
+    }
     file_list_short <- sub(".*/", "", file_list_full)
     # Otherwise, read files from directory
   } else {
-    message("Making list of available WAV files.")
+    message("Discovering WAV files...")
+    start_discover <- Sys.time()
+
     if (fast_import == TRUE) {
-      message("Using fast file reading (single pass)...")
       fast_df <- .get_file_list_singlepass(input_path)
       if (nrow(fast_df) > 0) {
+        elapsed <- round(as.numeric(difftime(Sys.time(), start_discover, units = "secs")), 2)
+        message(sprintf(
+          "Found %d WAV files using fast discovery in %s seconds.",
+          nrow(fast_df), elapsed
+        ))
         file_list_full <- fast_df$Full.Path
         file_list_short <- sub(".*\\/", "", file_list_full)
         file_list <- data.frame(
@@ -242,24 +530,30 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
           File.Modified = fast_df$File.Modified,
           stringsAsFactors = FALSE
         )
-        message("File list complete.")
         return(file_list)
       } else {
-        message("Fast single-pass discovery failed or returned no results. Falling back to list.files().")
+        message("Fast discovery returned no results. Using standard file listing...")
         file_list_full <- list.files(input_path, pattern = wav_pattern, full.names = TRUE, recursive = TRUE, ignore.case = TRUE)
         file_list_short <- sub(".*/", "", file_list_full)
       }
     } else {
-      message("Using slow file reading.")
+      message("Using standard file listing...")
       file_list_full <- list.files(input_path, pattern = wav_pattern, full.names = TRUE, recursive = TRUE, ignore.case = TRUE)
       file_list_short <- sub(".*/", "", file_list_full)
+    }
+
+    elapsed <- round(as.numeric(difftime(Sys.time(), start_discover, units = "secs")), 2)
+    if (length(file_list_full) > 0) {
+      message(sprintf("Found %d WAV files in %s seconds.", length(file_list_full), elapsed))
     }
   }
 
   # Handle case of no files found
   if (length(file_list_full) == 0) {
-    message("No WAV files found.")
-    return(data.frame(File.Name = character(), Local.Path = character(), Full.Path = character(), File.Modified = numeric(), stringsAsFactors = FALSE))
+    stop(
+      "No WAV files found in '", input_path, "'.\n",
+      "Please check the path and ensure it contains .wav files."
+    )
   }
 
   # Get file modification times (use file.info here to avoid extra system calls on fallback)
@@ -273,13 +567,41 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     stringsAsFactors = FALSE
   )
 
-  # Return file list
-  message("File list complete.")
   return(file_list)
 }
 
+#' Read GUANO Metadata from WAV File List
+#'
+#' Reads GUANO metadata from a list of WAV files, processes location columns,
+#' handles missing data, and prepares observations for analysis.
+#'
+#' @param file_list A data.frame from \code{.get_file_list()} containing file paths.
+#' @param site_col Character. Name of the GUANO field containing location/site name.
+#' @param timezone Character. Valid timezone string for timestamp conversion.
+#' @param fast_import Logical. If TRUE, reads files in parallel using \code{future}.
+#'
+#' @return A data.frame containing processed observations with standardized columns:
+#'   Timestamp, Species, Location, Latitude, Longitude, and all GUANO metadata fields.
+#'
+#' @details
+#' This function:
+#' \itemize{
+#'   \item Reads GUANO metadata from each file (with error handling)
+#'   \item Harmonizes location column name variations
+#'   \item Checks for missing critical data (location, coordinates)
+#'   \item Computes night dates using noon-to-noon convention
+#'   \item Standardizes Species column from manual/auto IDs
+#'   \item Corrects inconsistent GPS readings for Anabat Swift devices
+#' }
+#'
+#' @keywords internal
 .read_file_guano <- function(file_list, site_col, timezone, fast_import = FALSE) {
   paths <- as.character(file_list$Full.Path)
+  n_files <- length(paths)
+
+  message(sprintf("Reading GUANO metadata from %d files...", n_files))
+  read_start <- Sys.time()
+
   # Helper to read single file safely
   safe_read <- function(path) {
     tryCatch(
@@ -295,7 +617,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
 
   # Read files (possibly in parallel)
   if (fast_import) {
-    message("Fast import selected: setting up multisession.")
+    message("Using parallel processing...")
     old_plan <- future::plan()
     on.exit(future::plan(old_plan), add = TRUE)
     future::plan(future::multisession)
@@ -308,66 +630,49 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
       }, future.packages = "batr")
     })
   } else {
-    message("Reading WAV files, please wait...")
     res_list <- lapply(paths, safe_read)
   }
+
+  read_elapsed <- round(as.numeric(difftime(Sys.time(), read_start, units = "secs")), 1)
+  message(sprintf("Completed reading files in %s seconds.", read_elapsed))
 
   # Separate successes / failures
   failures <- vapply(res_list, function(x) is.list(x) && !is.data.frame(x), logical(1))
   if (any(failures)) {
     failed_info <- Filter(function(x) is.list(x) && !is.data.frame(x), res_list)
-    warning(sprintf("Failed to read %d files. See returned 'read_failures' attribute.", length(failed_info)))
-    attr(res_list, "read_failures") <- failed_info
+    n_failed <- length(failed_info)
+    warning(sprintf("Failed to read %d of %d files due to errors.", n_failed, n_files),
+      call. = FALSE
+    )
+    # Show first few failures
+    if (n_failed <= 3) {
+      for (fail in failed_info) {
+        message("  Failed: ", basename(fail$.path), " - ", fail$.message)
+      }
+    } else {
+      message("  First 3 failures:")
+      for (i in 1:3) {
+        message("    ", basename(failed_info[[i]]$.path), " - ", failed_info[[i]]$.message)
+      }
+      message(sprintf("    ... and %d more", n_failed - 3))
+    }
   }
 
   # Keep only successful data.frames
   dfs <- Filter(is.data.frame, res_list)
-  if (length(dfs) == 0) stop("No files could be read successfully.")
+  if (length(dfs) == 0) {
+    stop(
+      "No files could be read successfully.\n",
+      "Please check that the files contain valid GUANO metadata."
+    )
+  }
+  message(sprintf("Successfully read %d of %d files.", length(dfs), n_files))
+
+  message("Combining metadata...")
   observations <- do.call(plyr::rbind.fill, dfs)
 
-  # Harmonize location column names: handle both lowercase and capitalized variants
-  # If both variants exist, merge data (prefer capitalized, fill with lowercase where capitalized is NA)
-  if ("Loc.Position.latitude" %in% colnames(observations)) {
-    if ("Loc.Position.Lat" %in% colnames(observations)) {
-      # Both exist: merge data (prefer capitalized, use lowercase to fill NAs)
-      observations$Loc.Position.Lat <- ifelse(
-        is.na(observations$Loc.Position.Lat),
-        observations$Loc.Position.latitude,
-        observations$Loc.Position.Lat
-      )
-    } else {
-      # Only lowercase exists, rename to capitalized
-      colnames(observations)[colnames(observations) == "Loc.Position.latitude"] <- "Loc.Position.Lat"
-    }
-    # Drop lowercase after merge/rename
-    if ("Loc.Position.latitude" %in% colnames(observations)) {
-      observations[["Loc.Position.latitude"]] <- NULL
-    }
-  }
-  if ("Loc.Position.longitude" %in% colnames(observations)) {
-    if ("Loc.Position.Lon" %in% colnames(observations)) {
-      # Both exist: merge data (prefer capitalized, use lowercase to fill NAs)
-      observations$Loc.Position.Lon <- ifelse(
-        is.na(observations$Loc.Position.Lon),
-        observations$Loc.Position.longitude,
-        observations$Loc.Position.Lon
-      )
-    } else {
-      # Only lowercase exists, rename to capitalized
-      colnames(observations)[colnames(observations) == "Loc.Position.longitude"] <- "Loc.Position.Lon"
-    }
-    # Drop lowercase after merge/rename
-    if ("Loc.Position.longitude" %in% colnames(observations)) {
-      observations[["Loc.Position.longitude"]] <- NULL
-    }
-  }
-  # Finally, rename capitalized variants to final names
-  if ("Loc.Position.Lat" %in% colnames(observations)) {
-    colnames(observations)[colnames(observations) == "Loc.Position.Lat"] <- "Latitude"
-  }
-  if ("Loc.Position.Lon" %in% colnames(observations)) {
-    colnames(observations)[colnames(observations) == "Loc.Position.Lon"] <- "Longitude"
-  }
+  # Harmonize location column names
+  observations <- .harmonize_location_columns(observations)
 
   # Check for missing critical data and get list of files to exclude
   missing_data <- .missing_data_checker(observations, site_col)
@@ -396,36 +701,15 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   local_date <- as.Date(local_ts)
   observations$Night <- ifelse(lubridate::hour(local_ts) > 11, local_date, local_date - 1)
   observations$Night <- as.Date(observations$Night, origin = "1970-01-01")
-  
-  # Generate Species column: prefer manual ID over auto ID
-  observations <- dplyr::mutate(observations,
-    Species = dplyr::if_else(is.na(Species.Manual.ID),
-      as.character(Species.Auto.ID),
-      as.character(Species.Manual.ID)
-    )
-  )
 
-  colnames(observations)[colnames(observations) == site_col] <- "Location" # Set location column
+  # Generate Species column
+  observations <- .create_species_column(observations)
+
+  colnames(observations)[colnames(observations) == site_col] <- "Location"
   observations <- observations[!is.na(observations$Location), ]
-  
+
   # For Anabat Swift files: standardize lat/lon to first value per location
-  # (Swift files often have inconsistent GPS readings at the same physical location)
-  swift_files <- observations[observations$Model == "Swift", ]
-  if (nrow(swift_files) > 0) {
-    swift_files <- swift_files %>%
-      dplyr::group_by(Location) %>%
-      dplyr::mutate(
-        Latitude = dplyr::first(Latitude),
-        Longitude = dplyr::first(Longitude)
-      ) %>%
-      dplyr::ungroup()
-    
-    # Replace Swift rows with standardized versions
-    observations <- dplyr::bind_rows(
-      observations[observations$Model != "Swift", ],
-      swift_files
-    )
-  }
+  observations <- .standardize_swift_locations(observations)
   observations <- dplyr::select(
     observations,
     Timestamp,
@@ -442,6 +726,27 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   return(observations)
 }
 
+#' Check for Missing Critical Data
+#'
+#' Identifies files with missing location name, latitude, or longitude.
+#' Prompts user interactively for confirmation to proceed with exclusions.
+#'
+#' @param observations Data.frame containing observations with File.Name column.
+#' @param site_col Character. Name of the column containing location/site names.
+#'
+#' @return Data.frame listing files with missing data and which fields are missing.
+#'   Returns empty data.frame (0 rows) if all files have complete data.
+#'
+#' @details
+#' In interactive mode, presents missing files and prompts user to:
+#' \itemize{
+#'   \item (p)rint all missing files
+#'   \item (y)es proceed with exclusions
+#'   \item (n)o cancel import
+#' }
+#' In non-interactive mode, automatically proceeds with a warning.
+#'
+#' @keywords internal
 .missing_data_checker <- function(observations, site_col) {
   missing_data <- data.frame(
     File.Name = character(),
