@@ -16,6 +16,7 @@ knitr::opts_chunk$set(
 # batr
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/vulpes-vulpes/batr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vulpes-vulpes/batr/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The goal of batr is to streamline analyses and reporting of bat acoustic monitoring data containing [GUANO metadata](https://guano-md.org/). The package includes code to extract GUANO data directly from attributed WAV files, and to create summaries, plots, and analyses.
