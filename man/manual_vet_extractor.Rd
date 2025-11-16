@@ -48,9 +48,4 @@ move files with an accepted automatic species assignment from SonoBat.
 manual_vet_extractor("raw_data_project", "C:/Folder/Folder/File_Folder")
 }
 }
-\seealso{
-Other Manual Vetting Functions: 
-\code{\link{high_frequency_extractor}()},
-\code{\link{manual_vet_extractor_old}()}
-}
 \concept{Manual Vetting Functions}

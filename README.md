@@ -4,6 +4,8 @@
 # batr
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/vulpes-vulpes/batr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vulpes-vulpes/batr/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The goal of batr is to streamline analyses and reporting of bat acoustic
@@ -17,7 +19,8 @@ Program](https://www.torontozoo.com/bats), and is shared here in case it
 benefits anyone else. It remains a work in progress and feedback and
 contributions are welcome.
 
-Check development progress and latest changes [here](ADDME).
+Check development progress and latest changes
+[here](https://github.com/vulpes-vulpes/batr/blob/main/NEWS.md).
 
 ## Winter 2023 Update
 
@@ -40,8 +43,9 @@ features:
 
 If anyone out there wants the old version (0.1.0) you can find it here
 [here](https://github.com/vulpes-vulpes/batr/releases/tag/v0.1.0) and
-the documentation [here](ADDME). Note that this version is hard-coded
-for Ontario bat species only.
+the documentation
+[here](https://github.com/vulpes-vulpes/batr/wiki/batr-0.1.0-Instructions).
+Note that this version is hard-coded for Ontario bat species only.
 
 ## Installation
 
@@ -80,7 +84,7 @@ files need to have the following columns for batr to use them:
 
 ### Importing GUANO from WAV files:
 
-Use the “import_GUANO” function to import the metadata directly from WAV
+Use the ‘import_GUANO’ function to import the metadata directly from WAV
 files. This function takes a folder of WAV files that are recordings of
 bats with appropriate GUANO metadata already attributed (as described
 above), finds all the GUANO, and then gives you a new RDATA file that
@@ -92,9 +96,9 @@ create a new RDATA file, add additional data to an existing one, or
 update an existing RDATA file from files with with changed GUANO.
 
 **WHY?** Once you have processed a set of acoustic data all the cool and
-valuable information that you want for furher analyses is in the GUANO
+valuable information that you want for furthrer analyses is in the GUANO
 metadata (e.g. what species, where, and when). Having that data spread
-accross all the WAV files is unhelpful because: 1) they are relatively
+across all the WAV files is unhelpful because: 1) they are relatively
 huge and you have to lug all that sound data around even when you’re not
 using it; and 2) having that data spread across thousands of small files
 makes it really slow to read. The batr import_GUANO functions does that
@@ -141,7 +145,7 @@ touch and send example files or a suggestion, and I’ll see what I can
 do.
 
 Once you have your files organised as outlined above, use the
-import_logs function to add them to an existing RDATA file, or a new
+‘import_logs’ function to add them to an existing RDATA file, or a new
 one.
 
 ## Other Functions:

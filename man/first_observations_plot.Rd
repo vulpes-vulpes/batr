@@ -60,8 +60,4 @@ A plot as an object in the current envrionment, and a saved image if
 \code{first_observations_plot} creates a plot showing the first observation of
 the specified species relative to local sunset for each site withn a project.
 }
-\seealso{
-Other Activity Timing: 
-\code{\link{old_first_observations_plot}()}
-}
 \concept{Activity Timing}
