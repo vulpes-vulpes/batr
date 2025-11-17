@@ -105,13 +105,13 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
   swift_active_dates <- NULL
   ranger_active_dates <- NULL
   if (length(wa_file_list) > 0) {
-    wa_active_dates <- batr:::.read_wa_logs(wa_file_list, log_path)
+    wa_active_dates <- .read_wa_logs(wa_file_list, log_path)
   }
   if (length(swift_file_list) > 0) {
-    swift_active_dates <- batr:::.read_swift_logs(swift_file_list, log_path)
+    swift_active_dates <- .read_swift_logs(swift_file_list, log_path)
   }
   if (length(ranger_file_list) > 0) {
-    ranger_active_dates <- batr:::.read_ranger_logs(ranger_file_list, log_path)
+    ranger_active_dates <- .read_ranger_logs(ranger_file_list, log_path)
   }
   active_dates <- do.call(rbind, Filter(Negate(is.null), list(
     wa_active_dates,
@@ -310,7 +310,7 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
 
   # Aggregate by Date and Location (handles duplicates if multiple logs per day)
   output <- output[, c("Date", "Location", "Log_Count")]
-  output <- stats::aggregate(Log_Count ~ Date + Location, data = output, FUN = max)
+  # output <- stats::aggregate(Log_Count ~ Date + Location, data = output, FUN = max)
 
   return(output)
 }
@@ -331,21 +331,44 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
 #'
 #' @keywords internal
 .gap_generator <- function(active_dates, monitoring_start, monitoring_end) {
+  if (!"Date" %in% names(active_dates)) {
+    stop("active_dates must contain a 'Date' column.")
+  }
+  if (!inherits(active_dates$Date, "Date")) {
+    active_dates$Date <- as.Date(active_dates$Date)
+  }
+
   if (is.null(monitoring_start)) {
-    monitoring_start <- min(unique(active_dates$Date))
+    if (length(active_dates$Date) == 0 || all(is.na(active_dates$Date))) {
+      stop("No valid dates found to infer 'monitoring_start'; supply 'monitoring_start' explicitly.")
+    }
+    monitoring_start <- min(active_dates$Date, na.rm = TRUE)
   } else {
     monitoring_start <- as.Date(monitoring_start)
   }
 
   if (is.null(monitoring_end)) {
-    monitoring_end <- max(unique(active_dates$Date))
+    if (length(active_dates$Date) == 0 || all(is.na(active_dates$Date))) {
+      stop("No valid dates found to infer 'monitoring_end'; supply 'monitoring_end' explicitly.")
+    }
+    monitoring_end <- max(active_dates$Date, na.rm = TRUE)
   } else {
     monitoring_end <- as.Date(monitoring_end)
   }
 
+  if (is.na(monitoring_start) || is.na(monitoring_end)) {
+    stop("Monitoring start/end dates are invalid (NA).")
+  }
+  if (monitoring_start > monitoring_end) {
+    tmp <- monitoring_start
+    monitoring_start <- monitoring_end
+    monitoring_end <- tmp
+  }
+
   sites <- as.data.frame(unique(active_dates$Location))
   colnames(sites) <- c("Location")
-  date_range <- as.data.frame(rep(seq(as.Date(monitoring_start), as.Date(monitoring_end), by = 1),
+  dr <- seq(as.Date(monitoring_start), as.Date(monitoring_end), by = "day")
+  date_range <- as.data.frame(rep(dr,
     each = length(sites$Location)
   ))
   colnames(date_range) <- c("Date")
