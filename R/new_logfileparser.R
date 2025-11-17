@@ -51,60 +51,100 @@
 #' }
 #'
 import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, monitoring_end = NULL) {
+  # Validate inputs
+  if (!dir.exists(log_path)) {
+    stop(
+      "Log path does not exist: '", log_path, "'.\n",
+      "Please check the path and try again."
+    )
+  }
+
+  if (!is.null(monitoring_start)) {
+    tryCatch(
+      monitoring_start <- as.Date(monitoring_start),
+      error = function(e) stop("Invalid monitoring_start date. Use format 'YYYY-MM-DD'.")
+    )
+  }
+
+  if (!is.null(monitoring_end)) {
+    tryCatch(
+      monitoring_end <- as.Date(monitoring_end),
+      error = function(e) stop("Invalid monitoring_end date. Use format 'YYYY-MM-DD'.")
+    )
+  }
+
   data_path <- .check_data_path(data_path, action = "New", object = "active_dates")
+  # Find log files for each recorder type with proper regex patterns
   wa_file_list <- list.files(log_path,
     recursive = TRUE,
-    pattern = "*.txt",
-    full.names = TRUE
+    pattern = "\\.txt$", # Wildlife Acoustics summary files
+    full.names = TRUE,
+    ignore.case = TRUE
   )
   swift_file_list <- list.files(log_path,
     recursive = TRUE,
-    pattern = "log \\d{4}-\\d{2}-\\d{2}\\.csv",
+    pattern = "log \\d{4}-\\d{2}-\\d{2}\\.csv$", # Anabat Swift daily logs
     full.names = TRUE
   )
   ranger_file_list <- list.files(log_path,
     recursive = TRUE,
-    pattern = "ranger",
-    full.names = TRUE
+    pattern = "ranger.*\\.csv$", # Anabat Ranger logs
+    full.names = TRUE,
+    ignore.case = TRUE
   )
+  # Check if any log files were found
+  if (length(wa_file_list) == 0 && length(swift_file_list) == 0 && length(ranger_file_list) == 0) {
+    stop(
+      "No log files found in '", log_path, "'.\n",
+      "Please ensure the directory contains Wildlife Acoustics .txt files, ",
+      "Anabat Swift log files, or Anabat Ranger log files."
+    )
+  }
+
   wa_active_dates <- NULL
   swift_active_dates <- NULL
   ranger_active_dates <- NULL
   if (length(wa_file_list) > 0) {
-    wa_active_dates <- batr:::.read_wa_logs(
-      wa_file_list,
-      log_path,
-      monitoring_start,
-      monitoring_end,
-      data_path
-    )
+    wa_active_dates <- .read_wa_logs(wa_file_list, log_path)
   }
   if (length(swift_file_list) > 0) {
-    swift_active_dates <- batr:::.read_swift_logs(
-      swift_file_list,
-      log_path,
-      monitoring_start,
-      monitoring_end,
-      data_path
-    )
+    swift_active_dates <- .read_swift_logs(swift_file_list, log_path)
   }
   if (length(ranger_file_list) > 0) {
-    ranger_active_dates <- batr:::.read_ranger_logs(
-      ranger_file_list,
-      log_path,
-      monitoring_start,
-      monitoring_end
-    )
+    ranger_active_dates <- .read_ranger_logs(ranger_file_list, log_path)
   }
   active_dates <- do.call(rbind, Filter(Negate(is.null), list(
     wa_active_dates,
     swift_active_dates,
     ranger_active_dates
   )))
+
+  # Fill in gaps for dates with no log entries
+  active_dates <- .gap_generator(active_dates, monitoring_start, monitoring_end)
+
   .save_to_RDATA(active_dates, data_path)
+
+  message(sprintf(
+    "\nLog import complete: %d locations across %d dates.",
+    length(unique(active_dates$Location)),
+    length(unique(active_dates$Date))
+  ))
+
+  invisible(active_dates)
 }
 
-.read_wa_logs <- function(wa_file_list, log_path, monitoring_start, monitoring_end, data_path) {
+#' Parse Wildlife Acoustics Log Files
+#'
+#' Reads Wildlife Acoustics SM3/SM4 summary text files and extracts recording
+#' activity dates per location.
+#'
+#' @param wa_file_list Character vector of full paths to Wildlife Acoustics .txt files.
+#' @param log_path Character. Root directory containing log files (used for messaging).
+#'
+#' @return Data.frame with columns: Date, Location, Log_Count.
+#'
+#' @keywords internal
+.read_wa_logs <- function(wa_file_list, log_path) {
   message("Wildlife Acoustics summary files found. Reading files:")
   output <- data.table::rbindlist(
     sapply(wa_file_list,
@@ -117,114 +157,225 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
   # Remove rows that don't match the regular date expression
   output <- output[grepl("^\\d{4}-[a-zA-Z]{3}-\\d{2}$", output$DATE), ]
   output$DATE <- lubridate::ymd(output$DATE)
-  output$Time <- as.POSIXct(output$TIME, format = "%H:%M:%S")
-  output <- within(output, {
-    night <- ifelse(lubridate::hour(output$Time) > 11,
-      output$DATE,
-      output$DATE - 1
-    )
-  })
-  output$night <- as.Date(output$night)
-  output$Location <- sapply(strsplit(
-    sapply(strsplit(output$FileName, split = "/"), tail, n = 1),
-    "-"
-  ), `[`, 1)
+  # Parse time with explicit UTC timezone (log files typically use local time,
+  # but we only care about hour for day/night determination)
+  output$Time <- as.POSIXct(output$TIME, format = "%H:%M:%S", tz = "UTC")
+
+  # Assign recordings to "night" using noon-to-noon convention:
+  # recordings after noon (hour > 11) belong to that date's night,
+  # recordings before noon belong to the previous night
+  output <- dplyr::mutate(output,
+    night = ifelse(lubridate::hour(Time) > 11,
+      DATE,
+      DATE - 1
+    ),
+    night = as.Date(night)
+  )
+  # Derive location from file name: take basename then substring before first '-'
+  # Simpler and more robust than nested vapply calls (avoids type coercion errors)
+  file_names <- basename(output$FileName)
+  output$Location <- sub("-.*$", "", file_names)
   output$Location <- gsub("_", " ", output$Location)
+
+  # Aggregate by night and location (handles duplicate entries from multiple files)
   wa_active_dates <- as.data.frame(table(output$night, output$Location))
   colnames(wa_active_dates) <- c("Date", "Location", "Log_Count")
   wa_active_dates$Date <- lubridate::ymd(wa_active_dates$Date)
+
   return(wa_active_dates)
 }
 
-.read_swift_logs <- function(swift_file_list, log_path, monitoring_start, monitoring_end, data_path) {
+#' Parse Anabat Swift Log Files
+#'
+#' Reads Anabat Swift daily log CSV files and determines if the recorder was
+#' functioning properly on each date based on microphone status and file counts.
+#'
+#' @param swift_file_list Character vector of full paths to Anabat Swift log files.
+#' @param log_path Character. Root directory containing log files (used for messaging).
+#'
+#' @return Data.frame with columns: Date, Location, Log_Count.
+#'
+#' @keywords internal
+.read_swift_logs <- function(swift_file_list, log_path) {
   message("Anabat Swift log files found. Reading files:")
   output <- as.data.frame(swift_file_list)
   output$Date <- strptime(gsub(".*/", "", output$swift_file_list), "log %Y-%m-%d")
-  output$Location <- sapply(strsplit(output$swift_file_list, "/"), function(x) x[length(x) - 1])
-  output$Log_Count <- NA
-  output$Active <- NA
-  row_iterator <- 1
-  for (file in output$swift_file_list) {
+  output$Location <- vapply(
+    strsplit(output$swift_file_list, "/"),
+    function(x) x[length(x) - 1], character(1)
+  )
+  output$Active <- NA_character_
+
+  # Thresholds for determining if recorder was functioning properly
+  MIC_FAIL_THRESHOLD <- 1 # More than 1 mic check message indicates problem
+  MIN_FILES_THRESHOLD <- 10 # Minimum files expected if recording actively
+
+  for (i in seq_along(output$swift_file_list)) {
+    file <- output$swift_file_list[i]
     file_data <- read.csv(file, header = TRUE)
     mic_fails <- length(grep("Status: Check microphone", file_data[, 3]))
     files <- length(grep("FILE", file_data[, 2]))
     recording <- any(grepl("Status: Recording now", file_data[, 3]))
-    if (mic_fails > 1 && files < 10) {
-      output[row_iterator, 5] <- "N"
-    } else if (mic_fails > 1 || isFALSE(recording)) {
-      output[row_iterator, 5] <- "N"
+
+    if (mic_fails > MIC_FAIL_THRESHOLD && files < MIN_FILES_THRESHOLD) {
+      output$Active[i] <- "N"
+    } else if (mic_fails > MIC_FAIL_THRESHOLD || isFALSE(recording)) {
+      output$Active[i] <- "N"
     } else {
-      output[row_iterator, 5] <- "Y"
+      output$Active[i] <- "Y"
     }
-    row_iterator <- row_iterator + 1
   }
+
   output$Date <- as.Date(output$Date)
-  output[is.na(output)] <- "N"
-  output$swift_file_list <- NULL
-  output$Log_Count <- ifelse(output[, 4] == "Y", 1, 0)
-  output$Active <- NULL
+  # Replace any remaining NAs in Active column with "N"
+  output$Active[is.na(output$Active)] <- "N"
+  output$Log_Count <- ifelse(output$Active == "Y", 1, 0)
+
+  # Aggregate by Date and Location (handles duplicates if multiple logs per day)
+  output <- output[, c("Date", "Location", "Log_Count")]
+  output <- stats::aggregate(Log_Count ~ Date + Location, data = output, FUN = max)
+
   return(output)
 }
 
-.read_ranger_logs <- function(ranger_file_list, log_path, monitoring_start, monitoring_end) {
+#' Parse Anabat Ranger Log Files
+#'
+#' Reads Anabat Ranger log CSV files and determines if the recorder was
+#' functioning properly based on microphone status checks and recording activity.
+#'
+#' @param ranger_file_list Character vector of full paths to Anabat Ranger log files.
+#' @param log_path Character. Root directory containing log files (used for messaging).
+#'
+#' @return Data.frame with columns: Date, Location, Log_Count.
+#'
+#' @keywords internal
+.read_ranger_logs <- function(ranger_file_list, log_path) {
   message("Ranger log files found. Reading files:")
   output <- as.data.frame(ranger_file_list)
   output$Date <- strptime(
     sub("-\\d+\\-", "-", basename(output$ranger_file_list)),
     "ranger-%Y-%m-%d"
   )
-  output$Location <- sapply(strsplit(output$ranger_file_list, "/"), function(x) x[length(x) - 1])
-  output$Log_Count <- NA
-  output$Active <- NA
-  row_iterator <- 1
-  # ignore headers in csv - log files have list at the top
-  # there are 4 columns
-  # adjusted pattern matching for Ranger
-  for (file in output$ranger_file_list) {
-    file_data <- read.csv(file, header = FALSE, col.names = c("Date", "Message-Type", "Function", "Note"))
-    mic_fails <- length(grep(
-      "Status: Check mic",
-      file_data[, 4]
-    ))
-    files <- length(grep("File:", file_data[, 4]))
-    recording <- any(grepl(
-      "Status: ALL CLEAR - ready to record",
-      file_data[, 4]
-    ))
-    if (mic_fails > 1 && files < 10) {
-      output[row_iterator, 5] <- "N"
-    } else if (mic_fails > 1 || isFALSE(recording)) {
-      output[row_iterator, 5] <- "N"
-    } else {
-      output[row_iterator, 5] <- "Y"
+  output$Location <- vapply(
+    strsplit(output$ranger_file_list, "/"),
+    function(x) x[length(x) - 1], character(1)
+  )
+  output$Active <- NA_character_
+
+  # Thresholds for determining if recorder was functioning properly
+  MIC_FAIL_THRESHOLD <- 1 # More than 1 mic check message indicates problem
+  MIN_FILES_THRESHOLD <- 10 # Minimum files expected if recording actively
+
+  for (i in seq_along(output$ranger_file_list)) {
+    file <- output$ranger_file_list[i]
+    # Ranger log files can have variable column counts; read flexibly
+    file_data <- tryCatch(
+      read.csv(
+        file,
+        header = FALSE,
+        stringsAsFactors = FALSE,
+        blank.lines.skip = TRUE,
+        fill = TRUE
+      ),
+      error = function(e) data.frame()
+    )
+    # If unreadable, mark inactive and continue
+    if (ncol(file_data) == 0 || nrow(file_data) == 0) {
+      output$Active[i] <- "N"
+      next
     }
-    row_iterator <- row_iterator + 1
+    # Assign canonical names to first four columns if present
+    base_names <- c("Date", "Message_Type", "Function", "Note")
+    colnames(file_data)[seq_len(min(length(base_names), ncol(file_data)))] <- base_names[seq_len(min(length(base_names), ncol(file_data)))]
+    # Determine which column holds the free-form status text (prefer 'Note', else last column)
+    note_col <- if ("Note" %in% names(file_data)) "Note" else names(file_data)[ncol(file_data)]
+    note_vec <- file_data[[note_col]]
+    mic_fails <- length(grep("Status: Check mic", note_vec))
+    files <- length(grep("File:", note_vec))
+    recording <- any(grepl("Status: ALL CLEAR - ready to record", note_vec))
+
+    if (mic_fails > MIC_FAIL_THRESHOLD && files < MIN_FILES_THRESHOLD) {
+      output$Active[i] <- "N"
+    } else if (mic_fails > MIC_FAIL_THRESHOLD || isFALSE(recording)) {
+      output$Active[i] <- "N"
+    } else {
+      output$Active[i] <- "Y"
+    }
   }
+
   output$Date <- as.Date(output$Date)
-  output[is.na(output)] <- "N"
-  output$ranger_file_list <- NULL
-  output$Log_Count <- ifelse(output[, 4] == "Y", 1, 0)
-  output$Active <- NULL
+  # Replace any remaining NAs in Active column with "N"
+  output$Active[is.na(output$Active)] <- "N"
+  output$Log_Count <- ifelse(output$Active == "Y", 1, 0)
+
+  # Aggregate by Date and Location (handles duplicates if multiple logs per day)
+  output <- output[, c("Date", "Location", "Log_Count")]
+  # output <- stats::aggregate(Log_Count ~ Date + Location, data = output, FUN = max)
+
   return(output)
 }
 
+#' Fill Gaps in Activity Data
+#'
+#' Creates a complete date range across all locations and fills in missing dates
+#' with Log_Count = 0. This ensures every location has an entry for every date
+#' in the monitoring period.
+#'
+#' @param active_dates Data.frame with Date, Location, and Log_Count columns.
+#' @param monitoring_start Character or Date. Optional start date (format: 'YYYY-MM-DD').
+#'   If NULL, uses earliest date in active_dates.
+#' @param monitoring_end Character or Date. Optional end date (format: 'YYYY-MM-DD').
+#'   If NULL, uses latest date in active_dates.
+#'
+#' @return Data.frame with complete date × location grid, missing dates filled with Log_Count = 0.
+#'
+#' @keywords internal
 .gap_generator <- function(active_dates, monitoring_start, monitoring_end) {
-  monitoring_start <- if (is.null(monitoring_start)) {
-    monitoring_start <- min(unique(active_dates$Date))
+  if (!"Date" %in% names(active_dates)) {
+    stop("active_dates must contain a 'Date' column.")
   }
-  monitoring_end <- if (is.null(monitoring_end)) {
-    monitoring_end <- max(unique(active_dates$Date))
+  if (!inherits(active_dates$Date, "Date")) {
+    active_dates$Date <- as.Date(active_dates$Date)
+  }
+
+  if (is.null(monitoring_start)) {
+    if (length(active_dates$Date) == 0 || all(is.na(active_dates$Date))) {
+      stop("No valid dates found to infer 'monitoring_start'; supply 'monitoring_start' explicitly.")
+    }
+    monitoring_start <- min(active_dates$Date, na.rm = TRUE)
+  } else {
+    monitoring_start <- as.Date(monitoring_start)
+  }
+
+  if (is.null(monitoring_end)) {
+    if (length(active_dates$Date) == 0 || all(is.na(active_dates$Date))) {
+      stop("No valid dates found to infer 'monitoring_end'; supply 'monitoring_end' explicitly.")
+    }
+    monitoring_end <- max(active_dates$Date, na.rm = TRUE)
+  } else {
+    monitoring_end <- as.Date(monitoring_end)
+  }
+
+  if (is.na(monitoring_start) || is.na(monitoring_end)) {
+    stop("Monitoring start/end dates are invalid (NA).")
+  }
+  if (monitoring_start > monitoring_end) {
+    tmp <- monitoring_start
+    monitoring_start <- monitoring_end
+    monitoring_end <- tmp
   }
 
   sites <- as.data.frame(unique(active_dates$Location))
   colnames(sites) <- c("Location")
-  date_range <- as.data.frame(rep(seq(as.Date(monitoring_start), as.Date(monitoring_end), by = 1),
+  dr <- seq(as.Date(monitoring_start), as.Date(monitoring_end), by = "day")
+  date_range <- as.data.frame(rep(dr,
     each = length(sites$Location)
   ))
   colnames(date_range) <- c("Date")
   sites <- do.call("rbind", replicate(length(unique(date_range$Date)), sites, simplify = FALSE))
   date_range <- cbind(date_range, sites)
-  # output$Date <- as.Date(output$Date)
   active_dates <- merge(date_range, active_dates, all.x = TRUE)
   active_dates$Log_Count[is.na(active_dates$Log_Count)] <- 0
+
+  return(active_dates)
 }
