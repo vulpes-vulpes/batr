@@ -38,6 +38,20 @@ manual_vet_extractor <- function(data_path,
                                  no_manual = FALSE,
                                  fast_import = TRUE,
                                  interactive = interactive()) {
+  # Validate percentage parameter
+  if (!is.numeric(percentage) || length(percentage) != 1) {
+    stop(
+      "Invalid percentage: must be a single numeric value.\n",
+      "Please provide a value between 0 and 1 (e.g., 0.05 for 5%)."
+    )
+  }
+  if (percentage <= 0 || percentage > 1) {
+    stop(
+      "Invalid percentage: ", percentage, ".\n",
+      "Please provide a value between 0 and 1 (e.g., 0.05 for 5%)."
+    )
+  }
+  
   .check_data_path(data_path)
   load(data_path)
   dataset <- observations
