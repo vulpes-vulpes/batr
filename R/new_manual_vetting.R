@@ -36,6 +36,8 @@ manual_vet_extractor <- function(data_path,
                                  no_manual = FALSE,
                                  fast_import = TRUE) {
   .check_data_path(data_path)
+  load(data_path)
+  dataset <- observations
   # load(data_path)
   # dataset <- .location_subsetter(data_path)
   # dataset <- .species_subsetter(data_path, dataset)
@@ -71,13 +73,14 @@ manual_vet_extractor <- function(data_path,
   # proceed with sampling per species
   for (i in species_list) {
     message(paste("Copying", i, "vetting files to output directory."))
-    if (!dir.exists(paste(save_directory, "/", i, sep = ""))) { # Does species folder exist within 5% folder?
-      dir.create(paste(save_directory, "/", i, sep = ""))
+    species_dir <- file.path(save_directory, i)
+    if (!dir.exists(species_dir)) { # Does species folder exist within 5% folder?
+      dir.create(species_dir)
     } # If not then create it.
     temp_dataset <- dataset2[sample(which(dataset2$Species == i), (sum(dataset2$Species == i) * percentage)), ] # Create a temporary dataset with a random 5% of the rows for species.
     file.copy(
       temp_dataset$Full.Path,
-      paste(save_directory, "/", i, sep = "")
+      species_dir
     ) # Copy the five percent subset to the previously created species folder.
   }
 }
