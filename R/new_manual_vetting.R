@@ -19,6 +19,8 @@
 #'  Defaults to 0.05 - 5 percent.
 #' @param no_manual Logical vector, defaults to \code{FALSE}. If \code{TRUE} the
 #'  function will ignore files that have already been assigned an ID.
+#' @param interactive Logical. Whether to prompt user for input when issues arise.
+#'  Defaults to \code{interactive()} which detects if R is running interactively.
 #'
 #' @return Creates folder within the file folder filled with a percentage of
 #'  files of the selected copied.
@@ -31,10 +33,11 @@
 manual_vet_extractor <- function(data_path,
                                  WAV_directory,
                                  save_directory,
-                                 species_list,
+                                 species_list = c("Epfu", "Labo", "Laci", "Lano"),
                                  percentage = 0.05,
                                  no_manual = FALSE,
-                                 fast_import = TRUE) {
+                                 fast_import = TRUE,
+                                 interactive = interactive()) {
   .check_data_path(data_path)
   load(data_path)
   dataset <- observations
@@ -46,19 +49,23 @@ manual_vet_extractor <- function(data_path,
     dataset <- dataset[is.na(dataset$Species.Manual.ID), ]
   } # drop observations with existing manual IDs if selected
   dataset <- dataset[!is.na(dataset$Species), ] # drop observations without species
-  message("Matching observations to WAV files.")
+
+  message("\n========== Starting Manual Vetting File Selection ==========")
+  message(sprintf("Matching %d observations to WAV files in: %s", nrow(dataset), WAV_directory))
+
   WAV_directory_files <- .get_file_list(WAV_directory, fast_import) # get file list from the directory of WAV files
   dataset2 <- merge(dataset, WAV_directory_files, by = "File.Name", all.x = T) # merge the list of observations with the list of WAV files provided
+
   # Handle missing WAV files more gracefully: report, optionally list, then exclude
   missing_idx <- which(is.na(dataset2$Full.Path))
   if (length(missing_idx) > 0) {
     missing_files <- dataset2$File.Name[missing_idx]
-    message(sprintf(
+    warning(sprintf(
       "%d observations have no matching WAV file in '%s'. These will be excluded.",
       length(missing_idx), WAV_directory
     ))
     # Only prompt if session is interactive
-    if (interactive()) {
+    if (interactive) {
       show_list <- readline(prompt = "Show missing file names? (y/n): ")
       if (tolower(show_list) %in% c("y", "yes")) {
         print(missing_files)
@@ -71,16 +78,26 @@ manual_vet_extractor <- function(data_path,
     }
   }
   # proceed with sampling per species
+  message(sprintf("\nCopying %.1f%% of files per species to: %s", percentage * 100, save_directory))
+
   for (i in species_list) {
-    message(paste("Copying", i, "vetting files to output directory."))
+    species_count <- sum(dataset2$Species == i)
+    if (species_count == 0) {
+      message(sprintf("  %s: No files found, skipping.", i))
+      next
+    }
+
     species_dir <- file.path(save_directory, i)
-    if (!dir.exists(species_dir)) { # Does species folder exist within 5% folder?
-      dir.create(species_dir)
-    } # If not then create it.
-    temp_dataset <- dataset2[sample(which(dataset2$Species == i), (sum(dataset2$Species == i) * percentage)), ] # Create a temporary dataset with a random 5% of the rows for species.
-    file.copy(
-      temp_dataset$Full.Path,
-      species_dir
-    ) # Copy the five percent subset to the previously created species folder.
+    if (!dir.exists(species_dir)) {
+      dir.create(species_dir, recursive = TRUE)
+    }
+
+    sample_size <- ceiling(species_count * percentage)
+    temp_dataset <- dataset2[sample(which(dataset2$Species == i), sample_size), ]
+
+    copied <- file.copy(temp_dataset$Full.Path, species_dir)
+    message(sprintf("  %s: Copied %d of %d files (%.1f%%)", i, sum(copied), species_count, percentage * 100))
   }
+
+  message("\n========== Manual Vetting File Selection Complete ==========")
 }
