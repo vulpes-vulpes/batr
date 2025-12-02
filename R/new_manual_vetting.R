@@ -128,12 +128,16 @@ manual_vet_extractor <- function(data_path,
           dir.create(location_dir, recursive = TRUE)
         }
         
-        # Sample from this location
-        sample_size <- ceiling(location_count * percentage)
-        if (sample_size > location_count) sample_size <- location_count
-        
-        sampled_indices <- sample(seq_len(location_count), sample_size)
-        temp_dataset <- location_data[sampled_indices, ]
+        # Sample from this location (or copy all if percentage == 1)
+        if (percentage == 1) {
+          temp_dataset <- location_data
+        } else {
+          sample_size <- ceiling(location_count * percentage)
+          if (sample_size > location_count) sample_size <- location_count
+          
+          sampled_indices <- sample(seq_len(location_count), sample_size)
+          temp_dataset <- location_data[sampled_indices, ]
+        }
         
         copied <- file.copy(temp_dataset$Full.Path, location_dir)
         total_copied <- total_copied + sum(copied)
@@ -158,8 +162,13 @@ manual_vet_extractor <- function(data_path,
         dir.create(species_dir, recursive = TRUE)
       }
       
-      sample_size <- ceiling(species_count * percentage)
-      temp_dataset <- dataset2[sample(which(dataset2$Species == i), sample_size), ]
+      # Sample files (or copy all if percentage == 1)
+      if (percentage == 1) {
+        temp_dataset <- dataset2[dataset2$Species == i, ]
+      } else {
+        sample_size <- ceiling(species_count * percentage)
+        temp_dataset <- dataset2[sample(which(dataset2$Species == i), sample_size), ]
+      }
       
       copied <- file.copy(temp_dataset$Full.Path, species_dir)
       message(sprintf("  %s: Copied %d of %d files (%.1f%%)", i, sum(copied), species_count, percentage * 100))
