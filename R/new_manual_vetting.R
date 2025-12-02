@@ -2,36 +2,59 @@
 #'
 #' \code{manual_vet_extractor} copies a randomly selected subset of files in a
 #' project to a new folder to facilitate manual vetting. The function will only
-#' move files with an accepted automatic species assignment from SonoBat.
+#' copy files with an accepted automatic species assignment from SonoBat.
+#' Handles missing WAV files gracefully and supports both simple random sampling
+#' and stratified sampling by location.
 #'
 #' @family Manual Vetting Functions
 #'
 #' @param data_path Character. Path to an existing RData file for the data set
 #'  you wish to manually vet.
-#' @param WAV_directory Character, the parent directory containing original WAV
+#' @param WAV_directory Character. The parent directory containing original WAV
 #'  files.
-#' @param save_directory Character, the destination where selected files will be
-#'  copied to
-#' @param species_list Character, a single species or list in the form of four
-#'  character species codes used by SonoBat, e.g. "Epfu". Defaults to non
-#'  Ontario SAR: \code{c("Epfu", "Labo", "Laci", "Lano")}.
-#' @param percentage Number. What proportion of files do you wish to extract.
-#'  Defaults to 0.05 - 5 percent.
-#' @param no_manual Logical vector, defaults to \code{FALSE}. If \code{TRUE} the
-#'  function will ignore files that have already been assigned an ID.
+#' @param save_directory Character. The destination directory where selected files
+#'  will be copied to. Will be created if it does not exist.
+#' @param species_list Character vector. Four-character species codes used by
+#'  SonoBat, e.g. "Epfu". Defaults to low-frequency Ontario species:
+#'  \code{c("Epfu", "Labo", "Laci", "Lano")}.
+#' @param percentage Numeric. Proportion of files to extract per species (or per
+#'  location per species if stratified). Must be between 0 and 1. Defaults to
+#'  0.05 (5 percent).
+#' @param no_manual Logical. If \code{TRUE}, ignores files that already have a
+#'  manual species ID assigned. Defaults to \code{FALSE}.
 #' @param stratified Logical. If \code{TRUE}, samples proportionally from each
-#'  location/site (stratified sampling). If \code{FALSE}, samples randomly from
-#'  all files regardless of location. Defaults to \code{FALSE}.
-#' @param interactive Logical. Whether to prompt user for input when issues arise.
-#'  Defaults to \code{interactive()} which detects if R is running interactively.
+#'  location/site (stratified sampling), creating species/location subdirectories.
+#'  If \code{FALSE}, samples randomly from all files for each species regardless
+#'  of location. Defaults to \code{FALSE}.
+#' @param fast_import Logical. If \code{TRUE}, uses optimized file discovery
+#'  methods. If \code{FALSE}, uses standard R file operations. Defaults to
+#'  \code{TRUE}.
+#' @param interactive Logical. Whether to prompt user for input when issues arise
+#'  (e.g., missing WAV files). Defaults to \code{interactive()}, which detects
+#'  if R is running interactively.
 #'
-#' @return Creates folder within the file folder filled with a percentage of
-#'  files of the selected copied. When \code{stratified = TRUE}, creates
-#'  subfolders for each location within each species folder.
+#' @return Invisible NULL. The function is called for its side effect of copying
+#'  files to the save directory. Status messages are printed to the console
+#'  showing progress and summary statistics.
 #'
 #' @examples
 #' \dontrun{
-#' manual_vet_extractor("raw_data_project", "C:/Folder/Folder/File_Folder")
+#' # Simple random sampling (5% per species)
+#' manual_vet_extractor(
+#'   data_path = "path/to/project_data.RData",
+#'   WAV_directory = "path/to/wav/files",
+#'   save_directory = "path/to/vetting/output"
+#' )
+#'
+#' # Stratified sampling (10% per location per species)
+#' manual_vet_extractor(
+#'   data_path = "path/to/project_data.RData",
+#'   WAV_directory = "path/to/wav/files",
+#'   save_directory = "path/to/vetting/output",
+#'   species_list = c("Epfu", "Mylu", "Labo"),
+#'   percentage = 0.10,
+#'   stratified = TRUE
+#' )
 #' }
 #' @export
 manual_vet_extractor <- function(data_path,
@@ -107,19 +130,19 @@ manual_vet_extractor <- function(data_path,
 .prepare_vetting_dataset <- function(data_path, no_manual) {
   .check_data_path(data_path)
   load(data_path)
-  
+
   # Convert to data.table for performance
   dataset <- data.table::as.data.table(observations)
-  
+
   if (no_manual == TRUE) {
     dataset <- dataset[is.na(Species.Manual.ID)]
   }
   dataset <- dataset[!is.na(Species)]
-  
+
   if (nrow(dataset) == 0) {
     stop("No valid observations found after filtering. Check your data.")
   }
-  
+
   return(dataset)
 }
 
