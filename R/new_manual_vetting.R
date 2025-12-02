@@ -243,11 +243,18 @@ manual_vet_extractor <- function(data_path,
       }
       sampled_data <- .sample_files(location_data, percentage)
       copied <- file.copy(sampled_data$Full.Path, location_dir)
-      total_copied <- total_copied + sum(copied)
+      n_copied <- sum(copied)
+      total_copied <- total_copied + n_copied
+
+      # Warn if some files failed to copy
+      if (n_copied < nrow(sampled_data)) {
+        n_failed <- nrow(sampled_data) - n_copied
+        warning(sprintf("%s/%s: Failed to copy %d of %d files", species, location, n_failed, nrow(sampled_data)))
+      }
 
       message(sprintf(
         "    - %s: Copied %d of %d files (%.1f%%)",
-        location, sum(copied), location_count, (sum(copied) / location_count) * 100
+        location, n_copied, location_count, (n_copied / location_count) * 100
       ))
     }
 
@@ -279,10 +286,17 @@ manual_vet_extractor <- function(data_path,
 
     sampled_data <- .sample_files(species_data, percentage)
     copied <- file.copy(sampled_data$Full.Path, species_dir)
+    n_copied <- sum(copied)
+
+    # Warn if some files failed to copy
+    if (n_copied < nrow(sampled_data)) {
+      n_failed <- nrow(sampled_data) - n_copied
+      warning(sprintf("%s: Failed to copy %d of %d files", species, n_failed, nrow(sampled_data)))
+    }
 
     message(sprintf(
       "  %s: Copied %d of %d files (%.1f%%)",
-      species, sum(copied), species_count, percentage * 100
+      species, n_copied, species_count, percentage * 100
     ))
   }
 
