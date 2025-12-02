@@ -107,17 +107,19 @@ manual_vet_extractor <- function(data_path,
 .prepare_vetting_dataset <- function(data_path, no_manual) {
   .check_data_path(data_path)
   load(data_path)
-  dataset <- observations
-
+  
+  # Convert to data.table for performance
+  dataset <- data.table::as.data.table(observations)
+  
   if (no_manual == TRUE) {
-    dataset <- dataset[is.na(dataset$Species.Manual.ID), ]
+    dataset <- dataset[is.na(Species.Manual.ID)]
   }
-  dataset <- dataset[!is.na(dataset$Species), ]
-
+  dataset <- dataset[!is.na(Species)]
+  
   if (nrow(dataset) == 0) {
     stop("No valid observations found after filtering. Check your data.")
   }
-
+  
   return(dataset)
 }
 
@@ -125,8 +127,10 @@ manual_vet_extractor <- function(data_path,
 #' @keywords internal
 .match_files_to_wavs <- function(dataset, WAV_directory, fast_import) {
   message(sprintf("Matching %d observations to WAV files in: %s", nrow(dataset), WAV_directory))
-  WAV_directory_files <- .get_file_list(WAV_directory, fast_import)
-  dataset_merged <- merge(dataset, WAV_directory_files, by = "File.Name", all.x = TRUE)
+  WAV_directory_files <- data.table::as.data.table(.get_file_list(WAV_directory, fast_import))
+  data.table::setkey(dataset, File.Name)
+  data.table::setkey(WAV_directory_files, File.Name)
+  dataset_merged <- WAV_directory_files[dataset]
   return(dataset_merged)
 }
 
@@ -152,7 +156,8 @@ manual_vet_extractor <- function(data_path,
     }
   }
 
-  dataset_clean <- dataset[!is.na(dataset$Full.Path), ]
+  # Use data.table syntax for filtering
+  dataset_clean <- dataset[!is.na(Full.Path)]
 
   if (nrow(dataset_clean) == 0) {
     stop("All observations are missing WAV files; nothing to copy for manual vetting.")
@@ -188,7 +193,8 @@ manual_vet_extractor <- function(data_path,
   message(sprintf("Output directory: %s", save_directory))
 
   for (species in species_list) {
-    species_data <- dataset[dataset$Species == species, ]
+    # Fast data.table subsetting
+    species_data <- dataset[Species == species]
     species_count <- nrow(species_data)
 
     if (species_count == 0) {
@@ -202,7 +208,8 @@ manual_vet_extractor <- function(data_path,
 
     total_copied <- 0
     for (location in locations) {
-      location_data <- species_data[species_data$Location == location, ]
+      # Fast data.table filtering
+      location_data <- species_data[Location == location]
       location_count <- nrow(location_data)
 
       if (location_count == 0) next
@@ -211,7 +218,6 @@ manual_vet_extractor <- function(data_path,
       if (!dir.exists(location_dir)) {
         dir.create(location_dir, recursive = TRUE)
       }
-
       sampled_data <- .sample_files(location_data, percentage)
       copied <- file.copy(sampled_data$Full.Path, location_dir)
       total_copied <- total_copied + sum(copied)
@@ -234,7 +240,8 @@ manual_vet_extractor <- function(data_path,
   message(sprintf("\nCopying %.1f%% of files per species to: %s", percentage * 100, save_directory))
 
   for (species in species_list) {
-    species_data <- dataset[dataset$Species == species, ]
+    # Fast data.table subsetting
+    species_data <- dataset[Species == species]
     species_count <- nrow(species_data)
 
     if (species_count == 0) {
