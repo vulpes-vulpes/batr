@@ -133,6 +133,8 @@ manual_vet_extractor <- function(data_path,
 
   # Convert to data.table for performance
   dataset <- data.table::as.data.table(observations)
+  rm(observations)  # Free memory after conversion
+  gc(verbose = FALSE)
 
   if (no_manual == TRUE) {
     dataset <- dataset[is.na(Species.Manual.ID)]
