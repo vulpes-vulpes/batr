@@ -21,7 +21,6 @@ Imports:
   reshape2 (>= 1.4.4),
   data.table (>= 1.14.0),
   english(>= 1.2),
-  pbapply (>= 1.4),
   ggrepel (>= 0.9.1),
   rmarkdown (>= 2.8),
   bookdown (>= 0.22),
