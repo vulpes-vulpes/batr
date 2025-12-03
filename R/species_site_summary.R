@@ -43,7 +43,29 @@
 summary_table <- function(data_path,
                           species_list = NULL,
                           location_list = NULL) {
-  # Validate inputs
+  # Validate and load data
+  dataset <- .load_and_validate_summary_data(data_path, species_list, location_list)
+
+  # Clean data
+  dataset <- .clean_summary_dataset(dataset)
+
+  # Filter data
+  dataset <- .filter_summary_dataset(dataset, species_list, location_list)
+
+  # Build summary table
+  summary_table <- .build_summary_table(dataset, species_list, location_list)
+
+  # Add totals row
+  summary_table <- .add_totals_row(summary_table)
+
+  return(summary_table)
+}
+
+# Helper Functions ------------------------------------------------------------
+
+#' Load and validate data for summary table
+#' @keywords internal
+.load_and_validate_summary_data <- function(data_path, species_list, location_list) {
   .check_data_path(data_path)
 
   if (!is.null(species_list) && (!is.character(species_list) || length(species_list) == 0)) {
@@ -54,80 +76,81 @@ summary_table <- function(data_path,
     stop("location_list must be a character vector with at least one element")
   }
 
-  # Load data
   load(data_path)
 
   if (!exists("observations")) {
     stop("No 'observations' object found in ", data_path)
   }
 
-  # Use observations as dataset
-  dataset <- observations
-  
-  original_count <- nrow(dataset)
+  return(observations)
+}
 
-  # Identify and report rows with NA species or location
+#' Clean dataset by removing NA values
+#' @keywords internal
+.clean_summary_dataset <- function(dataset) {
   na_species <- is.na(dataset$Species)
   na_location <- is.na(dataset$Location)
   na_both <- na_species & na_location
-  
+
   n_na_species <- sum(na_species & !na_location)
   n_na_location <- sum(na_location & !na_species)
   n_na_both <- sum(na_both)
-  
+
   if (n_na_species > 0 || n_na_location > 0 || n_na_both > 0) {
-    # Build message parts
     parts <- character()
     if (n_na_species > 0) parts <- c(parts, sprintf("%d with NA species", n_na_species))
     if (n_na_location > 0) parts <- c(parts, sprintf("%d with NA location", n_na_location))
     if (n_na_both > 0) parts <- c(parts, sprintf("(%d with both NA)", n_na_both))
-    
+
     message(sprintf(
       "Removing %d observation(s) with missing data: %s",
       sum(na_species | na_location),
       paste(parts, collapse = ", ")
     ))
   }
-  
-  # Remove rows with NA species or location
+
   dataset <- dataset[!na_species & !na_location, ]
 
   if (nrow(dataset) == 0) {
     stop("No valid observations found after removing NA values")
   }
 
-  # Warn about missing requested items and filter
+  return(dataset)
+}
+
+#' Filter dataset by species and location lists
+#' @keywords internal
+.filter_summary_dataset <- function(dataset, species_list, location_list) {
+  # Filter by location
   if (!is.null(location_list)) {
     available_locations <- unique(dataset$Location)
-    missing_req_locations <- setdiff(location_list, available_locations)
-    if (length(missing_req_locations) > 0) {
+    missing_locations <- setdiff(location_list, available_locations)
+    if (length(missing_locations) > 0) {
       message(sprintf(
         "Note: %d location(s) not found in data: %s",
-        length(missing_req_locations),
-        paste(missing_req_locations, collapse = ", ")
+        length(missing_locations),
+        paste(missing_locations, collapse = ", ")
       ))
     }
-    # Keep only observations for requested locations
     dataset <- dataset[dataset$Location %in% location_list, ]
   }
 
+  # Filter by species
   if (!is.null(species_list)) {
     available_species <- unique(dataset$Species)
-    missing_req_species <- setdiff(species_list, available_species)
-    if (length(missing_req_species) > 0) {
+    missing_species <- setdiff(species_list, available_species)
+    if (length(missing_species) > 0) {
       message(sprintf(
         "Note: %d species not found in data: %s",
-        length(missing_req_species),
-        paste(missing_req_species, collapse = ", ")
+        length(missing_species),
+        paste(missing_species, collapse = ", ")
       ))
     }
-    # Keep only observations for requested species
     dataset <- dataset[dataset$Species %in% species_list, ]
   }
 
   if (nrow(dataset) == 0) {
     warning("No observations match the specified filters")
-    # Return empty table with requested structure
     empty_df <- data.frame(Location = character(0))
     if (!is.null(species_list)) {
       for (sp in species_list) {
@@ -137,48 +160,56 @@ summary_table <- function(data_path,
     return(empty_df)
   }
 
-  # Create summary table using table()
+  return(dataset)
+}
+
+#' Build summary table from filtered dataset
+#' @keywords internal
+.build_summary_table <- function(dataset, species_list, location_list) {
+  # Handle empty dataset
+  if (nrow(dataset) == 0) {
+    return(dataset)
+  }
+
+  # Create count table
   count_table <- table(dataset$Location, dataset$Species)
-  species_site_summary <- as.data.frame.matrix(count_table)
-  species_site_summary$Location <- rownames(species_site_summary)
-  rownames(species_site_summary) <- NULL
+  summary_df <- as.data.frame.matrix(count_table)
+  summary_df$Location <- rownames(summary_df)
+  rownames(summary_df) <- NULL
 
-  # Move Location column to first position
-  species_site_summary <- species_site_summary[, c("Location", setdiff(names(species_site_summary), "Location")), drop = FALSE]
+  # Move Location to first column
+  summary_df <- summary_df[, c("Location", setdiff(names(summary_df), "Location")), drop = FALSE]
 
-  # Determine final locations and species to include
-  if (!is.null(location_list)) {
-    final_locations <- location_list
-  } else {
-    final_locations <- unique(species_site_summary$Location)
-  }
+  # Determine final locations and species
+  final_locations <- if (!is.null(location_list)) location_list else unique(summary_df$Location)
+  final_species <- if (!is.null(species_list)) species_list else setdiff(names(summary_df), "Location")
 
-  if (!is.null(species_list)) {
-    final_species <- species_list
-  } else {
-    final_species <- setdiff(names(species_site_summary), "Location")
-  }
-
-  # Build complete table with all requested locations and species (vectorized approach)
+  # Build complete table with all requested locations and species
   complete_table <- data.frame(Location = final_locations, stringsAsFactors = FALSE)
 
-  # Add each species column efficiently
   for (sp in final_species) {
-    if (sp %in% names(species_site_summary)) {
-      # Merge existing counts using match for vectorized lookup
-      idx <- match(complete_table$Location, species_site_summary$Location)
-      complete_table[[sp]] <- ifelse(is.na(idx), 0L, species_site_summary[[sp]][idx])
+    if (sp %in% names(summary_df)) {
+      idx <- match(complete_table$Location, summary_df$Location)
+      complete_table[[sp]] <- ifelse(is.na(idx), 0L, summary_df[[sp]][idx])
       complete_table[[sp]][is.na(complete_table[[sp]])] <- 0L
     } else {
-      # Species not in data, add column of zeros
       complete_table[[sp]] <- 0L
     }
   }
 
-  # Add totals row efficiently (single rbind operation, maintain integer type)
-  totals <- colSums(complete_table[, -1, drop = FALSE], na.rm = TRUE)
-  totals_row <- data.frame(Location = "Totals", as.list(totals), stringsAsFactors = FALSE)
-  complete_table <- rbind(complete_table, totals_row)
-
   return(complete_table)
+}
+
+#' Add totals row to summary table
+#' @keywords internal
+.add_totals_row <- function(summary_table) {
+  if (nrow(summary_table) == 0) {
+    return(summary_table)
+  }
+
+  totals <- colSums(summary_table[, -1, drop = FALSE], na.rm = TRUE)
+  totals_row <- data.frame(Location = "Totals", as.list(totals), stringsAsFactors = FALSE)
+  summary_table <- rbind(summary_table, totals_row)
+
+  return(summary_table)
 }
