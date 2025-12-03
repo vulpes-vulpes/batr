@@ -76,13 +76,16 @@ summary_table <- function(data_path,
   n_na_both <- sum(na_both)
   
   if (n_na_species > 0 || n_na_location > 0 || n_na_both > 0) {
+    # Build message parts
+    parts <- character()
+    if (n_na_species > 0) parts <- c(parts, sprintf("%d with NA species", n_na_species))
+    if (n_na_location > 0) parts <- c(parts, sprintf("%d with NA location", n_na_location))
+    if (n_na_both > 0) parts <- c(parts, sprintf("(%d with both NA)", n_na_both))
+    
     message(sprintf(
-      "Removing %d observation(s) with missing data: %s%s%s",
+      "Removing %d observation(s) with missing data: %s",
       sum(na_species | na_location),
-      if (n_na_species > 0) sprintf("%d with NA species", n_na_species) else "",
-      if (n_na_location > 0 && n_na_species > 0) ", " else "",
-      if (n_na_location > 0) sprintf("%d with NA location", n_na_location) else "",
-      if (n_na_both > 0) sprintf(" (%d with both NA)", n_na_both) else ""
+      paste(parts, collapse = ", ")
     ))
   }
   
