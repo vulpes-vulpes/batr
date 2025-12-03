@@ -23,7 +23,9 @@ it each time you run a function. If no species list is specified functions
 will ask for it.
 }
 \examples{
-\dontrun{set_species_list(c("Epfu", "Labo"), "C:/Folder/Folder/Data.RData")}
+\dontrun{
+set_species_list(c("Epfu", "Labo"), "C:/Folder/Folder/Data.RData")
+}
 }
 \seealso{
 Other species tools: 
