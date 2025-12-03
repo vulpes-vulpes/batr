@@ -3,6 +3,8 @@
 #' Returns a table summarizing the total number of observations by site and
 #' species.
 #'
+#' @family Summary Functions
+#'
 #' @param data_path Character. Path to an existing RData file containing
 #'   observation data.
 #' @param species_list Character vector. Species codes to include in the summary.
@@ -13,9 +15,13 @@
 #'   If \code{NULL} (default), includes all locations found in the dataset.
 #'   If specified, filters to only those locations and adds empty rows for
 #'   any locations in the list that don't appear in the data.
+#' @param include_totals Logical. If \code{TRUE} (default), adds a "Totals" row
+#'   at the bottom summarizing counts across all locations.
+#' @param sort Logical. If \code{TRUE}, sorts locations and species alphabetically
+#'   when no explicit list is provided. Defaults to \code{FALSE}.
 #'
 #' @return A data frame of observations summarized by location and species,
-#'   with a "Totals" row at the bottom.
+#'   optionally with a "Totals" row at the bottom.
 #'
 #' @export
 #'
@@ -39,10 +45,22 @@
 #'   species_list = c("Epfu", "Lano"),
 #'   location_list = c("Site1", "Site2")
 #' )
+#'
+#' # Without totals row
+#' summary <- summary_table("C:/Folder/Folder/Data.RData",
+#'   include_totals = FALSE
+#' )
+#'
+#' # With alphabetical sorting
+#' summary <- summary_table("C:/Folder/Folder/Data.RData",
+#'   sort = TRUE
+#' )
 #' }
 summary_table <- function(data_path,
                           species_list = NULL,
-                          location_list = NULL) {
+                          location_list = NULL,
+                          include_totals = TRUE,
+                          sort = FALSE) {
   # Validate and load data
   dataset <- .load_and_validate_summary_data(data_path, species_list, location_list)
 
@@ -53,12 +71,14 @@ summary_table <- function(data_path,
   dataset <- .filter_summary_dataset(dataset, species_list, location_list)
 
   # Build summary table
-  summary_table <- .build_summary_table(dataset, species_list, location_list)
+  result_table <- .build_summary_table(dataset, species_list, location_list, sort)
 
-  # Add totals row
-  summary_table <- .add_totals_row(summary_table)
+  # Add totals row if requested
+  if (include_totals) {
+    result_table <- .add_totals_row(result_table)
+  }
 
-  return(summary_table)
+  return(result_table)
 }
 
 # Helper Functions ------------------------------------------------------------
@@ -133,6 +153,12 @@ summary_table <- function(data_path,
       ))
     }
     dataset <- dataset[dataset$Location %in% location_list, ]
+
+    # Early return if no locations match
+    if (nrow(dataset) == 0) {
+      warning("No observations match the specified location filter")
+      return(.create_empty_summary_table(species_list))
+    }
   }
 
   # Filter by species
@@ -147,17 +173,12 @@ summary_table <- function(data_path,
       ))
     }
     dataset <- dataset[dataset$Species %in% species_list, ]
-  }
 
-  if (nrow(dataset) == 0) {
-    warning("No observations match the specified filters")
-    empty_df <- data.frame(Location = character(0))
-    if (!is.null(species_list)) {
-      for (sp in species_list) {
-        empty_df[[sp]] <- integer(0)
-      }
+    # Early return if no species match
+    if (nrow(dataset) == 0) {
+      warning("No observations match the specified species filter")
+      return(.create_empty_summary_table(species_list))
     }
-    return(empty_df)
   }
 
   return(dataset)
@@ -165,7 +186,7 @@ summary_table <- function(data_path,
 
 #' Build summary table from filtered dataset
 #' @keywords internal
-.build_summary_table <- function(dataset, species_list, location_list) {
+.build_summary_table <- function(dataset, species_list, location_list, sort = FALSE) {
   # Handle empty dataset
   if (nrow(dataset) == 0) {
     return(dataset)
@@ -181,8 +202,21 @@ summary_table <- function(data_path,
   summary_df <- summary_df[, c("Location", setdiff(names(summary_df), "Location")), drop = FALSE]
 
   # Determine final locations and species
-  final_locations <- if (!is.null(location_list)) location_list else unique(summary_df$Location)
-  final_species <- if (!is.null(species_list)) species_list else setdiff(names(summary_df), "Location")
+  if (!is.null(location_list)) {
+    final_locations <- location_list
+  } else if (sort) {
+    final_locations <- sort(unique(summary_df$Location))
+  } else {
+    final_locations <- unique(summary_df$Location)
+  }
+
+  if (!is.null(species_list)) {
+    final_species <- species_list
+  } else if (sort) {
+    final_species <- sort(setdiff(names(summary_df), "Location"))
+  } else {
+    final_species <- setdiff(names(summary_df), "Location")
+  }
 
   # Build complete table with all requested locations and species
   complete_table <- data.frame(Location = final_locations, stringsAsFactors = FALSE)
@@ -212,4 +246,16 @@ summary_table <- function(data_path,
   summary_table <- rbind(summary_table, totals_row)
 
   return(summary_table)
+}
+
+#' Create empty summary table with requested structure
+#' @keywords internal
+.create_empty_summary_table <- function(species_list) {
+  empty_df <- data.frame(Location = character(0))
+  if (!is.null(species_list)) {
+    for (sp in species_list) {
+      empty_df[[sp]] <- integer(0)
+    }
+  }
+  return(empty_df)
 }
