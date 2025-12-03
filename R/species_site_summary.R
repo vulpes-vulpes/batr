@@ -63,9 +63,31 @@ summary_table <- function(data_path,
 
   # Use observations as dataset
   dataset <- observations
+  
+  original_count <- nrow(dataset)
 
-  # Remove rows with NA species
-  dataset <- dataset[!is.na(dataset$Species), ]
+  # Identify and report rows with NA species or location
+  na_species <- is.na(dataset$Species)
+  na_location <- is.na(dataset$Location)
+  na_both <- na_species & na_location
+  
+  n_na_species <- sum(na_species & !na_location)
+  n_na_location <- sum(na_location & !na_species)
+  n_na_both <- sum(na_both)
+  
+  if (n_na_species > 0 || n_na_location > 0 || n_na_both > 0) {
+    message(sprintf(
+      "Removing %d observation(s) with missing data: %s%s%s",
+      sum(na_species | na_location),
+      if (n_na_species > 0) sprintf("%d with NA species", n_na_species) else "",
+      if (n_na_location > 0 && n_na_species > 0) ", " else "",
+      if (n_na_location > 0) sprintf("%d with NA location", n_na_location) else "",
+      if (n_na_both > 0) sprintf(" (%d with both NA)", n_na_both) else ""
+    ))
+  }
+  
+  # Remove rows with NA species or location
+  dataset <- dataset[!na_species & !na_location, ]
 
   if (nrow(dataset) == 0) {
     stop("No valid observations found after removing NA values")
