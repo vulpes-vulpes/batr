@@ -24,7 +24,7 @@ set_species_list <- function(species_list, data_path) {
   } else {
     stop("Species list provided is not a vector, please check and try again.")
   } # Check if the object provided is a vector, and exit if not.
-  .check_data_path(data_path)
+  .validate_rdata_path(data_path, must_exist = FALSE)
   .save_to_rdata(species_list, data_path)
 }
 
@@ -44,7 +44,7 @@ set_species_list <- function(species_list, data_path) {
 #' set_species_list("C:/Folder/Folder/Data.RData")
 #' }
 show_species_list <- function(data_path) {
-  .check_data_path(data_path)
+  .validate_rdata_path(data_path)
   load(data_path)
   if (exists(species_list)) {
     return(species_list)
@@ -68,7 +68,7 @@ show_species_list <- function(data_path) {
 #' set_species_list("C:/Folder/Folder/Data.RData")
 #' }
 list_all_species <- function(data_path) {
-  .check_data_path(data_path)
+  .validate_rdata_path(data_path)
   load(data_path)
   if (exists("observations")) {
     all_species <- unique(observations$Species)

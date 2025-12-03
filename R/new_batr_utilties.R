@@ -71,36 +71,30 @@
   return(invisible(NULL))
 }
 
-.check_data_path <- function(data_path = NULL, action = FALSE, object = NULL) {
-  is_rdata_file <- (sub(".*\\.", "", data_path) == "RData")
-  file_exists <- file.exists(data_path)
-  if (action == FALSE && is.null(object)) {
-    if (is_rdata_file == TRUE && file_exists == TRUE) {
-      return(data_path)
-    } else if (is_rdata_file == TRUE && file_exists == FALSE) {
-      warning("Specified .RData file does not exist.")
-      return(data_path)
-    } else {
-      stop("Invalid data_path specified. Please supply a valid .RDATA file or.")
-    }
+#' Validate RData file path
+#'
+#' Simple validation that a path has the correct extension and optionally exists.
+#'
+#' @param path Character. Path to validate.
+#' @param must_exist Logical. If \code{TRUE}, checks that file exists.
+#'
+#' @return The validated path (invisibly).
+#'
+#' @keywords internal
+.validate_rdata_path <- function(path, must_exist = TRUE) {
+  if (is.null(path) || !is.character(path) || length(path) != 1) {
+    stop("data_path must be a single character string")
   }
-  if (!is.null(object)) {
-    if (is_rdata_file == TRUE && file_exists == TRUE) {
-      load(data_path)
-      if (exists(object)) {
-        overwrite <- readline(prompt = paste("Object", object, "already exists in this file. Overwrite? Y/N?"))
-        if (overwrite == "Y" || overwrite == "y") {
-          return(data_path)
-        } else {
-          stop("No overwrite selected. Exiting, no files saved.")
-        }
-      } else {
-        return(data_path)
-      }
-    } else if (is_rdata_file == TRUE && file_exists == FALSE) {
-      return(data_path)
-    }
+
+  if (!grepl("\\.RData$|\\.rda$", path, ignore.case = TRUE)) {
+    stop("data_path must have .RData or .rda extension")
   }
+
+  if (must_exist && !file.exists(path)) {
+    stop("RData file not found: ", path)
+  }
+
+  invisible(path)
 }
 
 .plot_gap_calculator <- function(active_dates) {

@@ -73,7 +73,9 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
     )
   }
 
-  data_path <- .check_data_path(data_path, action = "New", object = "active_dates")
+  # Validate data path (allow creating new file)
+  .validate_rdata_path(data_path, must_exist = FALSE)
+
   # Find log files for each recorder type with proper regex patterns
   wa_file_list <- list.files(log_path,
     recursive = TRUE,

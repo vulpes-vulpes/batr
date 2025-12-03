@@ -52,7 +52,7 @@ species_daily_site_plot <- function(data_path, species, monitoring_start = NULL,
   #  species_subset <- species_subset[which(lubridate::year(species_subset$Night)==survey_year),]
   # }
   # Import data
-  .check_data_path(data_path) # Check the data path provided
+  .validate_rdata_path(data_path) # Check the data path provided
   # load(data_path) # Load the data path
   dataset <- .location_subsetter(data_path) # Offer to subset locations
   dataset <- dataset[which(dataset$Species == species), ] # subset the species

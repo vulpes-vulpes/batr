@@ -40,7 +40,7 @@ first_observations_plot <- function(data_path, species, timezone,
                                     text_size = 10,
                                     date_label = "%b",
                                     save_directory = NULL) {
-  .check_data_path(data_path)
+  .validate_rdata_path(data_path)
   load(data_path)
   dataset <- .location_subsetter(data_path)
   dataset <- dataset[which(dataset$Species == species), ] # subset the species
