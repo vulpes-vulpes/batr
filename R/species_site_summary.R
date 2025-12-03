@@ -40,9 +40,23 @@
 summary_table <- function(data_path, 
                           species_list = NULL,
                           location_list = NULL) {
-  # Validate and load data
+  # Validate inputs
   .check_data_path(data_path)
+  
+  if (!is.null(species_list) && (!is.character(species_list) || length(species_list) == 0)) {
+    stop("species_list must be a character vector with at least one element")
+  }
+  
+  if (!is.null(location_list) && (!is.character(location_list) || length(location_list) == 0)) {
+    stop("location_list must be a character vector with at least one element")
+  }
+  
+  # Load data
   load(data_path)
+  
+  if (!exists("observations")) {
+    stop("No 'observations' object found in ", data_path)
+  }
   
   # Use observations as dataset
   dataset <- observations
@@ -50,16 +64,45 @@ summary_table <- function(data_path,
   # Remove rows with NA species
   dataset <- dataset[!is.na(dataset$Species), ]
   
-  # Filter to specific locations if requested
+  if (nrow(dataset) == 0) {
+    stop("No valid observations found after removing NA values")
+  }
+  
+  # Warn about missing requested items and filter
   if (!is.null(location_list)) {
+    available_locations <- unique(dataset$Location)
+    missing_req_locations <- setdiff(location_list, available_locations)
+    if (length(missing_req_locations) > 0) {
+      message(sprintf("Note: %d location(s) not found in data: %s", 
+                      length(missing_req_locations),
+                      paste(missing_req_locations, collapse = ", ")))
+    }
     # Keep only observations for requested locations
     dataset <- dataset[dataset$Location %in% location_list, ]
   }
   
-  # Filter to specific species if requested
   if (!is.null(species_list)) {
+    available_species <- unique(dataset$Species)
+    missing_req_species <- setdiff(species_list, available_species)
+    if (length(missing_req_species) > 0) {
+      message(sprintf("Note: %d species not found in data: %s",
+                      length(missing_req_species),
+                      paste(missing_req_species, collapse = ", ")))
+    }
     # Keep only observations for requested species
     dataset <- dataset[dataset$Species %in% species_list, ]
+  }
+  
+  if (nrow(dataset) == 0) {
+    warning("No observations match the specified filters")
+    # Return empty table with requested structure
+    empty_df <- data.frame(Location = character(0))
+    if (!is.null(species_list)) {
+      for (sp in species_list) {
+        empty_df[[sp]] <- integer(0)
+      }
+    }
+    return(empty_df)
   }
   
   # Create summary table
