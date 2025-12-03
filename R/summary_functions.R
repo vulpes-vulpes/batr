@@ -86,7 +86,7 @@ summary_table <- function(data_path,
 #' Load and validate data for summary table
 #' @keywords internal
 .load_and_validate_summary_data <- function(data_path, species_list, location_list) {
-  .check_data_path(data_path)
+  .validate_rdata_path(data_path)
 
   if (!is.null(species_list) && (!is.character(species_list) || length(species_list) == 0)) {
     stop("species_list must be a character vector with at least one element")

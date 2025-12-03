@@ -60,20 +60,24 @@
 #' }
 #' @export
 import_guano <- function(action, input_path, site_col, timezone, data_path = NULL, fast_import = TRUE) {
-  if (action == "New" || action == "Add" || action == "Update") {
-    data_path <- .check_data_path(data_path, action, object = action)
-  } # Check that a valid action is selected
+  # Validate action
+  if (!action %in% c("New", "Add", "Update")) {
+    stop(
+      "Invalid action given, please specify an action (\"New\", \"Add\" or \"Update\") and try again. ",
+      "See ?import_guano for more information."
+    )
+  }
+
+  # Validate data path (allow creating new file for "New" action)
+  .validate_rdata_path(data_path, must_exist = (action != "New"))
+
+  # Execute appropriate action
   if (action == "New") {
     .new_observations(input_path, site_col, timezone, data_path, fast_import)
   } else if (action == "Add") {
     .add_observations(input_path, site_col, timezone, data_path, fast_import)
   } else if (action == "Update") {
     .update_observations(input_path, site_col, timezone, data_path, fast_import)
-  } else {
-    stop(
-      "Invalid action given, please specify an action (\"New\", \"Add\" or \"Update\") and try again. ",
-      "See ?import_guano for more information."
-    )
   }
 }
 
@@ -111,7 +115,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
 
   file_list <- .get_file_list(input_path, fast_import)
   observations <- .read_file_guano(file_list, site_col, timezone, fast_import)
-  .save_to_RDATA(observations, data_path)
+  .save_to_rdata(observations, data_path)
 
   elapsed <- round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 1)
   message("\n========== Import Complete ==========")
@@ -178,7 +182,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   rownames(observations) <- NULL
 
   # Save updated data
-  .save_to_RDATA(observations, data_path)
+  .save_to_rdata(observations, data_path)
 
   elapsed <- round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 1)
   message("\n========== Add Complete ==========")
@@ -250,7 +254,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   rownames(observations) <- NULL
 
   # Save updated data
-  .save_to_RDATA(observations, data_path)
+  .save_to_rdata(observations, data_path)
 
   elapsed <- round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 1)
   message("\n========== Update Complete ==========")

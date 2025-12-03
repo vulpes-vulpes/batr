@@ -19,7 +19,9 @@ Returns a data frame listing all unique species identifications included in a
 dataset in an RData file
 }
 \examples{
-\dontrun{set_species_list("C:/Folder/Folder/Data.RData")}
+\dontrun{
+set_species_list("C:/Folder/Folder/Data.RData")
+}
 }
 \seealso{
 Other species tools: 

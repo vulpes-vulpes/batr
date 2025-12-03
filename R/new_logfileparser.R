@@ -73,7 +73,9 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
     )
   }
 
-  data_path <- .check_data_path(data_path, action = "New", object = "active_dates")
+  # Validate data path (allow creating new file)
+  .validate_rdata_path(data_path, must_exist = FALSE)
+
   # Find log files for each recorder type with proper regex patterns
   wa_file_list <- list.files(log_path,
     recursive = TRUE,
@@ -122,7 +124,7 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
   # Fill in gaps for dates with no log entries
   active_dates <- .gap_generator(active_dates, monitoring_start, monitoring_end)
 
-  .save_to_RDATA(active_dates, data_path)
+  .save_to_rdata(active_dates, data_path)
 
   message(sprintf(
     "\nLog import complete: %d locations across %d dates.",

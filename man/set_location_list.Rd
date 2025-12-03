@@ -23,7 +23,9 @@ each time you run a function. If no location list is specified functions will as
 for it.
 }
 \examples{
-\dontrun{set_location_list(c("location1", "location2"), "C:/Folder/Folder/Data.RData")}
+\dontrun{
+set_location_list(c("location1", "location2"), "C:/Folder/Folder/Data.RData")
+}
 }
 \seealso{
 Other location tools: 

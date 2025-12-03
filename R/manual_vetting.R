@@ -128,12 +128,12 @@ manual_vet_extractor <- function(data_path,
 #' Prepare vetting dataset by loading and filtering
 #' @keywords internal
 .prepare_vetting_dataset <- function(data_path, no_manual) {
-  .check_data_path(data_path)
+  .validate_rdata_path(data_path)
   load(data_path)
 
   # Convert to data.table for performance
   dataset <- data.table::as.data.table(observations)
-  rm(observations)  # Free memory after conversion
+  rm(observations) # Free memory after conversion
   gc(verbose = FALSE)
 
   if (no_manual == TRUE) {

@@ -260,12 +260,12 @@ test_that("import_logs processes Wildlife Acoustics logs end-to-end", {
     rdata_tmp <- tempfile(fileext = ".RData")
     on.exit(unlink(rdata_tmp), add = TRUE)
 
-    # Mock .check_data_path and .save_to_RDATA
-    mock_check <- function(data_path, action, object) {
-        if (is.null(data_path)) {
-            return(rdata_tmp)
+    # Mock .validate_rdata_path and .save_to_RDATA
+    mock_validate <- function(path, must_exist = TRUE) {
+        if (is.null(path)) {
+            stop("data_path cannot be NULL")
         }
-        return(data_path)
+        return(invisible(NULL))
     }
     mock_save <- function(active_dates, data_path) {
         save(active_dates, file = data_path)
@@ -284,7 +284,7 @@ test_that("import_logs processes Wildlife Acoustics logs end-to-end", {
             expect_s3_class(env$active_dates, "data.frame")
             expect_true(all(c("Date", "Location", "Log_Count") %in% names(env$active_dates)))
         },
-        .check_data_path = mock_check,
-        .save_to_RDATA = mock_save
+        .validate_rdata_path = mock_validate,
+        .save_to_rdata = mock_save
     )
 })

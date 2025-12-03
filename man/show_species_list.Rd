@@ -17,7 +17,9 @@ A vector of the saved Species List, if one exists.
 Reveals a Species List that has been saved into an existing Rdata file.
 }
 \examples{
-\dontrun{set_species_list("C:/Folder/Folder/Data.RData")}
+\dontrun{
+set_species_list("C:/Folder/Folder/Data.RData")
+}
 }
 \seealso{
 Other species tools: 

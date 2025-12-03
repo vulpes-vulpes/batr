@@ -15,14 +15,16 @@
 #'
 #' @family location tools
 #'
-#' @examples \dontrun{set_location_list(c("location1", "location2"), "C:/Folder/Folder/Data.RData")}
+#' @examples \dontrun{
+#' set_location_list(c("location1", "location2"), "C:/Folder/Folder/Data.RData")
+#' }
 set_location_list <- function(location_list, data_path) {
   if (is.vector(location_list)) {
     message("Vector found, proceeding.")
   } else {
     stop("Species list provided is not a vector, please check and try again.")
   } # Check if the object provided is a vector, and exit if not.
-  .check_data_path(data_path)
+  .validate_rdata_path(data_path, must_exist = FALSE)
   .save_to_RDATA(location_list, data_path)
 }
 
@@ -38,14 +40,16 @@ set_location_list <- function(location_list, data_path) {
 #'
 #' @family location tools
 #'
-#' @examples \dontrun{set_species_list("C:/Folder/Folder/Data.RData")}
+#' @examples \dontrun{
+#' set_species_list("C:/Folder/Folder/Data.RData")
+#' }
 show_location_list <- function(data_path) {
-  .check_data_path(data_path)
+  .validate_rdata_path(data_path)
   load(data_path)
   if (exists("location_list")) {
     return(location_list)
   } else {
-   "Location List not found." 
+    "Location List not found."
   }
 } # Reveal a set species list if present
 
@@ -61,17 +65,19 @@ show_location_list <- function(data_path) {
 #'
 #' @family location tools
 #'
-#' @examples \dontrun{set_species_list("C:/Folder/Folder/Data.RData")}
+#' @examples \dontrun{
+#' set_species_list("C:/Folder/Folder/Data.RData")
+#' }
 list_all_locations <- function(data_path) {
-  .check_data_path(data_path)
+  .validate_rdata_path(data_path)
   load(data_path)
   if (exists("observations")) {
-  all_locations <- unique(observations$Location)
+    all_locations <- unique(observations$Location)
   } else {
     stop("No observations found, please check RData file.")
   }
   if (length(all_locations) > 0) {
-    assign("all_locations", as.data.frame(all_locations), envir=globalenv())
+    assign("all_locations", as.data.frame(all_locations), envir = globalenv())
   } else {
     stop("No locations found, please check the data and try again.")
   }
