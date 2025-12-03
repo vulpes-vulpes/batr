@@ -122,7 +122,7 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
   # Fill in gaps for dates with no log entries
   active_dates <- .gap_generator(active_dates, monitoring_start, monitoring_end)
 
-  .save_to_RDATA(active_dates, data_path)
+  .save_to_rdata(active_dates, data_path)
 
   message(sprintf(
     "\nLog import complete: %d locations across %d dates.",

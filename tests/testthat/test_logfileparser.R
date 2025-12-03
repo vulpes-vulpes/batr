@@ -285,6 +285,6 @@ test_that("import_logs processes Wildlife Acoustics logs end-to-end", {
             expect_true(all(c("Date", "Location", "Log_Count") %in% names(env$active_dates)))
         },
         .check_data_path = mock_check,
-        .save_to_RDATA = mock_save
+        .save_to_rdata = mock_save
     )
 })

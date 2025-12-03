@@ -1,64 +1,65 @@
-#'Plot Activity for a Species at Each Site Within a Project
+#' Plot Activity for a Species at Each Site Within a Project
 #'
-#'\code{species_daily_site_plot} creates a plot of nightly activity for a chosen
-#'species at all sites within a project.
+#' \code{species_daily_site_plot} creates a plot of nightly activity for a chosen
+#' species at all sites within a project.
 #'
-#'@family Basic Plots
+#' @family Basic Plots
 #'
-#'@param data_path Character. Path to an existing RData file.
-#'@param species Character: the four letter species code for the species you
+#' @param data_path Character. Path to an existing RData file.
+#' @param species Character: the four letter species code for the species you
 #'  wish to plot. E.g. "Epfu".
-#'@param monitoring_start Character, the date the monitoring began (e.g.
+#' @param monitoring_start Character, the date the monitoring began (e.g.
 #'  "2019-01-01"), leave as NULL to use the earliest data point as the
 #'  monitoring start.
-#'@param monitoring_end Character, the date the monitoring ceased (e.g.
+#' @param monitoring_end Character, the date the monitoring ceased (e.g.
 #'  "2019-01-01"), leave as NULL to use the latest data point as the monitoring
 #'  end
-#'@param gaps Boolean. Set true to add grey blocks to the plot to indicate
+#' @param gaps Boolean. Set true to add grey blocks to the plot to indicate
 #'  periods in which the recorder was not active (requires log files to be
 #'  loaded first using \code{import_logs}. Default is \code{FALSE}.)
-#'@param save.directory Character: if provided a .png image of the plot will be
+#' @param save.directory Character: if provided a .png image of the plot will be
 #'  saved in the folder specified. Defaults to \code{NULL}: no output saved.
-#'@param y_scale Character. Determines whether scales on the y-axis are matched
+#' @param y_scale Character. Determines whether scales on the y-axis are matched
 #'  or free. Defaults to "free_y" for unmatched axis, set to "fixed" for matched
 #'  axis.
-#'@param width Number. The width in cm of the plot if saved to file. Default is
+#' @param width Number. The width in cm of the plot if saved to file. Default is
 #'  25 cm.
-#'@param height Number. The height of the plot if saved to file. Default is 20
+#' @param height Number. The height of the plot if saved to file. Default is 20
 #'  cm.
-#'@param text_size Numeric: adjusts the size of text in the figure.
-#'@param date_label Date value: adjusts the formatting of the month labels on
+#' @param text_size Numeric: adjusts the size of text in the figure.
+#' @param date_label Date value: adjusts the formatting of the month labels on
 #'  the y-axis. See https://www.statmethods.net/input/dates.html for formatting.
-#'@param title Logical vector. If \code{FALSE} (default) title is omitted.
+#' @param title Logical vector. If \code{FALSE} (default) title is omitted.
 #'
-#'@return A plot as an object in the current environment, and a saved image if
+#' @return A plot as an object in the current environment, and a saved image if
 #'  selected.
 #'
-#'@examples
-#'\dontrun{
+#' @examples
+#' \dontrun{
 #' species_daily_site_plot(species_night_site_projectname, "Project Name", "Mylu", "2019-01-01", "2019-12-31")
-#'}
-#'@export
+#' }
+#' @export
 #'
 #'
 species_daily_site_plot <- function(data_path, species, monitoring_start = NULL,
-                                    monitoring_end = NULL, gaps = FALSE, 
-                                    save_directory = NULL, y_scale = "free_y", 
+                                    monitoring_end = NULL, gaps = FALSE,
+                                    save_directory = NULL, y_scale = "free_y",
                                     width = 15.9, height = 8.43, text_size = 10,
                                     date_label = "%b", title = FALSE) {
   # Subset to selected species
-  #species_subset <- dataset[which(dataset$Species==species),]
-  #if (!is.null(survey_year)) {
+  # species_subset <- dataset[which(dataset$Species==species),]
+  # if (!is.null(survey_year)) {
   #  species_subset <- species_subset[which(lubridate::year(species_subset$Night)==survey_year),]
-  #}
+  # }
   # Import data
   .check_data_path(data_path) # Check the data path provided
   # load(data_path) # Load the data path
   dataset <- .location_subsetter(data_path) # Offer to subset locations
-  dataset <- dataset[which(dataset$Species==species),] #subset the species
+  dataset <- dataset[which(dataset$Species == species), ] # subset the species
   # Create count table
   counts <- aggregate(dataset$Species, list(
-    Night = dataset$Night, Species = dataset$Species, Location = dataset$Location, Latitude = dataset$Latitude, Longitude = dataset$Longitude), FUN=length) # Create intial table
+    Night = dataset$Night, Species = dataset$Species, Location = dataset$Location, Latitude = dataset$Latitude, Longitude = dataset$Longitude
+  ), FUN = length) # Create intial table
   names(counts)[names(counts) == "x"] <- "Count"
   # Create gap table if needed
   load(data_path)
@@ -79,34 +80,38 @@ species_daily_site_plot <- function(data_path, species, monitoring_start = NULL,
     }
   } else {
     if (is.null(monitoring_start)) {
-      monitoring_start <- .monitoring_start_finder(dataset)
+      monitoring_start <- min(dataset$Night)
     }
     if (is.null(monitoring_end)) {
-      monitoring_end <- .monitoring_end_finder(dataset)
+      monitoring_end <- max(dataset$Night)
     }
   }
   # Create Plot
   species_daily_site_plot <- ggplot2::ggplot() +
     ggplot2::geom_bar(data = counts, mapping = ggplot2::aes(x = Night, y = Count), stat = "identity", fill = "black") +
     ggplot2::scale_y_continuous(name = "Observations per Night") +
-    ggplot2::scale_x_date(limits = c(as.Date(monitoring_start),as.Date(monitoring_end)), breaks = scales::pretty_breaks(), date_breaks = "1 month", date_labels =  date_label) +
+    ggplot2::scale_x_date(limits = c(as.Date(monitoring_start), as.Date(monitoring_end)), breaks = scales::pretty_breaks(), date_breaks = "1 month", date_labels = date_label) +
     ggplot2::facet_wrap(
-      ~Location,  ncol = 1, scales = y_scale, strip.position = "top") +#, labeller=location_labeller) +
-    ggplot2::geom_hline(yintercept=0) +
+      ~Location,
+      ncol = 1, scales = y_scale, strip.position = "top"
+    ) + # , labeller=location_labeller) +
+    ggplot2::geom_hline(yintercept = 0) +
     ggplot2::theme_classic() +
     ggplot2::theme(
       plot.title = ggplot2::element_text(hjust = 0.5),
       strip.background = ggplot2::element_blank(),
       strip.text = ggplot2::element_text(hjust = 0),
-      text = ggplot2::element_text(size=text_size)
+      text = ggplot2::element_text(size = text_size)
     ) +
-    if(isTRUE(gaps)) {
+    if (isTRUE(gaps)) {
       gap_list <- batr:::.plot_gap_calculator(active_dates)
-      ggplot2::geom_rect(data=gap_list, 
-                         ggplot2::aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, alpha=0.9),
-                         show.legend = FALSE)
+      ggplot2::geom_rect(
+        data = gap_list,
+        ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, alpha = 0.9),
+        show.legend = FALSE
+      )
     }
-  if(isTRUE(title)) {
+  if (isTRUE(title)) {
     species_daily_site_plot <- species_daily_site_plot + ggplot2::ggtitle(paste("Total Activity of ", species, " by Site", sep = ""))
   }
   # Save plot to a specified folder if requested
@@ -114,13 +119,11 @@ species_daily_site_plot <- function(data_path, species, monitoring_start = NULL,
     ggplot2::ggsave(paste(save_directory, "/", species, "_daily_site_plot.png", sep = ""), width = width, height = height, units = "cm")
   }
   # Save plot to a specified folder if requested
-  #if (!is.null(save_directory)) {
+  # if (!is.null(save_directory)) {
   #  ggplot2::ggsave(paste(save_directory, "/", species, "_daily_site_plot_", project_name, ".png", sep = ""), width = width, height = height, units = "cm")
-  #}
+  # }
   # Save plot to environment
-  #assign(paste(species, "_daily_site_plot_", project_name, sep = ""), species_site_aggregated_plot, envir=globalenv())
+  # assign(paste(species, "_daily_site_plot_", project_name, sep = ""), species_site_aggregated_plot, envir=globalenv())
   # Plot plot
   return(species_daily_site_plot)
 }
-
-

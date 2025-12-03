@@ -1,29 +1,74 @@
-.save_to_RDATA <- function(obj, data_path) { # nolint: object_name_linter.
-  .dummy <- NULL
-  overwrite <- TRUE
-  if (!file.exists(data_path)) save(.dummy, file = data_path)
-  old_e <- new.env()
-  new_e <- new.env()
-  load(file = data_path, envir = old_e)
-  name_obj <- deparse(substitute(obj)) # get the name of the object
-  # new_e[[name_obj]] <- get(name_obj)     # use this only outside a function
-  new_e[[name_obj]] <- obj
-  # merge object from old environment with the new environment
-  # ls(old_e) is a character vector of the object names
-  if (overwrite) {
-    # the old variables take precedence over the new ones
-    invisible(sapply(ls(new_e), function(x) {
-      assign(x, get(x, envir = new_e), envir = old_e)
-    }))
-    # And finally we save the variables in the environment
-    save(list = ls(old_e), file = data_path, envir = old_e)
-  } else {
-    invisible(sapply(ls(old_e), function(x) {
-      assign(x, get(x, envir = old_e), envir = new_e)
-    }))
-    # And finally we save the variables in the environment
-    save(list = ls(new_e), file = data_path, envir = new_e)
+#' Save or update an object in an RData file
+#'
+#' Saves an R object to an RData file, either creating a new file or updating
+#' an existing one. If the file exists, the object will be added or updated
+#' while preserving other objects in the file.
+#'
+#' @param obj The object to save.
+#' @param data_path Character. Path to the .RData file.
+#' @param overwrite Logical. If \code{TRUE} (default), overwrites existing
+#'   objects with the same name. If \code{FALSE}, keeps existing objects
+#'   and only adds new ones.
+#'
+#' @return Invisible NULL. Called for its side effect of saving to file.
+#'
+#' @keywords internal
+#'
+#' @examples
+#' \dontrun{
+#' my_data <- data.frame(x = 1:10)
+#' .save_to_rdata(my_data, "output.RData")
+#' }
+.save_to_rdata <- function(obj, data_path, overwrite = TRUE) {
+  # Validate inputs
+  if (missing(obj)) {
+    stop("'obj' is required")
   }
+
+  if (missing(data_path) || !is.character(data_path) || length(data_path) != 1) {
+    stop("'data_path' must be a single character string")
+  }
+
+  if (!grepl("\\.RData$|\\.rda$", data_path, ignore.case = TRUE)) {
+    stop("'data_path' must have .RData or .rda extension")
+  }
+
+  # Get the name of the object
+  obj_name <- deparse(substitute(obj))
+
+  # If file doesn't exist, simply save the object
+  if (!file.exists(data_path)) {
+    assign(obj_name, obj, envir = environment())
+    save(list = obj_name, file = data_path, envir = environment())
+    message(sprintf("Created new file: %s with object '%s'", data_path, obj_name))
+    return(invisible(NULL))
+  }
+
+  # Load existing data into temporary environment
+  temp_env <- new.env()
+  load(file = data_path, envir = temp_env)
+
+  # Check if object already exists
+  if (obj_name %in% ls(temp_env)) {
+    if (overwrite) {
+      message(sprintf("Updating existing object '%s' in %s", obj_name, data_path))
+    } else {
+      message(sprintf("Keeping existing object '%s' in %s (overwrite=FALSE)", obj_name, data_path))
+      return(invisible(NULL))
+    }
+  } else {
+    message(sprintf("Adding new object '%s' to %s", obj_name, data_path))
+  }
+
+  # Add or update the object in the environment
+  if (overwrite || !obj_name %in% ls(temp_env)) {
+    assign(obj_name, obj, envir = temp_env)
+  }
+
+  # Save all objects from the environment
+  save(list = ls(temp_env), file = data_path, envir = temp_env)
+
+  return(invisible(NULL))
 }
 
 .check_data_path <- function(data_path = NULL, action = FALSE, object = NULL) {
@@ -56,72 +101,6 @@
       return(data_path)
     }
   }
-}
-
-.location_subsetter <- function(data_path, dataset = NULL) {
-  load(data_path)
-  if (!is.null(dataset)) {
-    observations <- dataset
-  } else {
-    observations <- observations
-  } # Check if a subsetted dataset already exists and use this for further subsetting if not
-  if (exists("location_list")) {
-    message("Location list found, using to subset (clear saved list to change).")
-    dataset <- observations[observations$Location %in% location_list, ]
-    return(dataset) # Check if there is a location list saved in the RData file and use to subset if so
-  } else {
-    message("No location list specified, would you like to set one? Select y to set a location list, select no to proceed with all locations included.")
-    setlist <- readline(prompt = "y/n:")
-    if (setlist == "y" | setlist == "Y") {
-      location_list <- .location_requester(data_path)
-      dataset <- observations[observations$Location %in% location_list, ]
-      return(dataset)
-    } else if (setlist == "n" | setlist == "N") {
-      message("Proceeding with all available locations.")
-      dataset <- observations
-      return(dataset)
-    } else {
-      stop("Input not recognised, please try again.")
-    } # If there is not an existing location list, ask whether one is needed and call a function to create and then subset if so, use all locations if no
-  }
-}
-
-.species_subsetter <- function(data_path, dataset = NULL) {
-  load(data_path)
-  if (!is.null(dataset)) {
-    observations <- dataset
-  } else {
-    observations <- observations
-  } # Check if a subsetted dataset already exists and use this for further subsetting if not
-  if (exists("species_list")) {
-    message("Species list found, using to subset (clear saved list to change).")
-    dataset <- observations[observations$Species %in% species_list, ]
-    return(dataset) # Check if there is a species list saved in the RData file and use to subset if so
-  } else {
-    message("No species list specified, would you like to set one? Select y to set a species list, select no to proceed with all species included.")
-    setlist <- readline(prompt = "y/n:")
-    if (setlist == "y" | setlist == "Y") {
-      species_list <- .species_requester(data_path)
-      dataset <- observations[observations$Species %in% species_list, ]
-      return(dataset)
-    } else if (setlist == "n" | setlist == "N") {
-      message("Proceeding with all available species.")
-      dataset <- observations
-      return(dataset)
-    } else {
-      stop("Input not recognised, please try again.")
-    } # If there is not an existing species list, ask whether one is needed and call a function to create and then subset if so, use all species if no
-  }
-}
-
-.monitoring_start_finder <- function(dataset) {
-  monitoring_start <- min(dataset$Night)
-  return(monitoring_start)
-}
-
-.monitoring_end_finder <- function(dataset) {
-  monitoring_end <- max(dataset$Night)
-  return(monitoring_end)
 }
 
 .plot_gap_calculator <- function(active_dates) {

@@ -58,23 +58,26 @@ test_that(".read_file_guano processes metadata, types, and filtering", {
   for (p in paths) writeBin(raw(), p)
   fl <- make_file_list_df(paths)
 
-  testthat::with_mocked_bindings({
-    out <- batr:::`.read_file_guano`(fl, site_col = "Site", timezone = "UTC", fast_import = FALSE)
-    # bad.wav should be excluded due to read error (warning is allowed)
-    expect_true(all(out$File.Name %in% basename(paths[basename(paths) != "bad.wav"])))
-    expect_true(all(c("Timestamp", "Species", "Location", "Latitude", "Longitude", "Night") %in% names(out)))
-    expect_type(out$Latitude, "double")
-    expect_type(out$Longitude, "double")
-    # Species prefers manual when present, else auto
-    a_row <- out[out$File.Name == "recA1.wav", ]
-    b_row <- out[out$File.Name == "recB2.wav", ]
-    expect_equal(a_row$Species, "MYLU")
-    expect_equal(b_row$Species, "EPFU")
-    # Night computed as date
-    expect_s3_class(out$Night, "Date")
-    # Location rename from Site
-    expect_true(all(out$Location %in% c("LocA", "LocB")))
-  }, read.guano = stub_read_guano)
+  testthat::with_mocked_bindings(
+    {
+      out <- batr:::`.read_file_guano`(fl, site_col = "Site", timezone = "UTC", fast_import = FALSE)
+      # bad.wav should be excluded due to read error (warning is allowed)
+      expect_true(all(out$File.Name %in% basename(paths[basename(paths) != "bad.wav"])))
+      expect_true(all(c("Timestamp", "Species", "Location", "Latitude", "Longitude", "Night") %in% names(out)))
+      expect_type(out$Latitude, "double")
+      expect_type(out$Longitude, "double")
+      # Species prefers manual when present, else auto
+      a_row <- out[out$File.Name == "recA1.wav", ]
+      b_row <- out[out$File.Name == "recB2.wav", ]
+      expect_equal(a_row$Species, "MYLU")
+      expect_equal(b_row$Species, "EPFU")
+      # Night computed as date
+      expect_s3_class(out$Night, "Date")
+      # Location rename from Site
+      expect_true(all(out$Location %in% c("LocA", "LocB")))
+    },
+    read.guano = stub_read_guano
+  )
 })
 
 # ----------------------------------------------------------------------------
@@ -83,36 +86,46 @@ test_that(".read_file_guano processes metadata, types, and filtering", {
 
 test_that(".new/.add/.update_observations work end-to-end with mocks", {
   # Prepare two directories representing two import waves
-  d1 <- tempfile("wave1_"); dir.create(d1)
-  d2 <- tempfile("wave2_"); dir.create(d2)
+  d1 <- tempfile("wave1_")
+  dir.create(d1)
+  d2 <- tempfile("wave2_")
+  dir.create(d2)
   on.exit(unlink(c(d1, d2), recursive = TRUE), add = TRUE)
-  f1 <- file.path(d1, c("recA1.wav", "recB2.wav")); for (p in f1) writeBin(raw(), p)
-  f2 <- file.path(d2, c("recA1.wav", "recC3.wav")); for (p in f2) writeBin(raw(), p)
+  f1 <- file.path(d1, c("recA1.wav", "recB2.wav"))
+  for (p in f1) writeBin(raw(), p)
+  f2 <- file.path(d2, c("recA1.wav", "recC3.wav"))
+  for (p in f2) writeBin(raw(), p)
 
   # Data path for RData
   rdata <- tempfile(fileext = ".RData")
 
-  # Mock .save_to_RDATA to actually save object, and rely on real .get_file_list (standard mode)
+  # Mock .save_to_rdata to actually save object, and rely on real .get_file_list (standard mode)
   # Also mock read.guano
   saver <- function(observations, data_path) save(observations, file = data_path)
 
   # Helper: call .get_file_list with fast_import = FALSE for stability
-  testthat::with_mocked_bindings({
-    # NEW
-    expect_message(batr:::`.new_observations`(d1, site_col = "Site", timezone = "UTC", data_path = rdata, fast_import = FALSE))
-    expect_true(file.exists(rdata))
-    env <- new.env(); load(rdata, envir = env)
-    expect_true(exists("observations", envir = env))
-    expect_equal(nrow(env$observations), 2)
+  testthat::with_mocked_bindings(
+    {
+      # NEW
+      expect_message(batr:::`.new_observations`(d1, site_col = "Site", timezone = "UTC", data_path = rdata, fast_import = FALSE))
+      expect_true(file.exists(rdata))
+      env <- new.env()
+      load(rdata, envir = env)
+      expect_true(exists("observations", envir = env))
+      expect_equal(nrow(env$observations), 2)
 
-    # ADD (should add only the new file recC3.wav)
-    expect_message(batr:::`.add_observations`(d2, site_col = "Site", timezone = "UTC", data_path = rdata, fast_import = FALSE))
-    env2 <- new.env(); load(rdata, envir = env2)
-    expect_equal(nrow(env2$observations), 3)
+      # ADD (should add only the new file recC3.wav)
+      expect_message(batr:::`.add_observations`(d2, site_col = "Site", timezone = "UTC", data_path = rdata, fast_import = FALSE))
+      env2 <- new.env()
+      load(rdata, envir = env2)
+      expect_equal(nrow(env2$observations), 3)
 
-    # UPDATE: simulate that recA1.wav got a newer modified time
-    # We mock .get_file_list to control mtimes and to support list=TRUE calls
-  }, read.guano = stub_read_guano, .save_to_RDATA = saver)
+      # UPDATE: simulate that recA1.wav got a newer modified time
+      # We mock .get_file_list to control mtimes and to support list=TRUE calls
+    },
+    read.guano = stub_read_guano,
+    .save_to_rdata = saver
+  )
 
   # Custom get_file_list mock for update test
   now <- as.numeric(Sys.time())
@@ -132,16 +145,26 @@ test_that(".new/.add/.update_observations work end-to-end with mocks", {
       return(sub)
     }
     # If directory matches d1 or d2, return corresponding df
-    if (identical(normalizePath(input_path), normalizePath(d1))) return(old_df)
-    if (identical(normalizePath(input_path), normalizePath(d2))) return(new_df)
+    if (identical(normalizePath(input_path), normalizePath(d1))) {
+      return(old_df)
+    }
+    if (identical(normalizePath(input_path), normalizePath(d2))) {
+      return(new_df)
+    }
     stop("Unexpected input_path to mock")
   }
 
   # Run update with mocks for read.guano, .save_to_RDATA, .get_file_list
-  testthat::with_mocked_bindings({
-    expect_message(batr:::`.update_observations`(d2, site_col = "Site", timezone = "UTC", data_path = rdata, fast_import = FALSE))
-    env3 <- new.env(); load(rdata, envir = env3)
-    # After update, still 3 rows, but recA1.wav metadata re-read; at least confirm presence
-    expect_setequal(env3$observations$File.Name, c("recA1.wav", "recB2.wav", "recC3.wav"))
-  }, read.guano = stub_read_guano, .save_to_RDATA = saver, .get_file_list = get_file_list_mock)
+  testthat::with_mocked_bindings(
+    {
+      expect_message(batr:::`.update_observations`(d2, site_col = "Site", timezone = "UTC", data_path = rdata, fast_import = FALSE))
+      env3 <- new.env()
+      load(rdata, envir = env3)
+      # After update, still 3 rows, but recA1.wav metadata re-read; at least confirm presence
+      expect_setequal(env3$observations$File.Name, c("recA1.wav", "recB2.wav", "recC3.wav"))
+    },
+    read.guano = stub_read_guano,
+    .save_to_rdata = saver,
+    .get_file_list = get_file_list_mock
+  )
 })

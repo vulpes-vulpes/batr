@@ -15,7 +15,9 @@
 #'
 #' @family species tools
 #'
-#' @examples \dontrun{set_species_list(c("Epfu", "Labo"), "C:/Folder/Folder/Data.RData")}
+#' @examples \dontrun{
+#' set_species_list(c("Epfu", "Labo"), "C:/Folder/Folder/Data.RData")
+#' }
 set_species_list <- function(species_list, data_path) {
   if (is.vector(species_list)) {
     message("Vector found, proceeding.")
@@ -23,7 +25,7 @@ set_species_list <- function(species_list, data_path) {
     stop("Species list provided is not a vector, please check and try again.")
   } # Check if the object provided is a vector, and exit if not.
   .check_data_path(data_path)
-  .save_to_RDATA(species_list, data_path)
+  .save_to_rdata(species_list, data_path)
 }
 
 #' Show a Species List that has been saved into an RData File
@@ -38,14 +40,16 @@ set_species_list <- function(species_list, data_path) {
 #'
 #' @family species tools
 #'
-#' @examples \dontrun{set_species_list("C:/Folder/Folder/Data.RData")}
+#' @examples \dontrun{
+#' set_species_list("C:/Folder/Folder/Data.RData")
+#' }
 show_species_list <- function(data_path) {
   .check_data_path(data_path)
   load(data_path)
   if (exists(species_list)) {
     return(species_list)
   } else {
-   "Species List not found." 
+    "Species List not found."
   }
 } # Return a Complete Species List From an RData File
 
@@ -60,17 +64,19 @@ show_species_list <- function(data_path) {
 #'
 #' @family species tools
 #'
-#' @examples \dontrun{set_species_list("C:/Folder/Folder/Data.RData")}
+#' @examples \dontrun{
+#' set_species_list("C:/Folder/Folder/Data.RData")
+#' }
 list_all_species <- function(data_path) {
   .check_data_path(data_path)
   load(data_path)
   if (exists("observations")) {
-  all_species <- unique(observations$Species)
+    all_species <- unique(observations$Species)
   } else {
     stop("No observations found, please check RData file.")
   }
   if (length(all_species) > 0) {
-    assign("all_species", as.data.frame(all_species), envir=globalenv())
+    assign("all_species", as.data.frame(all_species), envir = globalenv())
   } else {
     stop("No species found, please check the data and try again.")
   }
@@ -81,9 +87,6 @@ list_all_species <- function(data_path) {
   species_list <- readline(prompt = "List:")
   species_list <- as.vector(unlist(strsplit(species_list, ", ")))
   set_species_list(species_list, data_path)
-  .save_to_RDATA(species_list, data_path)
+  .save_to_rdata(species_list, data_path)
   return(species_list) # Function to request a list of species for subsetting: returns a vector of species and adds to the specified RData file
 }
-
-
-

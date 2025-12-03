@@ -111,7 +111,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
 
   file_list <- .get_file_list(input_path, fast_import)
   observations <- .read_file_guano(file_list, site_col, timezone, fast_import)
-  .save_to_RDATA(observations, data_path)
+  .save_to_rdata(observations, data_path)
 
   elapsed <- round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 1)
   message("\n========== Import Complete ==========")
@@ -178,7 +178,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   rownames(observations) <- NULL
 
   # Save updated data
-  .save_to_RDATA(observations, data_path)
+  .save_to_rdata(observations, data_path)
 
   elapsed <- round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 1)
   message("\n========== Add Complete ==========")
@@ -250,7 +250,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   rownames(observations) <- NULL
 
   # Save updated data
-  .save_to_RDATA(observations, data_path)
+  .save_to_rdata(observations, data_path)
 
   elapsed <- round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 1)
   message("\n========== Update Complete ==========")
