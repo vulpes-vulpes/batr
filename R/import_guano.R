@@ -12,7 +12,7 @@
 #'   before proceeding. However, files with changed metadata can be updated later
 #'   using the "Update" action.
 #'
-#' @family Import Functions
+#' @family Import FunctionsImport Functions
 #'
 #' @param action Character. Must equal "New", "Add" or "Update". Use "New" to
 #'   read GUANO from a new set of files and create a fresh RData file. Use "Add"
@@ -42,7 +42,7 @@
 #' @return An RData file saved in a specified location containing GUANO metadata
 #'   read from WAV files created through bat acoustic monitoring.
 #'
-#' @family import tools
+#' @family Import Functionsimport tools
 #'
 #' @examples
 #' \dontrun{

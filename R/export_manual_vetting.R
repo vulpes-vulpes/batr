@@ -6,7 +6,7 @@
 #' Handles missing WAV files gracefully and supports both simple random sampling
 #' and stratified sampling by location.
 #'
-#' @family Manual Vetting Functions
+#' @family Export FunctionsManual Vetting Functions
 #'
 #' @param data_path Character. Path to an existing RData file for the data set
 #'  you wish to manually vet.

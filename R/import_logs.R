@@ -44,7 +44,7 @@
 #' @return An RData file containing a data.frame of recorder activity.
 #' @export
 #'
-#' @family import tools
+#' @family Import Functionsimport tools
 #'
 #' @examples \dontrun{
 #' #' import_logs("C:/Folder/Folder/logss_Folder", "C:/Folder/Folder/Data.RData", "2021-01-01", "2021-12-31)
