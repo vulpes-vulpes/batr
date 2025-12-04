@@ -3,168 +3,209 @@
 # ============================================================================
 # Consolidated from plot_nightly_activity.R and update_Plots.R
 
-#' Plot Activity for a Species at Each Site Within a Project
+#' Plot Activity for a Species at Each Site
 #'
-#' \code{species_daily_site_plot} creates a plot of nightly activity for a chosen
-#' species at all sites within a project.
+#' Creates a plot of nightly activity for a chosen species at all sites (or
+#' a subset of locations if specified).
 #'
 #' @family Activity Plots
 #'
-#' @param data_path Character. Path to an existing RData file.
-#' @param species Character: the four letter species code for the species you
-#'  wish to plot. E.g. "Epfu".
-#' @param monitoring_start Character, the date the monitoring began (e.g.
-#'  "2019-01-01"), leave as NULL to use the earliest data point as the
-#'  monitoring start.
-#' @param monitoring_end Character, the date the monitoring ceased (e.g.
-#'  "2019-01-01"), leave as NULL to use the latest data point as the monitoring
-#'  end
-#' @param gaps Boolean. Set true to add grey blocks to the plot to indicate
-#'  periods in which the recorder was not active (requires log files to be
-#'  loaded first using \code{import_logs}. Default is \code{FALSE}.)
-#' @param save.directory Character: if provided a .png image of the plot will be
-#'  saved in the folder specified. Defaults to \code{NULL}: no output saved.
-#' @param y_scale Character. Determines whether scales on the y-axis are matched
-#'  or free. Defaults to "free_y" for unmatched axis, set to "fixed" for matched
-#'  axis.
-#' @param width Number. The width in cm of the plot if saved to file. Default is
-#'  25 cm.
-#' @param height Number. The height of the plot if saved to file. Default is 20
-#'  cm.
-#' @param text_size Numeric: adjusts the size of text in the figure.
-#' @param date_label Date value: adjusts the formatting of the month labels on
-#'  the y-axis. See https://www.statmethods.net/input/dates.html for formatting.
-#' @param title Logical vector. If \code{FALSE} (default) title is omitted.
+#' @param data_path Character. Path to an existing RData file containing
+#'   observation data.
+#' @param species Character. Four-letter species code to plot (e.g., "Epfu").
+#' @param location_list Character vector. Location names to include in the plot.
+#'   If \code{NULL} (default), includes all locations with data for this species.
+#' @param monitoring_start Character. Monitoring start date (e.g., "2019-01-01").
+#'   If \code{NULL}, uses the earliest date in the dataset.
+#' @param monitoring_end Character. Monitoring end date (e.g., "2019-12-31").
+#'   If \code{NULL}, uses the latest date in the dataset.
+#' @param gaps Logical. If \code{TRUE}, adds grey blocks indicating periods when
+#'   recorders were inactive (requires log file data loaded via \code{import_logs}).
+#'   Defaults to \code{FALSE}.
+#' @param y_scale Character. Y-axis scaling: "free_y" (default) for independent
+#'   scales per location, or "fixed" for matched scales.
+#' @param save_path Character. Full file path to save plot as PNG. If \code{NULL}
+#'   (default), plot is not saved.
+#' @param width Numeric. Plot width in cm. Default is 15.9.
+#' @param height Numeric. Plot height in cm. Default is 8.43.
+#' @param text_size Numeric. Text size for plot labels. Default is 10.
+#' @param date_label Character. Date format for x-axis labels. Default is "%b"
+#'   (abbreviated month name).
+#' @param title Logical. If \code{TRUE}, adds plot title. Default is \code{FALSE}.
 #'
-#' @return A plot as an object in the current environment, and a saved image if
-#'  selected.
+#' @return A ggplot2 object.
 #'
 #' @examples
 #' \dontrun{
-#' species_daily_site_plot(species_night_site_projectname, "Project Name", "Mylu", "2019-01-01", "2019-12-31")
+#' # Plot for all locations
+#' species_daily_site_plot("data.RData", species = "Mylu")
+#'
+#' # Plot for specific locations
+#' species_daily_site_plot("data.RData",
+#'   species = "Epfu",
+#'   location_list = c("Site1", "Site2")
+#' )
+#'
+#' # With monitoring gaps and custom date range
+#' species_daily_site_plot("data.RData",
+#'   species = "Lano",
+#'   monitoring_start = "2023-05-01",
+#'   monitoring_end = "2023-10-31",
+#'   gaps = TRUE
+#' )
 #' }
 #' @export
-#'
-#'
-species_daily_site_plot <- function(data_path, species, monitoring_start = NULL,
-                                    monitoring_end = NULL, gaps = FALSE,
-                                    save_directory = NULL, y_scale = "free_y",
-                                    width = 15.9, height = 8.43, text_size = 10,
-                                    date_label = "%b", title = FALSE) {
-  # Subset to selected species
-  # species_subset <- dataset[which(dataset$Species==species),]
-  # if (!is.null(survey_year)) {
-  #  species_subset <- species_subset[which(lubridate::year(species_subset$Night)==survey_year),]
-  # }
-  # Import data
-  .validate_rdata_path(data_path) # Check the data path provided
-  # load(data_path) # Load the data path
-  dataset <- .location_subsetter(data_path) # Offer to subset locations
-  dataset <- dataset[which(dataset$Species == species), ] # subset the species
-  # Create count table
-  counts <- aggregate(dataset$Species, list(
-    Night = dataset$Night, Species = dataset$Species, Location = dataset$Location, Latitude = dataset$Latitude, Longitude = dataset$Longitude
-  ), FUN = length) # Create intial table
-  names(counts)[names(counts) == "x"] <- "Count"
-  # Create gap table if needed
-  load(data_path)
-  if (isTRUE(gaps)) {
-    if (!exists("active_dates")) {
-      stop("Log file data are missing, please run import_logs and try again.")
-    } else {
-      gap_list <- .plot_gap_calculator(active_dates)
-    }
+species_daily_site_plot <- function(data_path,
+                                    species,
+                                    location_list = NULL,
+                                    monitoring_start = NULL,
+                                    monitoring_end = NULL,
+                                    gaps = FALSE,
+                                    y_scale = "free_y",
+                                    save_path = NULL,
+                                    width = 15.9,
+                                    height = 8.43,
+                                    text_size = 10,
+                                    date_label = "%b",
+                                    title = FALSE) {
+  # Load and filter data
+  dataset <- .load_plot_data(data_path, species_list = species, location_list = location_list)
+
+  # Load gap data if requested
+  active_dates <- NULL
+  if (gaps) {
+    active_dates <- .load_gap_data(data_path)
   }
-  # Create monitoring start / end if needed
-  if (isTRUE(gaps)) {
-    if (is.null(monitoring_start)) {
-      monitoring_start <- min(gap_list$xmin)
-    }
-    if (is.null(monitoring_end)) {
-      monitoring_end <- max(gap_list$xmax)
-    }
-  } else {
-    if (is.null(monitoring_start)) {
-      monitoring_start <- min(dataset$Night)
-    }
-    if (is.null(monitoring_end)) {
-      monitoring_end <- max(dataset$Night)
-    }
-  }
-  # Create Plot
-  species_daily_site_plot <- ggplot2::ggplot() +
-    ggplot2::geom_bar(data = counts, mapping = ggplot2::aes(x = Night, y = Count), stat = "identity", fill = "black") +
-    ggplot2::scale_y_continuous(name = "Observations per Night") +
-    ggplot2::scale_x_date(limits = c(as.Date(monitoring_start), as.Date(monitoring_end)), breaks = scales::pretty_breaks(), date_breaks = "1 month", date_labels = date_label) +
-    ggplot2::facet_wrap(
-      ~Location,
-      ncol = 1, scales = y_scale, strip.position = "top"
-    ) + # , labeller=location_labeller) +
-    ggplot2::geom_hline(yintercept = 0) +
-    ggplot2::theme_classic() +
-    ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5),
-      strip.background = ggplot2::element_blank(),
-      strip.text = ggplot2::element_text(hjust = 0),
-      text = ggplot2::element_text(size = text_size)
+
+  # Prepare activity data
+  counts <- .prepare_activity_data(dataset, species, location_list)
+
+  # Calculate monitoring period
+  period <- .calculate_monitoring_period(
+    counts, monitoring_start, monitoring_end, active_dates
+  )
+
+  # Create base plot
+  plot <- ggplot2::ggplot() +
+    ggplot2::geom_bar(
+      data = counts,
+      mapping = ggplot2::aes(x = Night, y = Count),
+      stat = "identity",
+      fill = "black"
     ) +
-    if (isTRUE(gaps)) {
-      gap_list <- batr:::.plot_gap_calculator(active_dates)
-      ggplot2::geom_rect(
-        data = gap_list,
-        ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, alpha = 0.9),
-        show.legend = FALSE
-      )
-    }
-  if (isTRUE(title)) {
-    species_daily_site_plot <- species_daily_site_plot + ggplot2::ggtitle(paste("Total Activity of ", species, " by Site", sep = ""))
+    ggplot2::scale_y_continuous(name = "Observations per Night") +
+    ggplot2::scale_x_date(
+      limits = c(as.Date(period$start), as.Date(period$end)),
+      breaks = scales::pretty_breaks(),
+      date_breaks = "1 month",
+      date_labels = date_label
+    ) +
+    ggplot2::facet_wrap(~Location, ncol = 1, scales = y_scale, strip.position = "top") +
+    ggplot2::geom_hline(yintercept = 0) +
+    .batr_theme(text_size)
+
+  # Add gaps if requested
+  if (gaps && !is.null(active_dates)) {
+    plot <- .add_gap_overlay(plot, active_dates)
   }
-  # Save plot to a specified folder if requested
-  if (!is.null(save_directory)) {
-    ggplot2::ggsave(paste(save_directory, "/", species, "_daily_site_plot.png", sep = ""), width = width, height = height, units = "cm")
+
+  # Add title if requested
+  if (title) {
+    plot <- plot + ggplot2::ggtitle(paste("Total Activity of", species, "by Site"))
   }
-  # Save plot to a specified folder if requested
-  # if (!is.null(save_directory)) {
-  #  ggplot2::ggsave(paste(save_directory, "/", species, "_daily_site_plot_", project_name, ".png", sep = ""), width = width, height = height, units = "cm")
-  # }
-  # Save plot to environment
-  # assign(paste(species, "_daily_site_plot_", project_name, sep = ""), species_site_aggregated_plot, envir=globalenv())
-  # Plot plot
-  return(species_daily_site_plot)
+
+  # Save if requested
+  if (!is.null(save_path)) {
+    ggplot2::ggsave(save_path, plot = plot, width = width, height = height, units = "cm")
+  }
+
+  return(plot)
 }
 
 # ============================================================================
-# Additional Activity Plotting Functions (from update_Plots.R)
+# Additional Activity Plotting Functions
 # ============================================================================
 
-#' Plot of Monitoring Effort by Site
+#' Plot Monitoring Effort by Site
 #'
-#' \code{monitoring_effort_plot} creates a plot showing monitor uptime at each
-#' site within the project.
+#' Creates a plot showing recorder uptime at each site, highlighting periods
+#' when recorders were inactive.
 #'
 #' @family Activity Plots
 #'
-#' @param gaps Object: a gaps data frame from log files.
-#' @param project_name Character (deprecated).
-#' @param monitoring_start Character, monitoring start date.
-#' @param monitoring_end Character, monitoring end date.
-#' @param survey_year Character (deprecated).
-#' @param save_directory Character: directory to save plot.
-#' @param title Logical. If TRUE (default), adds title.
-#' @param width Number. Width in cm.
-#' @param height Number. Height in cm.
-#' @param text_size Numeric: text size.
-#' @param date_label Date format string.
+#' @param data_path Character. Path to an existing RData file containing
+#'   log file data (must have \code{active_dates} object from \code{import_logs}).
+#' @param location_list Character vector. Location names to include in the plot.
+#'   If \code{NULL} (default), includes all locations with log data.
+#' @param monitoring_start Character. Monitoring start date (e.g., "2019-01-01").
+#'   If \code{NULL}, uses the earliest date in the log data.
+#' @param monitoring_end Character. Monitoring end date (e.g., "2019-12-31").
+#'   If \code{NULL}, uses the latest date in the log data.
+#' @param save_path Character. Full file path to save plot as PNG. If \code{NULL}
+#'   (default), plot is not saved.
+#' @param width Numeric. Plot width in cm. Default is 25.
+#' @param height Numeric. Plot height in cm. Default is 20.
+#' @param text_size Numeric. Text size for plot labels. Default is 10.
+#' @param date_label Character. Date format for x-axis labels. Default is "%b".
+#' @param title Logical. If \code{TRUE} (default), adds plot title.
 #'
-#' @return A ggplot2 plot object.
+#' @return A ggplot2 object.
 #'
+#' @examples
+#' \dontrun{
+#' # Plot for all locations
+#' monitoring_effort_plot("data.RData")
+#'
+#' # Plot for specific locations
+#' monitoring_effort_plot("data.RData",
+#'   location_list = c("Site1", "Site2")
+#' )
+#' }
 #' @export
-monitoring_effort_plot <- function(gaps, project_name, monitoring_start, monitoring_end,
-                                   survey_year = NULL, save_directory = NULL, title = TRUE,
-                                   width = 25, height = 20, text_size = 8, date_label = "%b") {
-  monitoring_effort_plot <- ggplot2::ggplot() +
+monitoring_effort_plot <- function(data_path,
+                                   location_list = NULL,
+                                   monitoring_start = NULL,
+                                   monitoring_end = NULL,
+                                   save_path = NULL,
+                                   width = 25,
+                                   height = 20,
+                                   text_size = 10,
+                                   date_label = "%b",
+                                   title = TRUE) {
+  # Load gap data
+  active_dates <- .load_gap_data(data_path)
+
+  # Filter by location if specified
+  if (!is.null(location_list)) {
+    active_dates <- active_dates[active_dates$Location %in% location_list, ]
+    if (nrow(active_dates) == 0) {
+      stop(
+        "No log data found for specified locations: ",
+        paste(location_list, collapse = ", ")
+      )
+    }
+  }
+
+  # Calculate gaps
+  gap_list <- .plot_gap_calculator(active_dates)
+
+  # Filter gaps by location if specified
+  if (!is.null(location_list)) {
+    gap_list <- gap_list[gap_list$Location %in% location_list, ]
+  }
+
+  # Calculate monitoring period
+  if (is.null(monitoring_start)) {
+    monitoring_start <- min(gap_list$xmin, na.rm = TRUE)
+  }
+  if (is.null(monitoring_end)) {
+    monitoring_end <- max(gap_list$xmax, na.rm = TRUE)
+  }
+
+  # Create plot
+  plot <- ggplot2::ggplot() +
     ggplot2::geom_rect(
-      data = gaps,
+      data = gap_list,
       ggplot2::aes(xmin = xmin, xmax = xmax, ymin = 0, ymax = 1, alpha = 0.9),
       show.legend = FALSE
     ) +
@@ -187,19 +228,15 @@ monitoring_effort_plot <- function(gaps, project_name, monitoring_start, monitor
       text = ggplot2::element_text(size = text_size)
     )
 
-  if (isTRUE(title)) {
-    monitoring_effort_plot <- monitoring_effort_plot +
-      ggplot2::ggtitle("Total Monitor Uptime by Site")
+  if (title) {
+    plot <- plot + ggplot2::ggtitle("Monitor Uptime by Site")
   }
 
-  if (!is.null(save_directory)) {
-    ggplot2::ggsave(
-      paste(save_directory, "/monitoring_uptime_plot_", project_name, ".png", sep = ""),
-      width = width, height = height, units = "cm"
-    )
+  if (!is.null(save_path)) {
+    ggplot2::ggsave(save_path, plot = plot, width = width, height = height, units = "cm")
   }
 
-  return(monitoring_effort_plot)
+  return(plot)
 }
 
 #' Monthly Activity Plot
@@ -284,6 +321,122 @@ monthly_activity_plot <- function(species_night_site, monthly_active_nights, exc
 # ============================================================================
 # Internal Helper Functions
 # ============================================================================
+
+#' Load and validate observation data for plotting
+#' @keywords internal
+.load_plot_data <- function(data_path, species_list = NULL, location_list = NULL) {
+  .validate_rdata_path(data_path)
+
+  load(data_path)
+
+  if (!exists("observations")) {
+    stop("No 'observations' object found in ", data_path)
+  }
+
+  # Remove NA values
+  observations <- observations[!is.na(observations$Species) & !is.na(observations$Location), ]
+
+  if (nrow(observations) == 0) {
+    stop("No valid observations found in dataset")
+  }
+
+  # Filter by species
+  if (!is.null(species_list)) {
+    observations <- observations[observations$Species %in% species_list, ]
+    if (nrow(observations) == 0) {
+      stop("No observations found for species: ", paste(species_list, collapse = ", "))
+    }
+  }
+
+  # Filter by location
+  if (!is.null(location_list)) {
+    observations <- observations[observations$Location %in% location_list, ]
+    if (nrow(observations) == 0) {
+      stop("No observations found for locations: ", paste(location_list, collapse = ", "))
+    }
+  }
+
+  return(observations)
+}
+
+#' Load gap data from log files
+#' @keywords internal
+.load_gap_data <- function(data_path) {
+  load(data_path)
+
+  if (!exists("active_dates")) {
+    stop("Log file data missing. Please run import_logs() first.")
+  }
+
+  return(active_dates)
+}
+
+#' Prepare activity count data for plotting
+#' @keywords internal
+.prepare_activity_data <- function(dataset, species, location_list) {
+  # Aggregate counts by night, species, location
+  counts <- aggregate(
+    dataset$Species,
+    list(
+      Night = dataset$Night,
+      Species = dataset$Species,
+      Location = dataset$Location
+    ),
+    FUN = length
+  )
+  names(counts)[names(counts) == "x"] <- "Count"
+
+  return(counts)
+}
+
+#' Calculate monitoring period dates
+#' @keywords internal
+.calculate_monitoring_period <- function(data, monitoring_start, monitoring_end, active_dates) {
+  if (is.null(monitoring_start)) {
+    if (!is.null(active_dates)) {
+      gap_list <- .plot_gap_calculator(active_dates)
+      monitoring_start <- min(gap_list$xmin, na.rm = TRUE)
+    } else {
+      monitoring_start <- min(data$Night, na.rm = TRUE)
+    }
+  }
+
+  if (is.null(monitoring_end)) {
+    if (!is.null(active_dates)) {
+      gap_list <- .plot_gap_calculator(active_dates)
+      monitoring_end <- max(gap_list$xmax, na.rm = TRUE)
+    } else {
+      monitoring_end <- max(data$Night, na.rm = TRUE)
+    }
+  }
+
+  list(start = monitoring_start, end = monitoring_end)
+}
+
+#' Add gap overlay to existing plot
+#' @keywords internal
+.add_gap_overlay <- function(plot, active_dates) {
+  gap_list <- .plot_gap_calculator(active_dates)
+
+  plot +
+    ggplot2::geom_rect(
+      data = gap_list,
+      ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, alpha = 0.9),
+      show.legend = FALSE
+    )
+}
+
+#' Consistent theme for batr plots
+#' @keywords internal
+.batr_theme <- function(text_size = 10) {
+  ggplot2::theme_classic() +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5),
+      strip.background = ggplot2::element_blank(),
+      strip.text = ggplot2::element_text(hjust = 0),
+      text = ggplot2::element_text(size = text_size)
+    )
+}
 
 #' Calculate Gap Rectangles for Plotting
 #'
