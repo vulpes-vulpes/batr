@@ -55,23 +55,29 @@ first_observations_plot <- function(data_path,
                                     height = 8.43,
                                     text_size = 10,
                                     date_label = "%b") {
+  # Validate timezone
+  .validate_timezone(timezone)
+
   # Load and filter data
   dataset <- .load_plot_data(data_path, species_list = species, location_list = location_list)
 
-  # Select relevant columns and filter to evening observations only
-  dataset <- dataset[, c("Night", "Species", "Location", "Latitude", "Longitude", "Timestamp")]
-  dataset$Time_PM <- dataset$Timestamp
-  dataset$Time_PM <- ifelse(lubridate::hour(dataset$Time_PM) < 12, NA, dataset$Time_PM)
-  dataset <- dataset[!is.na(dataset$Time_PM), ]
-  dataset$Time_PM <- as.POSIXct(dataset$Time_PM, origin = "1970-01-01")
+  # Convert to data.table and filter to evening observations only
+  dataset <- data.table::as.data.table(dataset)
+  dataset <- dataset[, .(Night, Species, Location, Latitude, Longitude, Timestamp)]
+  dataset[, Time_PM := data.table::fifelse(lubridate::hour(Timestamp) < 12, NA_real_, as.numeric(Timestamp))]
+  dataset <- dataset[!is.na(Time_PM)]
+  dataset[, Time_PM := as.POSIXct(Time_PM, origin = "1970-01-01")]
 
   # Prepare for suncalc
-  names(dataset)[names(dataset) == "Night"] <- "date"
-  names(dataset)[names(dataset) == "Latitude"] <- "lat"
-  names(dataset)[names(dataset) == "Longitude"] <- "lon"
+  data.table::setnames(dataset,
+    old = c("Night", "Latitude", "Longitude"),
+    new = c("date", "lat", "lon")
+  )
 
-  # Get first observation per night per location
-  dataset <- aggregate(Time_PM ~ date + Location + lat + lon, dataset, function(x) min(x))
+  # Get first observation per night per location using data.table aggregation
+  dataset <- dataset[, .(Time_PM = min(Time_PM), lat = lat[1], lon = lon[1]),
+    by = .(date, Location)
+  ]
 
   # Calculate monitoring period
   if (is.null(monitoring_start)) {

@@ -61,13 +61,17 @@ to local sunset at each site. Useful for phenology and emergence timing analysis
 \examples{
 \dontrun{
 # Plot for all locations
-first_observations_plot("data.RData", species = "Epfu",
-  timezone = "America/Toronto")
+first_observations_plot("data.RData",
+  species = "Epfu",
+  timezone = "America/Toronto"
+)
 
 # Plot for specific locations
-first_observations_plot("data.RData", species = "Mylu",
+first_observations_plot("data.RData",
+  species = "Mylu",
   timezone = "America/New_York",
-  location_list = c("Site1", "Site2"))
+  location_list = c("Site1", "Site2")
+)
 }
 }
 \concept{Timing Plots}

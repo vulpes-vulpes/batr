@@ -69,14 +69,18 @@ a subset of locations if specified).
 species_daily_site_plot("data.RData", species = "Mylu")
 
 # Plot for specific locations
-species_daily_site_plot("data.RData", species = "Epfu",
-  location_list = c("Site1", "Site2"))
+species_daily_site_plot("data.RData",
+  species = "Epfu",
+  location_list = c("Site1", "Site2")
+)
 
 # With monitoring gaps and custom date range
-species_daily_site_plot("data.RData", species = "Lano",
+species_daily_site_plot("data.RData",
+  species = "Lano",
   monitoring_start = "2023-05-01",
   monitoring_end = "2023-10-31",
-  gaps = TRUE)
+  gaps = TRUE
+)
 }
 }
 \seealso{

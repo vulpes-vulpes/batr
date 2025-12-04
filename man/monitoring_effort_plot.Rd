@@ -57,7 +57,8 @@ monitoring_effort_plot("data.RData")
 
 # Plot for specific locations
 monitoring_effort_plot("data.RData",
-  location_list = c("Site1", "Site2"))
+  location_list = c("Site1", "Site2")
+)
 }
 }
 \seealso{
