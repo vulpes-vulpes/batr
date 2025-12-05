@@ -113,18 +113,53 @@ first_observations_plot <- function(data_path,
   dataset$ob_time <- as.POSIXct(format(dataset$Time_PM, format = "%H:%M:%S"), format = "%H:%M:%S")
   dataset$date <- as.Date(dataset$date)
 
-  # Load gap data if requested
+  # Load and process gap data if requested
   gap_data <- NULL
   if (gaps) {
-    active_dates <- .load_gap_data(data_path)
-    gap_data <- .plot_gap_calculator(active_dates)
-    # Filter by locations if specified
-    if (!is.null(location_list)) {
-      gap_data <- gap_data[gap_data$Location %in% location_list, ]
-    }
-    # Set y-axis limits for gaps
-    gap_data$ymax <- max(dataset$ob_time, na.rm = TRUE)
-    gap_data$ymin <- min(dataset$sunset_time, na.rm = TRUE)
+    tryCatch(
+      {
+        active_dates <- .load_gap_data(data_path)
+
+        if (!is.null(active_dates) && nrow(active_dates) > 0) {
+          gap_data <- .plot_gap_calculator(active_dates)
+
+          # Filter by locations if specified
+          if (!is.null(location_list)) {
+            gap_data <- gap_data[gap_data$Location %in% location_list, ]
+          }
+
+          # Filter gaps to monitoring period
+          if (!is.null(gap_data) && nrow(gap_data) > 0) {
+            gap_data <- gap_data[gap_data$xmax >= as.Date(monitoring_start) &
+              gap_data$xmin <= as.Date(monitoring_end), ]
+          }
+
+          # Set y-axis limits for gaps if data exists
+          if (!is.null(gap_data) && nrow(gap_data) > 0) {
+            # Calculate limits based on actual data with fallback
+            y_max <- if (any(!is.na(dataset$ob_time))) {
+              max(dataset$ob_time, na.rm = TRUE)
+            } else {
+              as.POSIXct("23:59:59", format = "%H:%M:%S")
+            }
+
+            y_min <- if (any(!is.na(dataset$sunset_time))) {
+              min(dataset$sunset_time, na.rm = TRUE)
+            } else {
+              as.POSIXct("18:00:00", format = "%H:%M:%S")
+            }
+
+            gap_data$ymax <- y_max
+            gap_data$ymin <- y_min
+          }
+        } else {
+          warning("No gap data found in ", data_path, ". Skipping gap overlay.")
+        }
+      },
+      error = function(e) {
+        warning("Failed to load gap data: ", e$message, ". Skipping gap overlay.")
+      }
+    )
   }
 
   # Create plot
