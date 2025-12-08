@@ -3,7 +3,7 @@
 #' Returns a table summarizing the total number of observations by site and
 #' species.
 #'
-#' @family Summary Functions
+#' @family Summary FunctionsSummary Functions
 #'
 #' @param data_path Character. Path to an existing RData file containing
 #'   observation data.

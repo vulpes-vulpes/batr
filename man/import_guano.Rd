@@ -74,8 +74,8 @@ import_guano(
 }
 }
 \seealso{
-Other import tools: 
+Other Import Functionsimport tools: 
 \code{\link{import_logs}()}
 }
-\concept{Import Functions}
-\concept{import tools}
+\concept{Import FunctionsImport Functions}
+\concept{Import Functionsimport tools}
