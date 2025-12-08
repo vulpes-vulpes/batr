@@ -673,7 +673,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   message(sprintf("Successfully read %d of %d files.", length(dfs), n_files))
 
   message("Combining metadata...")
-  observations <- do.call(plyr::rbind.fill, dfs)
+  observations <- dplyr::bind_rows(dfs)
 
   # Harmonize location column names
   observations <- .harmonize_location_columns(observations)
