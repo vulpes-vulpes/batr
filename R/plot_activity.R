@@ -31,6 +31,8 @@
 #' @param text_size Numeric. Text size for plot labels. Default is 10.
 #' @param date_label Character. Date format for x-axis labels. Default is "%b"
 #'   (abbreviated month name).
+#' @param date_breaks Character. Optional break specification (e.g., "1 month").
+#'   If \code{NULL} (default), adaptive breaks are used based on timespan.
 #' @param title Logical. If \code{TRUE}, adds plot title. Default is \code{FALSE}.
 #'
 #' @return A ggplot2 object.
@@ -67,6 +69,7 @@ species_daily_site_plot <- function(data_path,
                                     height = 8.43,
                                     text_size = 10,
                                     date_label = "%b",
+                                    date_breaks = NULL,
                                     title = FALSE) {
   # Load and filter data
   dataset <- .load_plot_data(data_path, species_list = species, location_list = location_list)
@@ -85,6 +88,31 @@ species_daily_site_plot <- function(data_path,
     counts, monitoring_start, monitoring_end, active_dates
   )
 
+  # Build x-axis scale (adaptive breaks unless user supplies date_breaks)
+  adaptive_breaks <- if (is.null(date_breaks)) {
+    .adaptive_date_breaks(
+      min_date = as.Date(period$start),
+      max_date = as.Date(period$end),
+      date_label = date_label
+    )
+  } else {
+    NULL
+  }
+
+  x_scale <- if (is.null(date_breaks)) {
+    ggplot2::scale_x_date(
+      limits = c(as.Date(period$start), as.Date(period$end)),
+      breaks = adaptive_breaks$breaks,
+      labels = adaptive_breaks$labels
+    )
+  } else {
+    ggplot2::scale_x_date(
+      limits = c(as.Date(period$start), as.Date(period$end)),
+      date_breaks = date_breaks,
+      labels = scales::label_date(date_label)
+    )
+  }
+
   # Create base plot
   plot <- ggplot2::ggplot() +
     ggplot2::geom_bar(
@@ -94,12 +122,7 @@ species_daily_site_plot <- function(data_path,
       fill = "black"
     ) +
     ggplot2::scale_y_continuous(name = "Observations per Night") +
-    ggplot2::scale_x_date(
-      limits = c(as.Date(period$start), as.Date(period$end)),
-      breaks = scales::pretty_breaks(),
-      date_breaks = "1 month",
-      date_labels = date_label
-    ) +
+    x_scale +
     ggplot2::facet_wrap(~Location, ncol = 1, scales = y_scale, strip.position = "top") +
     ggplot2::geom_hline(yintercept = 0) +
     .batr_theme(text_size)
@@ -147,6 +170,8 @@ species_daily_site_plot <- function(data_path,
 #' @param height Numeric. Plot height in cm. Default is 20.
 #' @param text_size Numeric. Text size for plot labels. Default is 10.
 #' @param date_label Character. Date format for x-axis labels. Default is "%b".
+#' @param date_breaks Character. Optional break specification (e.g., "1 month").
+#'   If \code{NULL} (default), adaptive breaks are used based on timespan.
 #' @param title Logical. If \code{TRUE} (default), adds plot title.
 #'
 #' @return A ggplot2 object.
@@ -171,6 +196,7 @@ monitoring_effort_plot <- function(data_path,
                                    height = 20,
                                    text_size = 10,
                                    date_label = "%b",
+                                   date_breaks = NULL,
                                    title = TRUE) {
   # Load gap data
   active_dates <- .load_gap_data(data_path)
@@ -188,6 +214,9 @@ monitoring_effort_plot <- function(data_path,
 
   # Calculate gaps
   gap_list <- .plot_gap_calculator(active_dates)
+  
+    # Clean location labels for display
+    gap_list$Location_label <- gsub("_", " ", gap_list$Location)
 
   # Filter gaps by location if specified
   if (!is.null(location_list)) {
@@ -202,20 +231,40 @@ monitoring_effort_plot <- function(data_path,
     monitoring_end <- max(gap_list$xmax, na.rm = TRUE)
   }
 
+  # Build x-axis scale (adaptive breaks unless user supplies date_breaks)
+  adaptive_breaks <- if (is.null(date_breaks)) {
+    .adaptive_date_breaks(
+      min_date = as.Date(monitoring_start),
+      max_date = as.Date(monitoring_end),
+      date_label = date_label
+    )
+  } else {
+    NULL
+  }
+
+  x_scale <- if (is.null(date_breaks)) {
+    ggplot2::scale_x_date(
+      limits = c(as.Date(monitoring_start), as.Date(monitoring_end)),
+      breaks = adaptive_breaks$breaks,
+      labels = adaptive_breaks$labels
+    )
+  } else {
+    ggplot2::scale_x_date(
+      limits = c(as.Date(monitoring_start), as.Date(monitoring_end)),
+      date_breaks = date_breaks,
+      labels = scales::label_date(date_label)
+    )
+  }
+
   # Create plot
   plot <- ggplot2::ggplot() +
     ggplot2::geom_rect(
       data = gap_list,
-      ggplot2::aes(xmin = xmin, xmax = xmax, ymin = 0, ymax = 1, alpha = 0.9),
+        ggplot2::aes(xmin = xmin, xmax = xmax, ymin = 0, ymax = 1, alpha = 0.9),
       show.legend = FALSE
     ) +
-    ggplot2::scale_x_date(
-      limits = c(as.Date(monitoring_start), as.Date(monitoring_end)),
-      breaks = scales::pretty_breaks(),
-      date_breaks = "1 month",
-      date_labels = date_label
-    ) +
-    ggplot2::facet_wrap(~Location, ncol = 1, scales = "fixed", strip.position = "top") +
+    x_scale +
+      ggplot2::facet_wrap(~Location_label, ncol = 1, scales = "fixed", strip.position = "top") +
     ggplot2::geom_hline(yintercept = 0) +
     ggplot2::theme_classic() +
     ggplot2::theme(
@@ -369,6 +418,43 @@ monthly_activity_plot <- function(species_night_site, monthly_active_nights, exc
   }
 
   return(active_dates)
+}
+
+#' Adaptive date breaks for varying monitoring windows
+#' @keywords internal
+.adaptive_date_breaks <- function(min_date, max_date, date_label = "%b") {
+  span_days <- as.integer(max_date - min_date)
+
+  breaks <- if (span_days <= 14) {
+    seq(min_date, max_date, by = "2 days")
+  } else if (span_days <= 90) {
+    seq(min_date, max_date, by = "1 week")
+  } else if (span_days <= 540) {
+    seq(min_date, max_date, by = "1 month")
+  } else if (span_days <= 1095) {
+    seq(min_date, max_date, by = "3 months")
+  } else {
+    seq(min_date, max_date, by = "6 months")
+  }
+
+  if (length(breaks) == 0) {
+    breaks <- c(min_date, max_date)
+  }
+
+  label_format <- if (identical(date_label, "%b")) {
+    if (span_days <= 90) {
+      "%d %b"
+    } else {
+      "%b %Y"
+    }
+  } else {
+    date_label
+  }
+
+  list(
+    breaks = breaks,
+    labels = scales::label_date(label_format)
+  )
 }
 
 #' Prepare activity count data for plotting
