@@ -204,11 +204,11 @@ monitoring_effort_plot <- function(data_path,
                                    facet_cols = 1,
                                    title = TRUE) {
   # Load gap data
-  active_dates <- .load_gap_data(data_path)
+  active_dates <- data.table::as.data.table(.load_gap_data(data_path))
 
   # Filter by location if specified
   if (!is.null(location_list)) {
-    active_dates <- active_dates[active_dates$Location %in% location_list, ]
+    active_dates <- active_dates[Location %in% location_list]
     if (nrow(active_dates) == 0) {
       stop(
         "No log data found for specified locations: ",
@@ -218,14 +218,14 @@ monitoring_effort_plot <- function(data_path,
   }
 
   # Calculate gaps
-  gap_list <- .plot_gap_calculator(active_dates)
+  gap_list <- data.table::as.data.table(.plot_gap_calculator(as.data.frame(active_dates)))
 
   # Clean location labels for display
-  gap_list$Location_label <- gsub("_", " ", gap_list$Location)
+  gap_list[, Location_label := gsub("_", " ", Location)]
 
   # Filter gaps by location if specified
   if (!is.null(location_list)) {
-    gap_list <- gap_list[gap_list$Location %in% location_list, ]
+    gap_list <- gap_list[Location %in% location_list]
   }
 
   # Calculate monitoring period
@@ -465,19 +465,10 @@ monthly_activity_plot <- function(species_night_site, monthly_active_nights, exc
 #' Prepare activity count data for plotting
 #' @keywords internal
 .prepare_activity_data <- function(dataset, species, location_list) {
-  # Aggregate counts by night, species, location
-  counts <- aggregate(
-    dataset$Species,
-    list(
-      Night = dataset$Night,
-      Species = dataset$Species,
-      Location = dataset$Location
-    ),
-    FUN = length
-  )
-  names(counts)[names(counts) == "x"] <- "Count"
-
-  return(counts)
+  dt <- data.table::as.data.table(dataset)
+  counts <- dt[, .(Count = .N), by = .(Night, Species, Location)]
+  data.table::setorder(counts, Night, Location, Species)
+  return(as.data.frame(counts))
 }
 
 #' Calculate monitoring period dates
@@ -507,8 +498,8 @@ monthly_activity_plot <- function(species_night_site, monthly_active_nights, exc
 #' Add gap overlay to existing plot
 #' @keywords internal
 .add_gap_overlay <- function(plot, active_dates) {
-  gap_list <- .plot_gap_calculator(active_dates)
-  gap_list$Location_label <- gsub("_", " ", gap_list$Location)
+  gap_list <- data.table::as.data.table(.plot_gap_calculator(active_dates))
+  gap_list[, Location_label := gsub("_", " ", Location)]
 
   plot +
     ggplot2::geom_rect(
@@ -541,6 +532,9 @@ monthly_activity_plot <- function(species_night_site, monthly_active_nights, exc
 #'
 #' @keywords internal
 .plot_gap_calculator <- function(active_dates) {
+  # Ensure standard data.frame to avoid data.table method issues
+  active_dates <- as.data.frame(active_dates)
+
   failed_dates <- active_dates[which(active_dates$Log_Count == 0), ]
   failed_dates <- failed_dates[order(failed_dates$Location), ]
   failed_dates <- failed_dates[!duplicated(failed_dates), ]
