@@ -54,7 +54,9 @@ first_observations_plot <- function(data_path,
                                     width = 15.9,
                                     height = 8.43,
                                     text_size = 10,
-                                    date_label = "%b") {
+                                    facet_cols = 2,
+                                    date_label = "%b",
+                                    date_breaks = NULL) {
   # Validate timezone
   .validate_timezone(timezone)
 
@@ -64,6 +66,7 @@ first_observations_plot <- function(data_path,
   # Convert to data.table and filter to evening observations only
   dataset <- data.table::as.data.table(dataset)
   dataset <- dataset[, .(Night, Species, Location, Latitude, Longitude, Timestamp)]
+  dataset[, Location_label := gsub("_", " ", Location)]
   dataset[, Time_PM := data.table::fifelse(lubridate::hour(Timestamp) < 12, NA_real_, as.numeric(Timestamp))]
   dataset <- dataset[!is.na(Time_PM)]
   dataset[, Time_PM := as.POSIXct(Time_PM, origin = "1970-01-01")]
@@ -104,6 +107,8 @@ first_observations_plot <- function(data_path,
   dataset$lon <- ifelse(is.na(dataset$lon), dataset$lon.loc, dataset$lon)
   dataset$lat.loc <- NULL
   dataset$lon.loc <- NULL
+  # Restore cleaned location labels after merge
+  dataset$Location_label <- gsub("_", " ", dataset$Location)
 
   # Calculate sunset times
   dataset$sunset <- suncalc::getSunlightTimes(data = dataset, keep = "sunset", tz = timezone)$sunset
@@ -127,6 +132,9 @@ first_observations_plot <- function(data_path,
           if (!is.null(location_list)) {
             gap_data <- gap_data[gap_data$Location %in% location_list, ]
           }
+
+          # Clean location labels for faceting/legibility
+          gap_data$Location_label <- gsub("_", " ", gap_data$Location)
 
           # Filter gaps to monitoring period
           if (!is.null(gap_data) && nrow(gap_data) > 0) {
@@ -162,24 +170,44 @@ first_observations_plot <- function(data_path,
     )
   }
 
-  # Create plot
+  # Create plot with adaptive or user-specified date breaks
+  adaptive_breaks <- if (is.null(date_breaks)) {
+    .adaptive_date_breaks(
+      min_date = as.Date(monitoring_start),
+      max_date = as.Date(monitoring_end),
+      date_label = date_label
+    )
+  } else {
+    NULL
+  }
+
+  x_scale <- if (is.null(date_breaks)) {
+    ggplot2::scale_x_date(
+      limits = c(as.Date(monitoring_start), as.Date(monitoring_end)),
+      breaks = adaptive_breaks$breaks,
+      labels = adaptive_breaks$labels
+    )
+  } else {
+    ggplot2::scale_x_date(
+      limits = c(as.Date(monitoring_start), as.Date(monitoring_end)),
+      date_breaks = date_breaks,
+      labels = scales::label_date(date_label)
+    )
+  }
+
   plot <- ggplot2::ggplot() +
     ggplot2::geom_line(
       data = dataset,
-      mapping = ggplot2::aes(x = date, y = sunset_time, group = Location)
+      mapping = ggplot2::aes(x = date, y = sunset_time, group = Location_label)
     ) +
     ggplot2::geom_point(
       data = dataset,
       mapping = ggplot2::aes(x = date, y = ob_time)
     ) +
-    ggplot2::scale_x_date(
-      limits = c(as.Date(monitoring_start), as.Date(monitoring_end)),
-      breaks = scales::pretty_breaks(),
-      date_breaks = "1 month",
-      date_labels = date_label
-    ) +
+    x_scale +
     ggplot2::ylab("Time") +
-    ggplot2::facet_wrap(~Location, ncol = 2, scales = "fixed", strip.position = "top") +
+    ggplot2::xlab("Date") +
+    ggplot2::facet_wrap(~Location_label, ncol = facet_cols, scales = "fixed", strip.position = "top") +
     .batr_theme(text_size)
 
   # Add gaps if requested
@@ -251,6 +279,47 @@ first_observations_plot <- function(data_path,
   }
 
   return(active_dates)
+}
+
+#' Adaptive date breaks for varying monitoring windows
+#' @keywords internal
+.adaptive_date_breaks <- function(min_date, max_date, date_label = "%b") {
+  span_days <- as.integer(max_date - min_date)
+
+  breaks <- if (span_days <= 14) {
+    seq(min_date, max_date, by = "2 days")
+  } else if (span_days <= 90) {
+    seq(min_date, max_date, by = "1 week")
+  } else if (span_days <= 540) {
+    seq(min_date, max_date, by = "1 month")
+  } else if (span_days <= 1095) {
+    seq(min_date, max_date, by = "3 months")
+  } else {
+    seq(min_date, max_date, by = "6 months")
+  }
+
+  # Ensure at least endpoints are present
+  if (length(breaks) == 0) {
+    breaks <- c(min_date, max_date)
+  }
+
+  # Choose a sensible label format if user left default
+  label_format <- if (identical(date_label, "%b")) {
+    if (span_days <= 90) {
+      "%d %b"
+    } else if (span_days <= 540) {
+      "%b %Y"
+    } else {
+      "%b %Y"
+    }
+  } else {
+    date_label
+  }
+
+  list(
+    breaks = breaks,
+    labels = scales::label_date(label_format)
+  )
 }
 
 #' Consistent theme for batr plots
