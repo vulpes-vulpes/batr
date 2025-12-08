@@ -33,6 +33,7 @@
 #'   (abbreviated month name).
 #' @param date_breaks Character. Optional break specification (e.g., "1 month").
 #'   If \code{NULL} (default), adaptive breaks are used based on timespan.
+#' @param facet_cols Integer. Number of facet columns. Default is 1.
 #' @param title Logical. If \code{TRUE}, adds plot title. Default is \code{FALSE}.
 #'
 #' @return A ggplot2 object.
@@ -70,6 +71,7 @@ species_daily_site_plot <- function(data_path,
                                     text_size = 10,
                                     date_label = "%b",
                                     date_breaks = NULL,
+                                    facet_cols = 1,
                                     title = FALSE) {
   # Load and filter data
   dataset <- .load_plot_data(data_path, species_list = species, location_list = location_list)
@@ -82,6 +84,7 @@ species_daily_site_plot <- function(data_path,
 
   # Prepare activity data
   counts <- .prepare_activity_data(dataset, species, location_list)
+  counts$Location_label <- gsub("_", " ", counts$Location)
 
   # Calculate monitoring period
   period <- .calculate_monitoring_period(
@@ -123,7 +126,7 @@ species_daily_site_plot <- function(data_path,
     ) +
     ggplot2::scale_y_continuous(name = "Observations per Night") +
     x_scale +
-    ggplot2::facet_wrap(~Location, ncol = 1, scales = y_scale, strip.position = "top") +
+    ggplot2::facet_wrap(~Location_label, ncol = facet_cols, scales = y_scale, strip.position = "top") +
     ggplot2::geom_hline(yintercept = 0) +
     .batr_theme(text_size)
 
@@ -172,6 +175,7 @@ species_daily_site_plot <- function(data_path,
 #' @param date_label Character. Date format for x-axis labels. Default is "%b".
 #' @param date_breaks Character. Optional break specification (e.g., "1 month").
 #'   If \code{NULL} (default), adaptive breaks are used based on timespan.
+#' @param facet_cols Integer. Number of facet columns. Default is 1.
 #' @param title Logical. If \code{TRUE} (default), adds plot title.
 #'
 #' @return A ggplot2 object.
@@ -197,6 +201,7 @@ monitoring_effort_plot <- function(data_path,
                                    text_size = 10,
                                    date_label = "%b",
                                    date_breaks = NULL,
+                                   facet_cols = 1,
                                    title = TRUE) {
   # Load gap data
   active_dates <- .load_gap_data(data_path)
@@ -214,9 +219,9 @@ monitoring_effort_plot <- function(data_path,
 
   # Calculate gaps
   gap_list <- .plot_gap_calculator(active_dates)
-  
-    # Clean location labels for display
-    gap_list$Location_label <- gsub("_", " ", gap_list$Location)
+
+  # Clean location labels for display
+  gap_list$Location_label <- gsub("_", " ", gap_list$Location)
 
   # Filter gaps by location if specified
   if (!is.null(location_list)) {
@@ -260,11 +265,11 @@ monitoring_effort_plot <- function(data_path,
   plot <- ggplot2::ggplot() +
     ggplot2::geom_rect(
       data = gap_list,
-        ggplot2::aes(xmin = xmin, xmax = xmax, ymin = 0, ymax = 1, alpha = 0.9),
+      ggplot2::aes(xmin = xmin, xmax = xmax, ymin = 0, ymax = 1, alpha = 0.9),
       show.legend = FALSE
     ) +
     x_scale +
-      ggplot2::facet_wrap(~Location_label, ncol = 1, scales = "fixed", strip.position = "top") +
+    ggplot2::facet_wrap(~Location_label, ncol = facet_cols, scales = "fixed", strip.position = "top") +
     ggplot2::geom_hline(yintercept = 0) +
     ggplot2::theme_classic() +
     ggplot2::theme(
@@ -503,6 +508,7 @@ monthly_activity_plot <- function(species_night_site, monthly_active_nights, exc
 #' @keywords internal
 .add_gap_overlay <- function(plot, active_dates) {
   gap_list <- .plot_gap_calculator(active_dates)
+  gap_list$Location_label <- gsub("_", " ", gap_list$Location)
 
   plot +
     ggplot2::geom_rect(
