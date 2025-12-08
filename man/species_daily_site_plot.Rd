@@ -17,7 +17,13 @@ species_daily_site_plot(
   height = 8.43,
   text_size = 10,
   date_label = "\%b",
-  title = FALSE
+  date_breaks = NULL,
+  facet_cols = 2,
+  facet_rows = NULL,
+  title = FALSE,
+  plot_title = NULL,
+  plot_subtitle = NULL,
+  plot_caption = NULL
 )
 }
 \arguments{
@@ -54,7 +60,14 @@ scales per location, or "fixed" for matched scales.}
 \item{date_label}{Character. Date format for x-axis labels. Default is "%b"
 (abbreviated month name).}
 
+\item{date_breaks}{Character. Optional break specification (e.g., "1 month").
+If \code{NULL} (default), adaptive breaks are used based on timespan.}
+
+\item{facet_cols, facet_rows}{Integer. Number of facet columns/rows. Default 2 cols, all rows.}
+
 \item{title}{Logical. If \code{TRUE}, adds plot title. Default is \code{FALSE}.}
+
+\item{plot_title, plot_subtitle, plot_caption}{Character. Optional plot title, subtitle, caption.}
 }
 \value{
 A ggplot2 object.

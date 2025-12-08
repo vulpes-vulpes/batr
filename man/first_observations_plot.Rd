@@ -16,7 +16,13 @@ first_observations_plot(
   width = 15.9,
   height = 8.43,
   text_size = 10,
-  date_label = "\%b"
+  facet_cols = 2,
+  facet_rows = NULL,
+  date_label = "\%b",
+  date_breaks = NULL,
+  plot_title = NULL,
+  plot_subtitle = NULL,
+  plot_caption = NULL
 )
 }
 \arguments{
@@ -49,7 +55,13 @@ recorders were inactive. Defaults to \code{FALSE}.}
 
 \item{text_size}{Numeric. Text size for plot labels. Default is 10.}
 
+\item{facet_cols, facet_rows}{Integer. Number of facet columns/rows. Default 2 cols, all rows.}
+
 \item{date_label}{Character. Date format for x-axis labels. Default is "%b".}
+
+\item{date_breaks}{Character. Optional break specification (e.g., "1 month"). NULL = adaptive.}
+
+\item{plot_title, plot_subtitle, plot_caption}{Character. Optional plot title, subtitle, caption.}
 }
 \value{
 A ggplot2 object.
