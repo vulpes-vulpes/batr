@@ -2,21 +2,35 @@
 % Please edit documentation in R/utils_reports.R
 \name{comsci_report}
 \alias{comsci_report}
-\title{Create Com. Sci.Report(s)}
+\title{Create community science report(s)}
 \usage{
 comsci_report(data_path, save_path, sites, author, species)
 }
 \arguments{
-\item{RData}{file}
+\item{data_path}{Character. Path to an RData file with observations and log data.}
+
+\item{save_path}{Character. Directory to write the rendered reports.}
+
+\item{sites}{Character vector. Site names to render (one report per site).}
+
+\item{author}{Character. Author name to display in each report.}
+
+\item{species}{Character vector. Species codes to include.}
 }
 \value{
-A PDF report.
+Invisibly, the paths to rendered reports.
 }
 \description{
-Create Com. Sci.Report(s)
+Create community science report(s)
 }
 \examples{
 \dontrun{
-Insert Example!
+comsci_report(
+  data_path = "data.RData",
+  save_path = "reports/",
+  sites = c("Site1", "Site2"),
+  author = "Researcher",
+  species = c("Epfu", "Mylu")
+)
 }
 }

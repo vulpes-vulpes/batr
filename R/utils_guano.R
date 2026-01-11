@@ -21,6 +21,8 @@
 # SOFTWARE.
 
 #' Parse ISO 8601 subset timestamps
+#'
+#' @param s Character timestamp string to parse.
 .parse.timestamp <- function(s) {
   if (is.null(s) || is.na(s) || s == "") {
     return(NA)

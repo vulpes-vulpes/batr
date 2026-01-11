@@ -33,9 +33,12 @@
 #'   (abbreviated month name).
 #' @param date_breaks Character. Optional break specification (e.g., "1 month").
 #'   If \code{NULL} (default), adaptive breaks are used based on timespan.
-#' @param facet_cols,facet_rows Integer. Number of facet columns/rows. Default 2 cols, all rows.
+#' @param facet_cols Integer. Number of facet columns. Default is 2.
+#' @param facet_rows Integer. Number of facet rows. Default is NULL (all rows).
 #' @param title Logical. If \code{TRUE}, adds plot title. Default is \code{FALSE}.
-#' @param plot_title,plot_subtitle,plot_caption Character. Optional plot title, subtitle, caption.
+#' @param plot_title Character. Optional plot title.
+#' @param plot_subtitle Character. Optional plot subtitle.
+#' @param plot_caption Character. Optional plot caption.
 #'
 #' @return A ggplot2 object.
 #'
@@ -187,9 +190,12 @@ species_daily_site_plot <- function(data_path,
 #' @param date_label Character. Date format for x-axis labels. Default is "%b".
 #' @param date_breaks Character. Optional break specification (e.g., "1 month").
 #'   If \code{NULL} (default), adaptive breaks are used based on timespan.
-#' @param facet_cols,facet_rows Integer. Number of facet columns/rows. Default 2 cols, all rows.
+#' @param facet_cols Integer. Number of facet columns. Default is 1.
+#' @param facet_rows Integer. Number of facet rows. Default is \code{NULL} (all rows).
 #' @param title Logical. If \code{TRUE} (default), adds plot title.
-#' @param plot_title,plot_subtitle,plot_caption Character. Optional plot title, subtitle, caption.
+#' @param plot_title Character. Optional plot title.
+#' @param plot_subtitle Character. Optional plot subtitle.
+#' @param plot_caption Character. Optional plot caption.
 #'
 #' @return A ggplot2 object.
 #'

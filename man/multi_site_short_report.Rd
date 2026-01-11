@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils_reports.R
 \name{multi_site_short_report}
 \alias{multi_site_short_report}
-\title{Create Multi Site Report}
+\title{Create multi-site report}
 \usage{
 multi_site_short_report(
   data_path,
@@ -15,16 +15,36 @@ multi_site_short_report(
 )
 }
 \arguments{
-\item{RData}{file}
+\item{data_path}{Character. Path to an RData file with observations and log data.}
+
+\item{save_path}{Character. Directory to write the rendered report.}
+
+\item{file_name}{Character. Output filename (no spaces allowed).}
+
+\item{project_name}{Character. Project name to display in the report.}
+
+\item{author}{Character. Author name to display in the report.}
+
+\item{species}{Character vector. Species codes to include.}
+
+\item{sites}{Character vector. Site names to include.}
 }
 \value{
-A PDF report.
+Invisibly, the rendered report path.
 }
 \description{
-Create Multi Site Report
+Create multi-site report
 }
 \examples{
 \dontrun{
-Insert Example!
+multi_site_short_report(
+  data_path = "data.RData",
+  save_path = "reports/",
+  file_name = "All_Sites_Report.pdf",
+  project_name = "Project X",
+  author = "Researcher",
+  species = c("Epfu", "Mylu"),
+  sites = c("Site1", "Site2")
+)
 }
 }

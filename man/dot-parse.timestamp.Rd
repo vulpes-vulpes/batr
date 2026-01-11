@@ -6,6 +6,9 @@
 \usage{
 .parse.timestamp(s)
 }
+\arguments{
+\item{s}{Character timestamp string to parse.}
+}
 \description{
 Parse ISO 8601 subset timestamps
 }

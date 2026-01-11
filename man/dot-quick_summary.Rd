@@ -10,6 +10,8 @@
 \item{observations}{Observations data frame.}
 
 \item{active_dates}{Optional active_dates data frame}
+
+\item{species}{Optional character vector of species to include.}
 }
 \value{
 A quick summary table of total species observations and survey effort.

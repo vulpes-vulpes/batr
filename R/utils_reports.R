@@ -1,14 +1,28 @@
-#'Create One Site Report
+#' Create one-site report
 #'
-#'@param RData file
+#' @param data_path Character. Path to an RData file with observations and log data.
+#' @param save_path Character. Directory to write the rendered report.
+#' @param file_name Character. Output filename (no spaces allowed).
+#' @param project_name Character. Project name to display in the report.
+#' @param author Character. Author name to display in the report.
+#' @param species Character vector. Species codes to include.
+#' @param sites Character vector. Site names to include.
 #'
-#'@return A PDF report. 
+#' @return Invisibly, the rendered report path.
 #'
-#'@examples
-#'\dontrun{
-#' Insert Example!
-#'}
-#'@export
+#' @examples
+#' \dontrun{
+#' one_site_short_report(
+#'   data_path = "data.RData",
+#'   save_path = "reports/",
+#'   file_name = "Site1_Report.pdf",
+#'   project_name = "Project X",
+#'   author = "Researcher",
+#'   species = c("Epfu", "Mylu"),
+#'   sites = "Site1"
+#' )
+#' }
+#' @export
 one_site_short_report <- function(data_path, save_path, file_name, project_name, author, species, sites) {
   if (grepl(" ", file_name)) {
     stop("File name cannot contain spaces. Please amend and retry.")
@@ -24,17 +38,27 @@ one_site_short_report <- function(data_path, save_path, file_name, project_name,
                     clean = TRUE)
 }
 
-#'Create Com. Sci.Report(s)
+#' Create community science report(s)
 #'
-#'@param RData file
+#' @param data_path Character. Path to an RData file with observations and log data.
+#' @param save_path Character. Directory to write the rendered reports.
+#' @param sites Character vector. Site names to render (one report per site).
+#' @param author Character. Author name to display in each report.
+#' @param species Character vector. Species codes to include.
 #'
-#'@return A PDF report. 
+#' @return Invisibly, the paths to rendered reports.
 #'
-#'@examples
-#'\dontrun{
-#' Insert Example!
-#'}
-#'@export
+#' @examples
+#' \dontrun{
+#' comsci_report(
+#'   data_path = "data.RData",
+#'   save_path = "reports/",
+#'   sites = c("Site1", "Site2"),
+#'   author = "Researcher",
+#'   species = c("Epfu", "Mylu")
+#' )
+#' }
+#' @export
 comsci_report <- function(data_path, save_path, sites, author, species) {
   for (site in sites) {
     file_name <- sub(" ", "_", site)
@@ -50,17 +74,31 @@ comsci_report <- function(data_path, save_path, sites, author, species) {
   }
 }  
   
-#'Create Multi Site Report
+#' Create multi-site report
 #'
-#'@param RData file
+#' @param data_path Character. Path to an RData file with observations and log data.
+#' @param save_path Character. Directory to write the rendered report.
+#' @param file_name Character. Output filename (no spaces allowed).
+#' @param project_name Character. Project name to display in the report.
+#' @param author Character. Author name to display in the report.
+#' @param species Character vector. Species codes to include.
+#' @param sites Character vector. Site names to include.
 #'
-#'@return A PDF report. 
+#' @return Invisibly, the rendered report path.
 #'
-#'@examples
-#'\dontrun{
-#' Insert Example!
-#'}
-#'@export
+#' @examples
+#' \dontrun{
+#' multi_site_short_report(
+#'   data_path = "data.RData",
+#'   save_path = "reports/",
+#'   file_name = "All_Sites_Report.pdf",
+#'   project_name = "Project X",
+#'   author = "Researcher",
+#'   species = c("Epfu", "Mylu"),
+#'   sites = c("Site1", "Site2")
+#' )
+#' }
+#' @export
 multi_site_short_report <- function(data_path, save_path, file_name, project_name, author, species, sites) {
   if (grepl(" ", file_name)) {
     stop("File name cannot contain spaces. Please amend and retry.")
@@ -96,6 +134,7 @@ multi_site_short_report <- function(data_path, save_path, file_name, project_nam
 #'
 #'@param observations Observations data frame. 
 #'@param active_dates Optional active_dates data frame
+#'@param species Optional character vector of species to include.
 #'
 #'@return A quick summary table of total species observations and survey effort.
 #'
