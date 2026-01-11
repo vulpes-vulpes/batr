@@ -1,258 +1,464 @@
-#' Create one-site report
+#' Core Report Rendering Function
 #'
-#' @param data_path Character. Path to an RData file with observations and log data.
-#' @param save_path Character. Directory to write the rendered report.
-#' @param file_name Character. Output filename (no spaces allowed).
-#' @param project_name Character. Project name to display in the report.
-#' @param author Character. Author name to display in the report.
-#' @param species Character vector. Species codes to include.
-#' @param sites Character vector. Site names to include.
+#' Internal function that handles all RMarkdown report rendering with validation,
+#' error handling, and graceful fallback support.
 #'
-#' @return Invisibly, the rendered report path.
+#' @param template_path Character. Path to the RMarkdown template file.
+#' @param output_file Character. Filename for the rendered report (without directory).
+#' @param output_dir Character. Directory to save the rendered report.
+#' @param params List. Parameters to pass to rmarkdown::render().
+#' @param format Character. Output format (default: "pdf_document").
+#' @param include_map Logical. Whether to attempt map rendering (default: TRUE).
+#' @param quiet Logical. Suppress rendering messages (default: FALSE).
 #'
-#' @examples
-#' \dontrun{
-#' one_site_short_report(
-#'   data_path = "data.RData",
-#'   save_path = "reports/",
-#'   file_name = "Site1_Report.pdf",
-#'   project_name = "Project X",
-#'   author = "Researcher",
-#'   species = c("Epfu", "Mylu"),
-#'   sites = "Site1"
-#' )
-#' }
-#' @export
-one_site_short_report <- function(data_path, save_path, file_name, project_name, author, species, sites) {
-  if (grepl(" ", file_name)) {
-    stop("File name cannot contain spaces. Please amend and retry.")
+#' @return A list with elements:
+#'   - success: Logical indicating if rendering succeeded
+#'   - output_path: Character path to rendered file (NULL if failed)
+#'   - error: Character error message (NULL if successful)
+#'
+#' @keywords internal
+render_report <- function(template_path,
+                          output_file,
+                          output_dir,
+                          params,
+                          format = "pdf_document",
+                          include_map = TRUE,
+                          quiet = FALSE) {
+  # Validate template exists
+  if (!file.exists(template_path)) {
+    return(list(
+      success = FALSE,
+      output_path = NULL,
+      error = paste0("Template not found: ", template_path)
+    ))
   }
-  rmarkdown::render(input = system.file("rmd", "One_Site_Short_Report.Rmd", package = "batr"), 
-                    output_file = file_name,
-                    output_dir = save_path,
-                    params = list(project = project_name,
-                                  author = author,
-                                  species = species,
-                                  site = sites,
-                                  data = data_path),
-                    clean = TRUE)
-}
 
-#' Create community science report(s)
-#'
-#' @param data_path Character. Path to an RData file with observations and log data.
-#' @param save_path Character. Directory to write the rendered reports.
-#' @param sites Character vector. Site names to render (one report per site).
-#' @param author Character. Author name to display in each report.
-#' @param species Character vector. Species codes to include.
-#'
-#' @return Invisibly, the paths to rendered reports.
-#'
-#' @examples
-#' \dontrun{
-#' comsci_report(
-#'   data_path = "data.RData",
-#'   save_path = "reports/",
-#'   sites = c("Site1", "Site2"),
-#'   author = "Researcher",
-#'   species = c("Epfu", "Mylu")
-#' )
-#' }
-#' @export
-comsci_report <- function(data_path, save_path, sites, author, species) {
-  for (site in sites) {
-    file_name <- sub(" ", "_", site)
-    rmarkdown::render(input = system.file("rmd", "BBAM_Report.Rmd", package = "batr"), 
-                      output_file = file_name,
-                      output_dir = save_path,
-                      params = list(project = site,
-                                    author = author,
-                                    species = species,
-                                    site = site,
-                                    data = data_path),
-                      clean = TRUE)  
-  }
-}  
-  
-#' Create multi-site report
-#'
-#' @param data_path Character. Path to an RData file with observations and log data.
-#' @param save_path Character. Directory to write the rendered report.
-#' @param file_name Character. Output filename (no spaces allowed).
-#' @param project_name Character. Project name to display in the report.
-#' @param author Character. Author name to display in the report.
-#' @param species Character vector. Species codes to include.
-#' @param sites Character vector. Site names to include.
-#'
-#' @return Invisibly, the rendered report path.
-#'
-#' @examples
-#' \dontrun{
-#' multi_site_short_report(
-#'   data_path = "data.RData",
-#'   save_path = "reports/",
-#'   file_name = "All_Sites_Report.pdf",
-#'   project_name = "Project X",
-#'   author = "Researcher",
-#'   species = c("Epfu", "Mylu"),
-#'   sites = c("Site1", "Site2")
-#' )
-#' }
-#' @export
-multi_site_short_report <- function(data_path, save_path, file_name, project_name, author, species, sites) {
-  if (grepl(" ", file_name)) {
-    stop("File name cannot contain spaces. Please amend and retry.")
-  }
-  rmarkdown::render(input = system.file("rmd", "Multi_Site_Short_Report.Rmd", package = "batr"), 
-                    output_file = file_name,
-                    output_dir = save_path,
-                    params = list(project = project_name,
-                                  author = author,
-                                  species = species,
-                                  site = sites,
-                                  data = data_path))
-}
-
-.map4report <- function(observations, labels = T) {
-  locations <- as.data.frame(cbind(unique(observations$Location), unique(observations$Longitude), unique(observations$Latitude)))
-  colnames(locations) <- c("Location", "Longitude","Latitude")
-  locations$Latitude <- as.numeric(locations$Latitude)
-  locations$Longitude <- as.numeric(locations$Longitude) 
-   
-  map <- ggmap::qmplot(x = Longitude, y = Latitude, data = locations, maptype = "stamen_toner_background", extent = "normal") +
-    if (labels == T) {   
-             ggrepel::geom_text_repel(data = locations,
-            suppressWarnings(ggplot2::aes(label = Location)),
-             size=3)
-         }
-  return(map)
-}
-
-#'Create quick summary table
-#'
-#'@importFrom data.table %chin%
-#'
-#'@param observations Observations data frame. 
-#'@param active_dates Optional active_dates data frame
-#'@param species Optional character vector of species to include.
-#'
-#'@return A quick summary table of total species observations and survey effort.
-#'
-.quick_summary <- function (observations, active_dates = NULL, species = NULL) {
-  if (!is.null(species)) { observations_s <- data.table::setDT(observations)[Species %chin% species] } else {observations_s <- observations}
-  observations_s$Loc_Year <- paste(lubridate::year(observations_s$Night), observations_s$Location, sep = " ")
-  quick_summary <- as.data.frame.matrix(table(observations_s$Loc_Year, observations_s$Species)) # Create table of Species by Location
-  quick_summary <- cbind(Location = rownames(quick_summary), quick_summary) # Fix row names to column
-  rownames(quick_summary) <- NULL # with above
-  headers <- c("Location", species)
-  missing <- setdiff(headers, names(quick_summary)) 
-  quick_summary[missing] <- 0                    
-  quick_summary <- quick_summary[headers]
-  quick_summary$Year = substr(quick_summary$Location, 1, 4)
-  quick_summary$Location <- substring(quick_summary$Location, 6, 1000000L)
-  
-  quick_summary$Monitoring_Nights <- sapply(quick_summary$Location, function(l) nrow(active_dates[active_dates$Location==l & active_dates$Log_Count > 0.5,]))
-  
-  #div <- sapply(quick_summary$Location, function(l) nrow(active_dates[active_dates$Location==l,])) # , quick_summary$Location)
-  #div <- as.data.frame(div)
-  
-  #averages <- as.data.frame(mapply('/', quick_summary[species], div))
-  
-  return(quick_summary)
-}
-
-.speces_site_plot <- function(observations, active_dates = NULL, species = NULL, sites = NULL, text_size = 8, date_label = "%b") {
-  
-  if (!is.null(species)) { observations_s <- data.table::setDT(observations)[Species %chin% species] } else {observations_s <- observations}
-  if (!is.null(sites)) {observations_s <- data.table::setDT(observations_s)[Location %chin% sites] }
-  if (!is.null(sites) && !is.null(active_dates)) {active_dates_s <- data.table::setDT(active_dates)[Location %chin% sites] } else {active_dates_s <- active_dates}
-  
-  
-  species_night_site <- aggregate(observations_s$Species, list(
-    Night = observations_s$Night, Species = observations_s$Species, Location = observations_s$Location, Latitude = observations_s$Latitude, Longitude = observations_s$Longitude), FUN=length) # Create intial table
-  names(species_night_site)[names(species_night_site) == "x"] <- "Count"
-  
-  
-
-  
-  if (!is.null(active_dates)) {
-    
-    active_dates_s <- active_dates_s[order(active_dates_s$Location),]
-    
-    failed_dates <- active_dates_s[which(active_dates_s$Log_Count==0),]
-    #failed_dates$Active <- NULL
-    failed_dates$Gaps <- 0 # Create Gaps Column
-    failed_dates[1,4] <- 1 # Set first row to 1
-    row <- 2 # Set iterator to second row
-    maximum_row <- length(failed_dates$Gaps) + 1 # Calculate maximum
-    while (row < maximum_row) { # While loop to add consequtive labels based on date differneces
-      rowdown <- row - 1 # Create value for row - 1
-      if (failed_dates[row,1] - failed_dates[rowdown,1] == 1) { #If dates are consecutive, set same as row above
-        failed_dates [row,4] <- failed_dates[rowdown,4]
-      } else { # Else add one
-        failed_dates[row,4] <- failed_dates[rowdown,4] + 1
+  # Validate output directory
+  if (!dir.exists(output_dir)) {
+    tryCatch(
+      {
+        dir.create(output_dir, recursive = TRUE)
+      },
+      error = function(e) {
+        return(list(
+          success = FALSE,
+          output_path = NULL,
+          error = paste0("Could not create output directory: ", e$message)
+        ))
       }
-      row <- row + 1 # Interate row
-    } # While loop to iterate gap numbers
-    maximum_fail <- max(failed_dates$Gaps) # Calculate number of gaps
-    activity <- failed_dates # Copy dates without recordings to a new data frame
-    activity$Date <- NULL # Remove unnecessary column
-    activity$Log_Count <- NULL # Remove unnecessary column
-    activity <- unique(activity) # Remove duplicate rows
-    fail <- 1 # Create fail variable
-    activity$xmin <- 0 # Create empty column for xmax
-    while (fail < (maximum_fail+1)) {
-      butthead <- failed_dates[failed_dates$Gaps == fail,1]
-      activity[fail,3] <- min(butthead$Date)
-      fail <- fail + 1
-    } # Compute end date for each break
-    activity$xmin <- as.Date(activity$xmin, origin = "1970-01-01") # Convert to date
-    fail <- 1 # Reset fail variable
-    activity$xmax <- 0 # Create empty column for xmin
-    while (fail < (maximum_fail+1)) {
-      butthead <- failed_dates[failed_dates$Gaps == fail,1]
-      activity[fail,4] <- max(butthead$Date)
-      fail <- fail + 1
-    } # Compute start date for each break
-    activity$xmax <- as.Date(activity$xmax, origin = "1970-01-01") # Convert to date
-    activity$ymax <- Inf
-    activity$ymin <- 0
-    activity$Gaps <- NULL
-    #assign(paste("Gaps_", dataset_name, sep = ""),activity,.GlobalEnv)
+    )
   }
-  
-  # Create labeller to provide more verbose labels on the plot facets
-  species.labs <- c("Big Brown Bat", "Eastern Red Bat", "Hoary Bat", "Silver-haired Bat", "Myotis Spp.",
-                    "Tri-colored Bat", "Eastern Small-footed Myotis", "Little Brown Myotis", "Northern Myotis",
-                    "All Myotis Combined")
-  names(species.labs) <- c("Epfu", "Labo", "Laci", "Lano", "Mysp", "Pesu", "Myle", "Mylu", "Myse", "Mysp_all")
-  
-  # Create plot
-  species_site_plot <- ggplot2::ggplot() +
-    ggplot2::geom_bar(data = species_night_site, mapping = ggplot2::aes(x = Night, y = Count, fill = Location), stat = "identity") + #, fill = "black") +
-    ggplot2::scale_y_continuous(name = "Calls per Night") + #, breaks = scales::pretty_breaks(n = 2)) +
-    #ggplot2::scale_x_date(name = ggplot2::element_blank(), limits = c(as.Date(min(observations_s$Night)),as.Date(max(observations_s$Night))), breaks = scales::pretty_breaks(), date_breaks = "1 month", date_labels =  date_label) + 
-    #date_breaks = "1 month", date_labels =  "%b %Y") + # limits = c(as.Date("2017-05-01."),as.Date("2017-11-30")),
-    #ggplot2::ggtitle("Total Activity of Bats") +
-    ggplot2::facet_grid(
-      Species~Location, scales = "free_y",
-      labeller = ggplot2::labeller(Species = species.labs)) +
-    ggplot2::geom_hline(yintercept=0) +
-    ggplot2::theme_classic() +
-    ggplot2::theme(
-      plot.title = ggplot2::element_blank(),
-      strip.background = ggplot2::element_blank(),
-      strip.text = ggplot2::element_text(hjust = 0),
-      strip.text.x = ggplot2::element_blank(),
-      text = ggplot2::element_text(size=text_size),
-      legend.position = "none"
-    ) #+
-    #if (!is.null(active_dates)) {
-    #  ggplot2::geom_rect(data=activity, ggplot2::aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, alpha=0.9),
-    #                     show.legend = FALSE) # Add gaps if available
-    #} 
 
-  return(species_site_plot)
+  # Validate parameters
+  if (!is.list(params) || length(params) == 0) {
+    return(list(
+      success = FALSE,
+      output_path = NULL,
+      error = "Parameters must be a non-empty list"
+    ))
+  }
+
+  # Add include_map to parameters if not present
+  if (!("include_map" %in% names(params))) {
+    params$include_map <- include_map
+  }
+
+  # Attempt rendering
+  tryCatch(
+    {
+      output_path <- rmarkdown::render(
+        input = template_path,
+        output_file = output_file,
+        output_dir = output_dir,
+        output_format = format,
+        params = params,
+        envir = new.env(),
+        clean = TRUE,
+        quiet = quiet
+      )
+
+      list(
+        success = TRUE,
+        output_path = output_path,
+        error = NULL
+      )
+    },
+    error = function(e) {
+      list(
+        success = FALSE,
+        output_path = NULL,
+        error = paste0("Render error: ", e$message)
+      )
+    }
+  )
 }
 
 
+#' Generate Single-Site Report
+#'
+#' Generates a report for a single site using the built-in single-site template.
+#'
+#' @param data_path Character. Path to an RData file with observations and log data.
+#' @param output_dir Character. Directory to save the rendered report.
+#' @param output_file Character. Filename for the report (default: "report.pdf").
+#' @param site Character. Site name to include (required).
+#' @param species Character vector. Species codes to include. If NULL (default),
+#'   all species in the data will be included.
+#' @param author Character. Author name to display in the report.
+#' @param project_name Character. Project name to display in the report.
+#' @param monitoring_start Date. Monitoring period start (optional).
+#' @param monitoring_end Date. Monitoring period end (optional).
+#' @param include_map Logical. Whether to include location map (default: TRUE).
+#'
+#' @return Invisibly, a list with success/failure status and output path.
+#'
+#' @examples
+#' \dontrun{
+#' single_site_report(
+#'   data_path = "data.RData",
+#'   output_dir = "reports/",
+#'   output_file = "Site1_Report.pdf",
+#'   site = "Site1",
+#'   species = c("Epfu", "Mylu"),
+#'   author = "Researcher",
+#'   project_name = "Project X"
+#' )
+#' }
+#'
+#' @export
+single_site_report <- function(data_path,
+                               output_dir,
+                               output_file = "report.pdf",
+                               site,
+                               species = NULL,
+                               author = "",
+                               project_name = "",
+                               monitoring_start = NULL,
+                               monitoring_end = NULL,
+                               include_map = TRUE) {
+  # Input validation
+  if (!file.exists(data_path)) {
+    stop("data_path does not exist: ", data_path)
+  }
+
+  # Normalize path to avoid working-directory issues during render
+  data_path <- normalizePath(data_path)
+
+  if (length(site) != 1 || is.na(site)) {
+    stop("site must be a single site (length 1)")
+  }
+
+  # If species not specified, load all available species from the data
+  if (is.null(species) || length(species) == 0 || all(is.na(species))) {
+    load(data_path, envir = (data_env <- new.env()))
+    if (exists("observations", envir = data_env)) {
+      obs <- get("observations", envir = data_env)
+      species <- unique(obs$Species)
+      # Remove NA values and format as character vector
+      species <- as.character(species[!is.na(species)])
+      if (length(species) == 0) {
+        stop("No species found in observations data")
+      }
+    } else {
+      stop("observations not found in data file")
+    }
+  } else {
+    # Remove NA values and format as character vector
+    species <- as.character(species[!is.na(species)])
+  }
+
+  # Get template path
+  template_path <- system.file("rmarkdown", "templates", "batr-single-site",
+    "skeleton", "skeleton.Rmd",
+    package = "batr"
+  )
+
+  if (template_path == "") {
+    stop(
+      "Built-in single-site template not found in package. ",
+      "Please reinstall batr package."
+    )
+  }
+
+  # Prepare parameters
+  params <- list(
+    data_path = data_path,
+    site = site,
+    species = species,
+    author = author,
+    project_name = project_name,
+    monitoring_start = monitoring_start,
+    monitoring_end = monitoring_end,
+    include_map = include_map
+  )
+
+  # Render report
+  result <- render_report(
+    template_path = template_path,
+    output_file = output_file,
+    output_dir = output_dir,
+    params = params,
+    format = "pdf_document",
+    include_map = include_map,
+    quiet = FALSE
+  )
+
+  if (!result$success) {
+    warning(
+      "Report rendering failed for site ", site,
+      ": ", result$error
+    )
+  } else {
+    message("Report generated: ", result$output_path)
+  }
+
+  invisible(result)
+}
+
+
+#' Generate Multi-Site Report
+#'
+#' Generates a report for multiple sites using the built-in multi-site template.
+#' Can handle few to many sites gracefully with progress feedback.
+#'
+#' @param data_path Character. Path to an RData file with observations and log data.
+#' @param output_dir Character. Directory to save the rendered report.
+#' @param output_file Character. Filename for the report (default: "report.pdf").
+#' @param sites Character vector. Site names to include (required).
+#' @param species Character vector. Species codes to include. If NULL (default),
+#'   all species in the data will be included.
+#' @param author Character. Author name to display in the report.
+#' @param project_name Character. Project name to display in the report.
+#' @param monitoring_start Date. Monitoring period start (optional).
+#' @param monitoring_end Date. Monitoring period end (optional).
+#' @param include_map Logical. Whether to include location map (default: TRUE).
+#'
+#' @return Invisibly, a list with success/failure status and output path.
+#'
+#' @details
+#' This function renders a single report covering all specified sites.
+#' If progressr is installed, progress updates will be displayed during rendering.
+#'
+#' @examples
+#' \dontrun{
+#' multi_site_report(
+#'   data_path = "data.RData",
+#'   output_dir = "reports/",
+#'   output_file = "All_Sites_Report.pdf",
+#'   sites = c("Site1", "Site2", "Site3"),
+#'   species = c("Epfu", "Mylu"),
+#'   author = "Researcher",
+#'   project_name = "Project X"
+#' )
+#' }
+#'
+#' @export
+multi_site_report <- function(data_path,
+                              output_dir,
+                              output_file = "report.pdf",
+                              sites,
+                              species = NULL,
+                              author = "",
+                              project_name = "",
+                              monitoring_start = NULL,
+                              monitoring_end = NULL,
+                              include_map = TRUE) {
+  # Input validation
+  if (!file.exists(data_path)) {
+    stop("data_path does not exist: ", data_path)
+  }
+
+  # Normalize path to avoid working-directory issues during render
+  data_path <- normalizePath(data_path)
+
+  if (length(sites) == 0 || all(is.na(sites))) {
+    stop("sites must be non-empty")
+  }
+
+  # If species not specified, load all available species from the data
+  if (is.null(species) || length(species) == 0 || all(is.na(species))) {
+    load(data_path, envir = (data_env <- new.env()))
+    if (exists("observations", envir = data_env)) {
+      obs <- get("observations", envir = data_env)
+      species <- unique(obs$Species)
+      # Remove NA values and format as character vector
+      species <- as.character(species[!is.na(species)])
+      if (length(species) == 0) {
+        stop("No species found in observations data")
+      }
+    } else {
+      stop("observations not found in data file")
+    }
+  } else {
+    # Remove NA values and format as character vector
+    species <- as.character(species[!is.na(species)])
+  }
+
+  # Get template path
+  template_path <- system.file("rmarkdown", "templates", "batr-multi-site",
+    "skeleton", "skeleton.Rmd",
+    package = "batr"
+  )
+
+  if (template_path == "") {
+    stop(
+      "Built-in multi-site template not found in package. ",
+      "Please reinstall batr package."
+    )
+  }
+
+  # Prepare parameters
+  params <- list(
+    data_path = data_path,
+    sites = sites,
+    species = species,
+    author = author,
+    project_name = project_name,
+    monitoring_start = monitoring_start,
+    monitoring_end = monitoring_end,
+    include_map = include_map
+  )
+
+  # Show progress if progressr is available
+  progress_handler <- tryCatch(
+    {
+      requireNamespace("progressr", quietly = TRUE)
+      progressr::with_progress({
+        p <- progressr::progressor(along = seq_len(1))
+        p(message = "Rendering report...")
+        NULL
+      })
+    },
+    error = function(e) NULL
+  )
+
+  # Render report
+  result <- render_report(
+    template_path = template_path,
+    output_file = output_file,
+    output_dir = output_dir,
+    params = params,
+    format = "pdf_document",
+    include_map = include_map,
+    quiet = FALSE
+  )
+
+  if (!result$success) {
+    warning(
+      "Report rendering failed for site(s) ", paste(sites, collapse = ", "),
+      ": ", result$error
+    )
+  } else {
+    message("Report generated: ", result$output_path)
+  }
+
+  invisible(result)
+}
+
+
+#' Generate Report from Custom Template
+#'
+#' Renders a report using a user-supplied RMarkdown template file from any location.
+#'
+#' @param template_path Character. Path to the user's RMarkdown template file.
+#'   Can be absolute or relative to current working directory.
+#' @param output_dir Character. Directory to save the rendered report.
+#' @param output_file Character. Filename for the report (default: "report.pdf").
+#' @param params List. Parameters to pass to the template. Must include all parameters
+#'   that the template expects (e.g., data_path, sites, species, etc.).
+#' @param format Character. Output format (default: "pdf_document").
+#'   Other options: "html_document", "word_document", etc.
+#' @param include_map Logical. Whether to attempt map rendering (default: TRUE).
+#'   If template uses maps, consider setting to FALSE for offline operation.
+#'
+#' @return Invisibly, a list with success/failure status and output path.
+#'
+#' @details
+#' Users can create custom templates by copying built-in templates or starting
+#' from scratch. Templates should be valid RMarkdown files with YAML front matter
+#' declaring parameters using:
+#'
+#' \preformatted{
+#' ---
+#' title: "My Custom Report"
+#' params:
+#'   data_path: !r NA_character_
+#'   sites: !r NA_character_
+#'   species: !r NA_character_
+#'   author: !r NA_character_
+#' ---
+#' }
+#'
+#' Templates are typically stored in a `_templates/` subdirectory within a project
+#' for organization:
+#'
+#' \preformatted{
+#' my_project/
+#' ├── data.RData
+#' ├── _templates/
+#' │   ├── my_template.Rmd
+#' │   └── advanced_template.Rmd
+#' └── analysis.R
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' # Using a custom template from a relative path
+#' render_custom_report(
+#'   template_path = "_templates/my_report.Rmd",
+#'   output_dir = "reports/",
+#'   output_file = "custom_analysis.pdf",
+#'   params = list(
+#'     data_path = "data.RData",
+#'     sites = c("Site1", "Site2"),
+#'     species = c("Epfu", "Mylu"),
+#'     author = "Jane Researcher"
+#'   )
+#' )
+#' }
+#'
+#' @export
+render_custom_report <- function(template_path,
+                                 output_dir,
+                                 output_file = "report.pdf",
+                                 params,
+                                 format = "pdf_document",
+                                 include_map = TRUE) {
+  # Validate template exists and is readable
+  if (!file.exists(template_path)) {
+    stop("Template file not found: ", template_path)
+  }
+
+  if (!file.access(template_path, mode = 4) == 0) {
+    stop("Template file is not readable: ", template_path)
+  }
+
+  # Convert relative paths to absolute for clarity
+  if (!grepl("^/", template_path) && !grepl("^[A-Za-z]:", template_path)) {
+    template_path <- file.path(getwd(), template_path)
+  }
+
+  # Validate parameters
+  if (!is.list(params)) {
+    stop("params must be a list")
+  }
+
+  # Render using core function
+  result <- render_report(
+    template_path = template_path,
+    output_file = output_file,
+    output_dir = output_dir,
+    params = params,
+    format = format,
+    include_map = include_map,
+    quiet = FALSE
+  )
+
+  if (!result$success) {
+    warning("Custom report rendering failed: ", result$error)
+  } else {
+    message("Custom report generated: ", result$output_path)
+  }
+
+  invisible(result)
+}

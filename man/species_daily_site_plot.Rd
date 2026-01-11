@@ -105,6 +105,7 @@ species_daily_site_plot("data.RData",
 \seealso{
 Other Activity Plots: 
 \code{\link{monitoring_effort_plot}()},
-\code{\link{monthly_activity_plot}()}
+\code{\link{monthly_activity_plot}()},
+\code{\link{species_activity_facet_plot}()}
 }
 \concept{Activity Plots}

@@ -83,6 +83,7 @@ monitoring_effort_plot("data.RData",
 \seealso{
 Other Activity Plots: 
 \code{\link{monthly_activity_plot}()},
+\code{\link{species_activity_facet_plot}()},
 \code{\link{species_daily_site_plot}()}
 }
 \concept{Activity Plots}

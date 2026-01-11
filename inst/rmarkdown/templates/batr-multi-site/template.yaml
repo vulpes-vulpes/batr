@@ -1,0 +1,6 @@
+name: Batr Multi-Site Report
+description: >
+  Generate a multi-site bat monitoring report combining data from multiple
+  locations into a single PDF. Includes species summary table, activity plots
+  by site, and optional location map.
+create_dir: false

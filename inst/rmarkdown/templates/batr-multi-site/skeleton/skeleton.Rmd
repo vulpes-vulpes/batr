@@ -1,0 +1,202 @@
+---
+title: "Multi-Site Bat Monitoring Report"
+author: "`r params$author`"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  pdf_document:
+    toc: false
+    keep_tex: false
+    extra_dependencies: ["booktabs", "geometry"]
+geometry:
+- top=20mm
+- left=20mm
+fontsize: 11pt
+urlcolor: blue
+params:
+  data_path: !r NA_character_
+  sites: !r c("Site1", "Site2")
+  species: !r c("Epfu")
+  author: !r NA_character_
+  project_name: !r NA_character_
+  monitoring_start: !r NA_character_
+  monitoring_end: !r NA_character_
+  include_map: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center"
+)
+
+library(batr)
+library(kableExtra)
+library(lubridate)
+library(data.table)
+
+# Load data
+load(params$data_path)
+
+# Filter to specified sites and species
+observations <- observations[
+  observations$Species %in% params$species &
+  observations$Location %in% params$sites, 
+]
+
+if (nrow(observations) == 0) {
+  stop("No observations found for specified sites and species")
+}
+
+# Filter active_dates if provided
+if (exists("active_dates")) {
+  active_dates <- active_dates[active_dates$Location %in% params$sites, ]
+}
+
+# Determine monitoring period
+if (is.null(params$monitoring_start)) {
+  mon_start <- min(observations$Night, na.rm = TRUE)
+} else {
+  mon_start <- as.Date(params$monitoring_start)
+}
+
+if (is.null(params$monitoring_end)) {
+  mon_end <- max(observations$Night, na.rm = TRUE)
+} else {
+  mon_end <- as.Date(params$monitoring_end)
+}
+
+n_sites <- length(params$sites)
+n_species <- length(unique(observations$Species))
+n_observations <- nrow(observations)
+```
+
+# `r params$project_name`
+
+## Multi-Site Report
+
+**Prepared by:** `r params$author`  
+**Report Date:** `r format(Sys.Date(), '%B %d, %Y')`  
+**Monitoring Period:** `r format(mon_start, '%b %d, %Y')` to `r format(mon_end, '%b %d, %Y')`  
+**Sites Included:** `r paste(params$sites, collapse = ", ")`
+
+---
+
+## Executive Summary
+
+- **Number of Sites:** `r n_sites`
+- **Species Detected:** `r n_species`
+- **Total Observations:** `r n_observations`
+- **Monitoring Duration:** `r as.integer(mon_end - mon_start)` days
+
+\newpage
+
+## Species Summary by Site
+
+```{r summary_table, fig.cap="Total species observations by site."}
+# Use batr's summary_table function
+summary <- batr::summary_table(
+  data_path = params$data_path,
+  species_list = params$species,
+  location_list = params$sites,
+  include_totals = TRUE
+)
+
+kable(summary, 
+      format = "latex",
+      booktabs = TRUE,
+      caption = "Species observations across all monitoring sites") %>%
+  kable_styling(latex_options = c("hold_position", "scale_down"))
+```
+
+\newpage
+
+## Activity Patterns Across Sites
+
+Nightly activity of each species by location throughout the monitoring period is shown below.
+
+```{r activity_plot, fig.cap="Nightly bat observations by species and location.", fig.height=10, fig.width=11}
+# Use batr's species_daily_site_plot function
+batr::species_daily_site_plot(
+  data_path = params$data_path,
+  species = params$species,
+  location_list = params$sites,
+  active_dates = if (exists("active_dates")) active_dates else NULL,
+  text_size = 9
+)
+```
+
+\newpage
+
+## Monitoring Effort
+
+Recorder uptime across all monitoring locations.
+
+```{r monitoring_plot, fig.cap="Monitoring effort by location over time.", fig.height=8, fig.width=10}
+if (exists("active_dates")) {
+  batr::monitoring_effort_plot(
+    active_dates = active_dates,
+    location_list = params$sites
+  )
+} else {
+  plot.new()
+  text(0.5, 0.5, "Monitoring effort data not available", cex = 1.5)
+}
+```
+
+\newpage
+
+## Monitoring Locations
+
+```{r location_info}
+# Extract unique locations with coordinates
+unique_locs <- unique(observations[, c("Location", "Latitude", "Longitude")])
+unique_locs <- unique_locs[order(unique_locs$Location), ]
+rownames(unique_locs) <- NULL
+
+kable(unique_locs,
+      format = "latex",
+      booktabs = TRUE,
+      caption = "Monitoring location coordinates") %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+\newpage
+
+## Site Comparison
+
+Summary statistics by site.
+
+```{r site_comparison}
+# Calculate summary statistics by site
+site_stats <- data.table(observations)[, 
+  .(
+    N_Observations = .N,
+    N_Species = length(unique(Species)),
+    N_Nights = length(unique(Night))
+  ), 
+  by = Location
+][order(Location)]
+
+kable(site_stats,
+      format = "latex",
+      booktabs = TRUE,
+      col.names = c("Site", "Observations", "Species", "Monitoring Nights"),
+      caption = "Summary statistics by monitoring site") %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+\newpage
+
+## Notes
+
+- This report is automatically generated from acoustic monitoring data
+- Species identifications are based on automated classification and should be verified
+- The number of observations cannot be directly compared between species, as detection varies by echolocation call characteristics
+- Comparison between sites should account for differences in monitoring effort and equipment
+- For additional analysis or questions, please contact the research team
+
+---
+
+*Report generated using the batr R package*
