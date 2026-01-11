@@ -161,37 +161,26 @@ if (exists("active_dates") && nrow(active_dates) > 0) {
 
 ## Location Information
 
-```{r location_info}
-# Extract unique locations
+```{r location_info, results='asis'}
+# Extract location coordinates
 unique_locs <- unique(observations[, c("Location", "Latitude", "Longitude")])
-if (nrow(unique_locs) > 0) {
-  kable(unique_locs,
-        format = "latex",
-        booktabs = TRUE,
-        caption = "Monitoring location coordinates") %>%
-    kable_styling(latex_options = "hold_position")
+if (nrow(unique_locs) > 0 && !is.na(unique_locs$Latitude[1]) && !is.na(unique_locs$Longitude[1])) {
+  cat(sprintf("**Monitoring Site:** %s  \n", params$site))
+  cat(sprintf("**Latitude:** %.6f  \n", unique_locs$Latitude[1]))
+  cat(sprintf("**Longitude:** %.6f  \n", unique_locs$Longitude[1]))
 } else {
-  cat("Location information not available")
+  cat("Location coordinates not available")
 }
 ```
 
-```{r location_map, fig.cap="Monitoring location map", fig.height=5, fig.width=8, eval=params$include_map}
-# Create a simple map if ggmap is available
-tryCatch({
-  if ("Latitude" %in% names(observations) && "Longitude" %in% names(observations)) {
-    # Simple plot of coordinates as fallback
-    plot(unique(observations$Longitude), 
-         unique(observations$Latitude),
-         main = "Monitoring Locations",
-         xlab = "Longitude",
-         ylab = "Latitude",
-         pch = 16,
-         cex = 2,
-         col = "darkblue")
-  }
-}, error = function(e) {
-  cat("Map rendering unavailable. Coordinates are provided in the table above.")
-})
+```{r location_map, fig.cap="Monitoring location map", fig.height=4, fig.width=6, eval=params$include_map}
+batr::location_map_plot(
+  data_path = params$data_path,
+  location_list = params$site,
+  text_size = 10,
+  point_size = 4,
+  plot_title = NULL
+)
 ```
 
 \newpage

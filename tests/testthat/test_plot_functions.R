@@ -8,6 +8,34 @@ test_that("species_daily_site_plot returns a ggplot object and handles all/NULL"
     expect_s3_class(p2, "ggplot")
 })
 
+test_that("species_activity_facet_plot returns a ggplot object", {
+    skip_if_not(file.exists("testdata/test_obs.RData"))
+    p1 <- species_activity_facet_plot("testdata/test_obs.RData", species = c("Epfu", "Mylu"))
+    expect_s3_class(p1, "ggplot")
+    # Test with NULL species (should include all)
+    p2 <- species_activity_facet_plot("testdata/test_obs.RData", species = NULL)
+    expect_s3_class(p2, "ggplot")
+})
+
+test_that("location_map_plot returns a ggplot object", {
+    skip_if_not(file.exists("testdata/test_obs.RData"))
+    p <- location_map_plot("testdata/test_obs.RData")
+    expect_s3_class(p, "ggplot")
+    # Test with specific location
+    p2 <- location_map_plot("testdata/test_obs.RData", location_list = "Site1")
+    expect_s3_class(p2, "ggplot")
+})
+
+test_that("location_map_plot errors without coordinates", {
+    skip_if_not(file.exists("testdata/test_obs.RData"))
+    # Should error if no Latitude/Longitude columns exist
+    # This assumes test data has coordinates - if it doesn't, this will pass
+    expect_error(
+        location_map_plot("testdata/no_coords.RData"),
+        "Latitude and Longitude"
+    )
+})
+
 test_that("monitoring_effort_plot returns a ggplot object and handles missing gaps", {
     skip_if_not(file.exists("testdata/test_obs.RData"))
     expect_s3_class(

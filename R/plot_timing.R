@@ -1,3 +1,7 @@
+# ============================================================================
+# Timing Plotting Functions
+# ============================================================================
+
 #' Plot Timing of First Observations Relative to Sunset
 #'
 #' Creates a plot showing the first nightly observation of a species relative
