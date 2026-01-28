@@ -48,7 +48,7 @@ If \code{NULL} (default), includes all locations in the dataset.}
 A ggplot2 object.
 }
 \description{
-Creates a simple scatter plot showing the geographic coordinates of 
+Creates a simple scatter plot showing the geographic coordinates of
 monitoring locations.
 }
 \examples{
