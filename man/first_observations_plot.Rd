@@ -59,7 +59,7 @@ recorders were inactive. Defaults to \code{FALSE}.}
 
 \item{facet_rows}{Integer. Number of facet rows. Default is \code{NULL} (all rows).}
 
-\item{date_label}{Character. Date format for x-axis labels. Default is "%b".}
+\item{date_label}{Character. Date format for x-axis labels. Default is "\%b".}
 
 \item{date_breaks}{Character. Optional break specification (e.g., "1 month"). \code{NULL} = adaptive.}
 

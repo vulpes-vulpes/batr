@@ -25,7 +25,7 @@
 #' @param width Numeric. Plot width in cm. Default is 15.
 #' @param height Numeric. Plot height in cm. Default is 20.
 #' @param text_size Numeric. Text size for plot labels. Default is 10.
-#' @param date_label Character. Date format for x-axis labels. Default is "%b %Y".
+#' @param date_label Character. Date format for x-axis labels. Default is "\%b \%Y".
 #' @param date_breaks Character. Break specification (e.g., "1 month").
 #'   Default is "1 month".
 #' @param facet_cols Integer. Number of facet columns. Default is 1.
@@ -133,7 +133,7 @@ species_activity_facet_plot <- function(data_path,
 #' @param width Numeric. Plot width in cm. Default is 15.9.
 #' @param height Numeric. Plot height in cm. Default is 8.43.
 #' @param text_size Numeric. Text size for plot labels. Default is 10.
-#' @param date_label Character. Date format for x-axis labels. Default is "%b"
+#' @param date_label Character. Date format for x-axis labels. Default is "\%b"
 #'   (abbreviated month name).
 #' @param date_breaks Character. Optional break specification (e.g., "1 month").
 #'   If \code{NULL} (default), adaptive breaks are used based on timespan.
@@ -291,7 +291,7 @@ species_daily_site_plot <- function(data_path,
 #' @param width Numeric. Plot width in cm. Default is 25.
 #' @param height Numeric. Plot height in cm. Default is 20.
 #' @param text_size Numeric. Text size for plot labels. Default is 10.
-#' @param date_label Character. Date format for x-axis labels. Default is "%b".
+#' @param date_label Character. Date format for x-axis labels. Default is "\%b".
 #' @param date_breaks Character. Optional break specification (e.g., "1 month").
 #'   If \code{NULL} (default), adaptive breaks are used based on timespan.
 #' @param facet_cols Integer. Number of facet columns. Default is 1.

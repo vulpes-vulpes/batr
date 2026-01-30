@@ -47,7 +47,10 @@
 #' @family Import Functionsimport tools
 #'
 #' @examples \dontrun{
-#' #' import_logs("C:/Folder/Folder/logss_Folder", "C:/Folder/Folder/Data.RData", "2021-01-01", "2021-12-31)
+#' #' import_logs("C:/Folder/Folder/logss_Folder", 
+#'                "C:/Folder/Folder/Data.RData", 
+#'                "2021-01-01",
+#'                "2021-12-31")
 #' }
 #'
 import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, monitoring_end = NULL) {
@@ -214,7 +217,7 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
 
   for (i in seq_along(output$swift_file_list)) {
     file <- output$swift_file_list[i]
-    file_data <- read.csv(file, header = TRUE)
+    file_data <- utils::read.csv(file, header = TRUE)
     mic_fails <- length(grep("Status: Check microphone", file_data[, 3]))
     files <- length(grep("FILE", file_data[, 2]))
     recording <- any(grepl("Status: Recording now", file_data[, 3]))
@@ -272,7 +275,7 @@ import_logs <- function(log_path, data_path = NULL, monitoring_start = NULL, mon
     file <- output$ranger_file_list[i]
     # Ranger log files can have variable column counts; read flexibly
     file_data <- tryCatch(
-      read.csv(
+      utils::read.csv(
         file,
         header = FALSE,
         stringsAsFactors = FALSE,

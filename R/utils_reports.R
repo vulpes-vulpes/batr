@@ -394,11 +394,11 @@ multi_site_report <- function(data_path,
 #'
 #' \preformatted{
 #' my_project/
-#' ├── data.RData
-#' ├── _templates/
-#' │   ├── my_template.Rmd
-#' │   └── advanced_template.Rmd
-#' └── analysis.R
+#' +-- data.RData
+#' +-- _templates/
+#' |   +-- my_template.Rmd
+#' |   +-- advanced_template.Rmd
+#' +-- analysis.R
 #' }
 #'
 #' @examples

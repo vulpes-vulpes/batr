@@ -57,7 +57,7 @@ scales per location, or "fixed" for matched scales.}
 
 \item{text_size}{Numeric. Text size for plot labels. Default is 10.}
 
-\item{date_label}{Character. Date format for x-axis labels. Default is "%b"
+\item{date_label}{Character. Date format for x-axis labels. Default is "\%b"
 (abbreviated month name).}
 
 \item{date_breaks}{Character. Optional break specification (e.g., "1 month").

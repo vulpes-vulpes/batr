@@ -27,7 +27,7 @@
 #' @param width Numeric. Plot width in cm. Default is 15.9.
 #' @param height Numeric. Plot height in cm. Default is 8.43.
 #' @param text_size Numeric. Text size for plot labels. Default is 10.
-#' @param date_label Character. Date format for x-axis labels. Default is "%b".
+#' @param date_label Character. Date format for x-axis labels. Default is "\%b".
 #' @param facet_cols Integer. Number of facet columns. Default is 2.
 #' @param facet_rows Integer. Number of facet rows. Default is \code{NULL} (all rows).
 #' @param date_breaks Character. Optional break specification (e.g., "1 month"). \code{NULL} = adaptive.

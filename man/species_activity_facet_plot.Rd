@@ -48,7 +48,7 @@ If \code{NULL}, uses the latest date in the dataset.}
 
 \item{text_size}{Numeric. Text size for plot labels. Default is 10.}
 
-\item{date_label}{Character. Date format for x-axis labels. Default is "%b %Y".}
+\item{date_label}{Character. Date format for x-axis labels. Default is "\%b \%Y".}
 
 \item{date_breaks}{Character. Break specification (e.g., "1 month").
 Default is "1 month".}
