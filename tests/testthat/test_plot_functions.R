@@ -78,3 +78,39 @@ test_that(".clean_location_label replaces underscores", {
     expect_equal(.clean_location_label("Site_1"), "Site 1")
     expect_equal(.clean_location_label("A_B_C"), "A B C")
 })
+
+test_that("monthly_activity_plot returns a ggplot object", {
+    # Create minimal test data
+    species_night_site <- data.frame(
+        Night = as.Date(c("2023-01-15", "2023-02-15", "2023-03-15")),
+        Location = c("Site1", "Site1", "Site1"),
+        Species = c("Epfu", "Epfu", "Epfu"),
+        Count = c(10, 15, 20)
+    )
+    monthly_active_nights <- data.frame(
+        Year = 2023,
+        Location = "Site1",
+        `1` = 5,
+        `2` = 6,
+        `3` = 7,
+        Total_Nights = 18,
+        check.names = FALSE
+    )
+
+    p <- monthly_activity_plot(species_night_site, monthly_active_nights)
+    expect_s3_class(p, "ggplot")
+
+    # Test with exclusion
+    p2 <- monthly_activity_plot(species_night_site, monthly_active_nights,
+        exclude_species = "Mylu"
+    )
+    expect_s3_class(p2, "ggplot")
+})
+
+test_that("pipe operator %>% works", {
+    # Simple test that the pipe is available
+    result <- mtcars %>%
+        head(5) %>%
+        nrow()
+    expect_equal(result, 5)
+})

@@ -168,3 +168,57 @@ test_that(".new/.add/.update_observations work end-to-end with mocks", {
     .get_file_list = get_file_list_mock
   )
 })
+
+# ----------------------------------------------------------------------------
+# import_guano main function tests
+# ----------------------------------------------------------------------------
+
+test_that("import_guano validates action parameter", {
+  expect_error(
+    import_guano(
+      action = "Invalid", input_path = tempdir(),
+      site_col = "Site", timezone = "UTC"
+    ),
+    "Invalid action given"
+  )
+})
+
+test_that("import_guano New action creates RData file with mocked components", {
+  skip_on_cran()
+
+  td <- tempfile(pattern = "wavdir_")
+  dir.create(td)
+  on.exit(unlink(td, recursive = TRUE), add = TRUE)
+
+  paths <- file.path(td, c("recA1.wav", "recB2.wav"))
+  for (p in paths) writeBin(raw(), p)
+
+  rdata <- tempfile(fileext = ".RData")
+  on.exit(unlink(rdata), add = TRUE)
+
+  # Mock components
+  testthat::with_mocked_bindings(
+    {
+      # Suppress interactive prompts by providing data_path
+      result <- import_guano(
+        action = "New",
+        input_path = td,
+        site_col = "Site",
+        timezone = "UTC",
+        data_path = rdata,
+        fast_import = FALSE
+      )
+
+      # Check that RData file was created
+      expect_true(file.exists(rdata))
+
+      # Load and verify contents
+      env <- new.env()
+      load(rdata, envir = env)
+      expect_true("observations" %in% ls(env))
+      expect_s3_class(env$observations, "data.frame")
+      expect_true(nrow(env$observations) > 0)
+    },
+    read.guano = stub_read_guano
+  )
+})
