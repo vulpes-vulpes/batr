@@ -1,12 +1,14 @@
 ---
-title: "Multi-Site Bat Monitoring Report"
-author: "`r params$author`"
-date: "`r format(Sys.Date(), '%B %d, %Y')`"
 output:
   pdf_document:
     toc: false
     keep_tex: false
     extra_dependencies: ["booktabs", "geometry"]
+header-includes:
+  - \usepackage{helvet}
+  - \renewcommand\familydefault{\sfdefault}
+  - \usepackage{caption}
+  - \captionsetup{justification=raggedright, singlelinecheck=false, font=small, labelfont=bf}
 geometry:
 - top=20mm
 - left=20mm
@@ -83,16 +85,33 @@ n_observations <- nrow(observations)
 
 ---
 
-## Executive Summary
+## Summary
 
-- **Number of Sites:** `r n_sites`
-- **Species Detected:** `r n_species`
-- **Total Observations:** `r n_observations`
-- **Monitoring Duration:** `r as.integer(mon_end - mon_start)` days
+A total of **`r n_species`** bat species were detected across **`r n_sites`** monitoring locations during the monitoring period, with a combined total of **`r n_observations`** acoustic observations over **`r as.integer(mon_end - mon_start)`** nights.
 
-\newpage
+## Site Comparison
 
-## Species Summary by Site
+```{r site_comparison}
+# Calculate summary statistics by site including recorder model
+site_stats <- data.table(observations)[, 
+  .(
+    Model = if("Model" %in% names(.SD)) paste(unique(Model), collapse = ", ") else "Unknown",
+    N_Observations = .N,
+    N_Species = length(unique(Species)),
+    N_Nights = length(unique(Night))
+  ), 
+  by = Location
+][order(Location)]
+
+kable(site_stats,
+      format = "latex",
+      booktabs = TRUE,
+      col.names = c("Site", "Recorder", "Observations", "Species", "Monitoring Nights"),
+      caption = "Summary statistics by monitoring site") %>%
+  kable_styling(latex_options = c("hold_position", "scale_down"))
+```
+
+## Species Observations by Site
 
 ```{r summary_table, fig.cap="Total species observations by site."}
 # Use batr's summary_table function
@@ -114,16 +133,17 @@ kable(summary,
 
 ## Activity Patterns Across Sites
 
-Nightly activity of each species by location throughout the monitoring period is shown below.
+Nightly activity of all species by site throughout the monitoring period is shown below.
 
-```{r activity_plot, fig.cap="Nightly bat observations by species and location.", fig.height=10, fig.width=11}
+```{r activity_plot, fig.cap="Nightly bat observations by species and site.", fig.height=6.5, fig.width=7}
 # Use batr's species_daily_site_plot function
 batr::species_daily_site_plot(
   data_path = params$data_path,
   species = params$species,
   location_list = params$sites,
   gaps = exists("active_dates"),
-  text_size = 9
+  text_size = 9,
+  date_breaks = "2 weeks"
 )
 ```
 
@@ -131,13 +151,16 @@ batr::species_daily_site_plot(
 
 ## Monitoring Effort
 
-Recorder uptime across all monitoring locations.
+Monitoring effort at all locations throughout the monitoring period. Grey bars indicate nights with no monitoring effort.
 
-```{r monitoring_plot, fig.cap="Monitoring effort by location over time.", fig.height=8, fig.width=10}
+```{r monitoring_plot, fig.cap="Monitoring effort by site over time.", fig.height=6.5, fig.width=7}
 tryCatch({
   batr::monitoring_effort_plot(
     data_path = params$data_path,
-    location_list = params$sites
+    location_list = params$sites,
+    monitoring_start = mon_start,
+    monitoring_end = mon_end,
+    date_breaks = "2 weeks"
   )
 }, error = function(e) {
   plot.new()
@@ -158,45 +181,49 @@ rownames(unique_locs) <- NULL
 kable(unique_locs,
       format = "latex",
       booktabs = TRUE,
-      caption = "Monitoring location coordinates") %>%
+      caption = "Monitoring site coordinates") %>%
   kable_styling(latex_options = "hold_position")
 ```
 
-\newpage
+```{r location_map, fig.cap="Monitoring location map", fig.height=4, fig.width=6, eval=params$include_map}
+# Save filtered observations to temporary RData for site-specific map
+temp_map_file <- tempfile(fileext = ".RData")
+save(observations, file = temp_map_file)
 
-## Site Comparison
+batr::location_map_plot(
+  data_path = temp_map_file,
+  location_list = params$site,
+  text_size = 10,
+  point_size = 4,
+  plot_title = NULL
+)
 
-Summary statistics by site.
-
-```{r site_comparison}
-# Calculate summary statistics by site
-site_stats <- data.table(observations)[, 
-  .(
-    N_Observations = .N,
-    N_Species = length(unique(Species)),
-    N_Nights = length(unique(Night))
-  ), 
-  by = Location
-][order(Location)]
-
-kable(site_stats,
-      format = "latex",
-      booktabs = TRUE,
-      col.names = c("Site", "Observations", "Species", "Monitoring Nights"),
-      caption = "Summary statistics by monitoring site") %>%
-  kable_styling(latex_options = "hold_position")
+unlink(temp_map_file)
 ```
+
 
 \newpage
 
 ## Notes
 
-- This report is automatically generated from acoustic monitoring data
-- Species identifications are based on automated classification and should be verified
-- The number of observations cannot be directly compared between species, as detection varies by echolocation call characteristics
-- Comparison between sites should account for differences in monitoring effort and equipment
-- For additional analysis or questions, please contact the research team
+```{r notes, results='asis', echo=FALSE}
+# Check if any manual IDs exist
+has_manual_ids <- "Species.Manual.ID" %in% names(observations) && 
+                  any(!is.na(observations$Species.Manual.ID))
+
+cat("- This report is automatically generated from acoustic monitoring data\n")
+
+if (has_manual_ids) {
+  cat("- Species identifications include manual verification\n")
+} else {
+  cat("- Species identifications are based on automated classification and should be verified\n")
+}
+
+cat("- The number of observations cannot be directly compared between species, as detection varies by echolocation call characteristics\n")
+cat("- Comparison between sites should account for differences in monitoring effort and equipment\n")
+cat("- For additional analysis or questions, please contact the research team\n")
+```
 
 ---
 
-*Report generated using the batr R package*
+*Report generated using the [batr R package](https://github.com/vulpes-vulpes/batr) by Toby Thorne*

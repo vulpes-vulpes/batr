@@ -373,6 +373,26 @@ monitoring_effort_plot <- function(data_path,
     }
   }
 
+  # Clip gap rectangles to monitoring period for proper display
+  if (nrow(gap_list) > 0) {
+    gap_list[, xmin := pmax(as.Date(xmin), as.Date(monitoring_start))]
+    gap_list[, xmax := pmin(as.Date(xmax), as.Date(monitoring_end))]
+    # Remove gaps that are entirely outside the monitoring period
+    gap_list <- gap_list[xmin <= xmax]
+
+    # If clipping removed all gaps, create an empty plot-compatible structure
+    if (nrow(gap_list) == 0 && !is.null(location_list)) {
+      gap_list <- data.table::data.table(
+        Location = location_list,
+        Location_label = .clean_location_label(location_list),
+        xmin = as.Date(monitoring_start),
+        xmax = as.Date(monitoring_start),
+        ymin = 0,
+        ymax = 1
+      )
+    }
+  }
+
   # Build x-axis scale (adaptive breaks unless user supplies date_breaks)
   adaptive_breaks <- if (is.null(date_breaks)) {
     .adaptive_date_breaks(

@@ -143,7 +143,7 @@ batr::species_activity_facet_plot(
 
 ## Monitoring Effort
 
-This plot shows the monitoring effort (presence/absence of active recordings) throughout the monitoring period. Grey bars indicate nights with no monitoring effort.
+Monitoring effort throughout the monitoring period. Grey bars indicate nights with no monitoring effort.
 
 ```{r monitoring_plot, fig.cap="Monitoring effort over time.", fig.height=2, fig.width=7}
 if (exists("active_dates") && nrow(active_dates) > 0) {
