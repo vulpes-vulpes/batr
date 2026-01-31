@@ -1,53 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# batr <img src="man/figures/logo.svg" align="right" height="139" />
-
-<!-- badges: start -->
-
-[![R-CMD-check](https://github.com/vulpes-vulpes/batr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vulpes-vulpes/batr/actions/workflows/R-CMD-check.yaml)
-[![License: GPL
-v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-<!-- badges: end -->
-
-**batr** streamlines analysis and reporting of bat acoustic monitoring
-data containing [GUANO metadata](https://guano-md.org/). The package
-provides tools to extract GUANO metadata directly from WAV files, create
-summaries and visualizations, generate automated reports, and facilitate
-manual vetting workflows.
-
-Developed as part of conservation research by the [Toronto Zoo’s Native
-Bat Conservation Program](https://www.torontozoo.com/bats), batr is
-designed to support large-scale acoustic monitoring projects. The
-package is species-agnostic and works with any GUANO-compliant species
-identification codes.
-
-## Key Features
-
-- **GUANO Import**: Extract metadata directly from WAV files with
-  flexible add/update capabilities
-- **Device Support**: Import log files from Anabat Swift, Wildlife
-  Acoustics SM3BAT/SM4BAT/SMmini, and Titley Ranger
-- **Visualization Suite**: Create publication-quality plots for activity
-  patterns, phenology, and spatial distributions
-- **Automated Reporting**: Generate single-site and multi-site PDF
-  reports with customizable templates
-- **Manual Vetting**: Extract stratified or random file samples for
-  quality control workflows
-- **Survey Effort Tracking**: Visualize recorder uptime and data gaps to
-  contextualize results
-
-Check development progress and latest changes in
-[NEWS.md](https://github.com/vulpes-vulpes/batr/blob/main/NEWS.md).
-
-## Installation
-
-Install the current version from [GitHub](https://github.com/) using the
-following code:
-
-<!-- README.md is generated from README.Rmd. Please edit that file -->
-
-# batr <img src="man/figures/logo.svg" align="right" height="139" />
+# batr
 
 <!-- badges: start -->
 
