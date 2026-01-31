@@ -1,12 +1,14 @@
 ---
-title: "Single Site Bat Monitoring Report"
-author: "`r params$author`"
-date: "`r format(Sys.Date(), '%B %d, %Y')`"
 output:
   pdf_document:
     toc: false
     keep_tex: false
     extra_dependencies: ["booktabs", "geometry"]
+header-includes:
+  - \usepackage{helvet}
+  - \renewcommand\familydefault{\sfdefault}
+  - \usepackage{caption}
+  - \captionsetup{justification=raggedright, singlelinecheck=false, font=small, labelfont=bf}
 geometry:
 - top=20mm
 - left=20mm
@@ -92,8 +94,8 @@ n_observations <- nrow(observations)
 ## Single Site Report: `r site_name`
 
 **Prepared by:** `r params$author`  
-**Report Date:** `r format(Sys.Date(), '%B %d, %Y')`  
-**Monitoring Period:** `r format(mon_start, '%b %d, %Y')` to `r format(mon_end, '%b %d, %Y')`
+**Report Generated Date:** `r format(Sys.Date(), '%B %d, %Y')`  
+**Monitoring Period:** `r format(mon_start, '%d %b %Y')` to `r format(mon_end, '%d %b %Y')`
 
 ---
 
@@ -138,14 +140,17 @@ batr::species_activity_facet_plot(
 
 ## Monitoring Effort
 
-This plot shows the monitoring effort (presence/absence of active recordings) throughout the monitoring period.
+This plot shows the monitoring effort (presence/absence of active recordings) throughout the monitoring period. Grey bars indicate nights with no monitoring effort.
 
-```{r monitoring_plot, fig.cap="Monitoring effort over time.", fig.height=6, fig.width=10}
+```{r monitoring_plot, fig.cap="Monitoring effort over time.", fig.height=2, fig.width=7}
 if (exists("active_dates") && nrow(active_dates) > 0) {
   tryCatch({
     batr::monitoring_effort_plot(
       data_path = params$data_path,
-      location_list = params$site
+      location_list = params$site,
+      monitoring_start = mon_start,
+      monitoring_end = mon_end,
+      facet_rows = 1
     )
   }, error = function(e) {
     plot.new()
@@ -174,13 +179,19 @@ if (nrow(unique_locs) > 0 && !is.na(unique_locs$Latitude[1]) && !is.na(unique_lo
 ```
 
 ```{r location_map, fig.cap="Monitoring location map", fig.height=4, fig.width=6, eval=params$include_map}
+# Save filtered observations to temporary RData for site-specific map
+temp_map_file <- tempfile(fileext = ".RData")
+save(observations, file = temp_map_file)
+
 batr::location_map_plot(
-  data_path = params$data_path,
+  data_path = temp_map_file,
   location_list = params$site,
   text_size = 10,
   point_size = 4,
   plot_title = NULL
 )
+
+unlink(temp_map_file)
 ```
 
 \newpage
