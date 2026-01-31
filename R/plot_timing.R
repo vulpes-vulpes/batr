@@ -150,7 +150,7 @@ first_observations_plot <- function(data_path,
   if (gaps) {
     tryCatch(
       {
-        active_dates <- .load_gap_data(data_path)
+        active_dates <- .load_gap_data(data_path, location_list = location_list)
 
         if (!is.null(active_dates) && nrow(active_dates) > 0) {
           gap_data <- .plot_gap_calculator(active_dates)
@@ -262,15 +262,3 @@ first_observations_plot <- function(data_path,
 # ============================================================================
 # Helper Functions (shared with plot_activity.R)
 # ============================================================================
-
-#' Load gap data from log files
-#' @keywords internal
-.load_gap_data <- function(data_path) {
-  load(data_path)
-
-  if (!exists("active_dates")) {
-    stop("Log file data missing. Please run import_logs() first.")
-  }
-
-  return(active_dates)
-}

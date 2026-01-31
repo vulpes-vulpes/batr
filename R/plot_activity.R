@@ -192,7 +192,7 @@ species_daily_site_plot <- function(data_path,
   active_dates <- NULL
   if (gaps) {
     active_dates <- tryCatch(
-      .load_gap_data(data_path),
+      .load_gap_data(data_path, location_list = location_list),
       error = function(e) {
         warning("Failed to load gap data: ", e$message, ". Skipping gap overlay.")
         NULL
@@ -330,25 +330,14 @@ monitoring_effort_plot <- function(data_path,
                                    plot_title = NULL,
                                    plot_subtitle = NULL,
                                    plot_caption = NULL) {
-  # Load gap data
+  # Load gap data with location filtering
   active_dates <- tryCatch(
-    data.table::as.data.table(.load_gap_data(data_path)),
+    data.table::as.data.table(.load_gap_data(data_path, location_list = location_list)),
     error = function(e) {
       warning("Failed to load gap data: ", e$message, ". Skipping plot.")
       data.table::data.table()
     }
   )
-
-  # Filter by location if specified
-  if (!is.null(location_list)) {
-    active_dates <- active_dates[Location %in% location_list]
-    if (nrow(active_dates) == 0) {
-      stop(
-        "No log data found for specified locations: ",
-        paste(location_list, collapse = ", ")
-      )
-    }
-  }
 
   # Calculate gaps (skip if no data)
   gap_list <- if (nrow(active_dates) > 0) {
@@ -360,11 +349,11 @@ monitoring_effort_plot <- function(data_path,
   # Clean location labels for display
   if (nrow(gap_list) > 0) {
     gap_list[, Location_label := .clean_location_label(Location)]
-  }
 
-  # Filter gaps by location if specified
-  if (!is.null(location_list)) {
-    gap_list <- gap_list[Location %in% location_list]
+    # Filter gaps by location if specified
+    if (!is.null(location_list)) {
+      gap_list <- gap_list[Location %in% location_list]
+    }
   }
 
   # Calculate monitoring period
@@ -528,16 +517,6 @@ monthly_activity_plot <- function(species_night_site, monthly_active_nights, exc
 
 #' Load gap data from log files
 #' @keywords internal
-.load_gap_data <- function(data_path) {
-  load(data_path)
-
-  if (!exists("active_dates")) {
-    stop("Log file data missing. Please run import_logs() first.")
-  }
-
-  return(active_dates)
-}
-
 #' Prepare activity count data for plotting
 #' @keywords internal
 .prepare_activity_data <- function(dataset, species, location_list) {

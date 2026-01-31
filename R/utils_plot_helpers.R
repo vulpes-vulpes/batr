@@ -96,6 +96,37 @@
   return(observations)
 }
 
+#' Load gap data from RData file
+#'
+#' Loads active_dates (recorder uptime) data from an RData file with optional
+#' filtering by location.
+#'
+#' @param data_path Character. Path to an RData file with active_dates data.
+#' @param location_list Character vector. Location names to filter by (optional).
+#'
+#' @return Data frame of active_dates, optionally filtered.
+#'
+#' @keywords internal
+.load_gap_data <- function(data_path, location_list = NULL) {
+  .validate_rdata_path(data_path)
+
+  load(data_path)
+
+  if (!exists("active_dates")) {
+    stop("Log file data missing. Please run import_logs() first.")
+  }
+
+  # Filter by location if specified
+  if (!is.null(location_list)) {
+    active_dates <- active_dates[active_dates$Location %in% location_list, ]
+    if (nrow(active_dates) == 0) {
+      stop("No log data found for specified locations: ", paste(location_list, collapse = ", "))
+    }
+  }
+
+  return(active_dates)
+}
+
 #' Consistent theme for batr plots
 #'
 #' Provides a consistent ggplot2 theme for all batr visualizations.
