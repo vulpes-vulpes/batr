@@ -36,6 +36,7 @@ by month and species.
 \seealso{
 Other Activity Plots: 
 \code{\link{monitoring_effort_plot}()},
+\code{\link{species_activity_facet_plot}()},
 \code{\link{species_daily_site_plot}()}
 }
 \concept{Activity Plots}

@@ -20,4 +20,168 @@ knitr::opts_chunk$set(
 library(batr)
 ```
 
-To be completed. 
+## Overview
+
+The **batr** package streamlines analysis and reporting of bat acoustic
+monitoring data containing [GUANO metadata](https://guano-md.org/). It provides
+tools to import metadata from WAV files, summarize observations, visualize
+activity and timing patterns, and generate PDF reports.
+
+Typical workflow:
+
+1. Import GUANO metadata from WAV files into a single RData file.
+2. Optionally import recorder log files to track survey effort and gaps.
+3. Summarize and visualize activity patterns.
+4. Generate standardized reports or build custom templates.
+
+## Installation
+
+Install the development version from GitHub:
+
+```r
+# install.packages("pak")
+pak::pak("vulpes-vulpes/batr")
+```
+
+## Data Requirements
+
+batr expects WAV files that contain GUANO metadata (Grand Unified Acoustic
+Notation Ontology). At minimum, the metadata should include:
+
+- **Species identification**: `Species Auto ID` or `Species Manual ID`
+- **Site identifier**: a GUANO field used to specify location (passed as
+  `site_col` during import)
+- **Timestamp**: recording date and time (GUANO standard field)
+- **Coordinates**: `Loc Position` in decimal degrees
+
+## Importing GUANO Metadata
+
+Use `import_guano()` to read metadata from WAV files and save a consolidated
+RData file. This is typically the most time‑intensive step for large projects.
+
+```r
+# Not run
+import_guano(
+  action = "New",
+  input_path = "path/to/wav/files",
+  site_col = "Site",
+  timezone = "America/Toronto",
+  data_path = "project_data.RData"
+)
+```
+
+To add new files later:
+
+```r
+# Not run
+import_guano(
+  action = "Add",
+  input_path = "path/to/new/wavs",
+  site_col = "Site",
+  timezone = "America/Toronto",
+  data_path = "project_data.RData"
+)
+```
+
+To update metadata after re‑identification or manual vetting:
+
+```r
+# Not run
+import_guano(
+  action = "Update",
+  input_path = "path/to/updated/wavs",
+  site_col = "Site",
+  timezone = "America/Toronto",
+  data_path = "project_data.RData"
+)
+```
+
+## Importing Recorder Logs
+
+Recorder logs allow you to calculate monitoring effort and distinguish true
+absences from recorder downtime. Use `import_logs()` to load log data and merge
+it into your project RData file.
+
+```r
+# Not run
+import_logs(
+  log_path = "path/to/log/files",
+  data_path = "project_data.RData"
+)
+```
+
+Supported device log formats include:
+
+- **Anabat Swift** (daily CSV logs, one folder per site)
+- **Titley Ranger** (same structure as Anabat Swift)
+- **Wildlife Acoustics SM3/SM4/SMmini** (summary TXT files; if a site has
+  multiple summary files, append a hyphen and number, e.g., `SiteA-1.txt`)
+
+## Summaries and Visualizations
+
+Once data are imported, you can summarize activity and generate plots.
+
+### Summary tables
+
+```r
+# Not run
+summary_table("project_data.RData")
+```
+
+### Activity plots
+
+```r
+# Not run
+species_daily_site_plot(
+  data_path = "project_data.RData",
+  species = "Mylu",
+  gaps = TRUE # If true and log data are available, shows gaps in monitoring effort
+)
+```
+
+### Phenology and timing
+
+```r
+# Not run
+first_observations_plot(
+  data_path = "project_data.RData",
+  species = "Mylu",
+  timezone = "America/Toronto"
+)
+```
+
+## Automated Reports
+
+Generate standardized PDF reports using the built‑in templates:
+
+```r
+# Not run
+single_site_report(
+  data_path = "project_data.RData",
+  site = "Site1",
+  output_dir = "reports"
+)
+```
+
+For custom templates, see `vignette("custom-reports")`.
+
+## Manual Vetting Workflows
+
+Use `manual_vet_extractor()` to select files for quality control or manual
+verification:
+
+```r
+# Not run
+manual_vet_extractor(
+  data_path = "project_data.RData",
+  WAV_directory = "path/to/wav/files",
+  save_directory = "path/to/vetting/output",
+  percentage = 0.05,
+  stratified = TRUE
+)
+```
+
+## Next Steps
+
+Explore the function reference with `?batr` and view additional examples in the
+`custom-reports` vignette.

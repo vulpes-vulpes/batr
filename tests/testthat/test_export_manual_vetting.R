@@ -246,9 +246,9 @@ test_that(".handle_missing_wavs excludes missing files", {
         Full.Path = c("/path/file1.wav", NA, "/path/file3.wav", NA)
     )
 
-    expect_warning(
-        result <- batr:::`.handle_missing_wavs`(dataset, "/wav/dir", interactive = FALSE),
-        "2 observations have no matching WAV file"
+    expect_message(
+        result <- batr:::`.handle_missing_wavs`(dataset, "/wav/dir", ask_user = FALSE),
+        "2 of 4 observations.*have no matching WAV file"
     )
 
     expect_equal(nrow(result), 2)
@@ -262,7 +262,7 @@ test_that(".handle_missing_wavs returns unchanged dataset when no missing files"
         Full.Path = c("/path/file1.wav", "/path/file2.wav")
     )
 
-    result <- batr:::`.handle_missing_wavs`(dataset, "/wav/dir", interactive = FALSE)
+    result <- batr:::`.handle_missing_wavs`(dataset, "/wav/dir", ask_user = FALSE)
     expect_equal(nrow(result), 2)
     expect_identical(result, dataset)
 })
@@ -275,7 +275,7 @@ test_that(".handle_missing_wavs errors when all files missing", {
     )
 
     expect_error(
-        batr:::`.handle_missing_wavs`(dataset, "/wav/dir", interactive = FALSE),
+        batr:::`.handle_missing_wavs`(dataset, "/wav/dir", ask_user = FALSE),
         "All observations are missing WAV files"
     )
 })
@@ -319,7 +319,7 @@ test_that("manual_vet_extractor works end-to-end with simple sampling", {
             percentage = 0.2,
             stratified = FALSE,
             fast_import = TRUE,
-            interactive = FALSE
+            ask_user = FALSE
         ),
         "Starting Manual Vetting"
     )
@@ -375,7 +375,7 @@ test_that("manual_vet_extractor works with stratified sampling", {
             percentage = 0.2,
             stratified = TRUE,
             fast_import = TRUE,
-            interactive = FALSE
+            ask_user = FALSE
         ),
         "stratified sampling"
     )
@@ -416,8 +416,8 @@ test_that("manual_vet_extractor handles missing WAV files gracefully", {
     temp_rdata <- tempfile(fileext = ".RData")
     save(observations, file = temp_rdata)
 
-    # Run function - should warn about missing files but continue
-    expect_warning(
+    # Run function - should message about missing files but continue
+    expect_message(
         manual_vet_extractor(
             data_path = temp_rdata,
             WAV_directory = temp_wav_dir,
@@ -426,9 +426,9 @@ test_that("manual_vet_extractor handles missing WAV files gracefully", {
             percentage = 0.5,
             stratified = FALSE,
             fast_import = TRUE,
-            interactive = FALSE
+            ask_user = FALSE
         ),
-        "3 observations have no matching WAV file"
+        "3 of 10 observations.*have no matching WAV file"
     )
 
     # Should still copy available files

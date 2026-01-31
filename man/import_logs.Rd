@@ -64,7 +64,10 @@ there were no bats, or because the monitor had run out of batteries...
 
 \examples{
 \dontrun{
-#' import_logs("C:/Folder/Folder/logss_Folder", "C:/Folder/Folder/Data.RData", "2021-01-01", "2021-12-31)
+#' import_logs("C:/Folder/Folder/logss_Folder", 
+               "C:/Folder/Folder/Data.RData", 
+               "2021-01-01",
+               "2021-12-31")
 }
 
 }

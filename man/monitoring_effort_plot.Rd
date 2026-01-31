@@ -45,16 +45,22 @@ If \code{NULL}, uses the latest date in the log data.}
 
 \item{text_size}{Numeric. Text size for plot labels. Default is 10.}
 
-\item{date_label}{Character. Date format for x-axis labels. Default is "%b".}
+\item{date_label}{Character. Date format for x-axis labels. Default is "\%b".}
 
 \item{date_breaks}{Character. Optional break specification (e.g., "1 month").
 If \code{NULL} (default), adaptive breaks are used based on timespan.}
 
-\item{facet_cols, facet_rows}{Integer. Number of facet columns/rows. Default 2 cols, all rows.}
+\item{facet_cols}{Integer. Number of facet columns. Default is 1.}
+
+\item{facet_rows}{Integer. Number of facet rows. Default is \code{NULL} (all rows).}
 
 \item{title}{Logical. If \code{TRUE} (default), adds plot title.}
 
-\item{plot_title, plot_subtitle, plot_caption}{Character. Optional plot title, subtitle, caption.}
+\item{plot_title}{Character. Optional plot title.}
+
+\item{plot_subtitle}{Character. Optional plot subtitle.}
+
+\item{plot_caption}{Character. Optional plot caption.}
 }
 \value{
 A ggplot2 object.
@@ -77,6 +83,7 @@ monitoring_effort_plot("data.RData",
 \seealso{
 Other Activity Plots: 
 \code{\link{monthly_activity_plot}()},
+\code{\link{species_activity_facet_plot}()},
 \code{\link{species_daily_site_plot}()}
 }
 \concept{Activity Plots}

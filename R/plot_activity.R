@@ -3,6 +3,110 @@
 # ============================================================================
 # Consolidated from plot_nightly_activity.R and update_Plots.R
 
+#' Plot Species Activity Faceted by Species
+#'
+#' Creates a plot of nightly activity for multiple species, with each species
+#' shown in its own facet panel. Designed for single-site or aggregated data.
+#'
+#' @family Activity Plots
+#'
+#' @param data_path Character. Path to an existing RData file containing
+#'   observation data.
+#' @param species Character vector. Species codes to include in the plot.
+#'   If \code{NULL}, includes all species in the dataset.
+#' @param location_list Character vector. Location names to filter/include.
+#'   If \code{NULL} (default), includes all locations.
+#' @param monitoring_start Character. Monitoring start date (e.g., "2019-01-01").
+#'   If \code{NULL}, uses the earliest date in the dataset.
+#' @param monitoring_end Character. Monitoring end date (e.g., "2019-12-31").
+#'   If \code{NULL}, uses the latest date in the dataset.
+#' @param save_path Character. Full file path to save plot as PNG. If \code{NULL}
+#'   (default), plot is not saved.
+#' @param width Numeric. Plot width in cm. Default is 15.
+#' @param height Numeric. Plot height in cm. Default is 20.
+#' @param text_size Numeric. Text size for plot labels. Default is 10.
+#' @param date_label Character. Date format for x-axis labels. Default is "\%b \%Y".
+#' @param date_breaks Character. Break specification (e.g., "1 month").
+#'   Default is "1 month".
+#' @param facet_cols Integer. Number of facet columns. Default is 1.
+#' @param y_scale Character. Y-axis scaling: "free_y" (default) for independent
+#'   scales per species, or "fixed" for matched scales.
+#' @param plot_title Character. Optional plot title.
+#' @param plot_subtitle Character. Optional plot subtitle.
+#' @param plot_caption Character. Optional plot caption.
+#'
+#' @return A ggplot2 object.
+#'
+#' @examples
+#' \dontrun{
+#' # Plot all species at a site
+#' species_activity_facet_plot("data.RData",
+#'   location_list = "Site1"
+#' )
+#'
+#' # Plot specific species
+#' species_activity_facet_plot("data.RData",
+#'   species = c("Epfu", "Mylu", "Lano"),
+#'   location_list = "Site1"
+#' )
+#' }
+#' @export
+species_activity_facet_plot <- function(data_path,
+                                        species = NULL,
+                                        location_list = NULL,
+                                        monitoring_start = NULL,
+                                        monitoring_end = NULL,
+                                        save_path = NULL,
+                                        width = 15,
+                                        height = 20,
+                                        text_size = 10,
+                                        date_label = "%b %Y",
+                                        date_breaks = "1 month",
+                                        facet_cols = 1,
+                                        y_scale = "free_y",
+                                        plot_title = NULL,
+                                        plot_subtitle = NULL,
+                                        plot_caption = NULL) {
+  # Load and filter data
+  dataset <- .load_plot_data(data_path, species_list = species, location_list = location_list)
+
+  # Filter by monitoring period if specified
+  if (!is.null(monitoring_start)) {
+    dataset <- dataset[dataset$Night >= as.Date(monitoring_start), ]
+  }
+  if (!is.null(monitoring_end)) {
+    dataset <- dataset[dataset$Night <= as.Date(monitoring_end), ]
+  }
+
+  # Aggregate counts by Night and Species
+  obs_plot <- dataset %>%
+    dplyr::group_by(Night, Species) %>%
+    dplyr::summarise(Count = dplyr::n(), .groups = "drop")
+
+  # Create plot
+  plot <- ggplot2::ggplot(obs_plot, ggplot2::aes(x = Night, y = Count)) +
+    ggplot2::geom_bar(stat = "identity", fill = "black") +
+    ggplot2::facet_wrap(~Species, ncol = facet_cols, scales = y_scale, strip.position = "top") +
+    ggplot2::scale_y_continuous(name = "Observations per Night") +
+    ggplot2::scale_x_date(date_labels = date_label, date_breaks = date_breaks) +
+    ggplot2::geom_hline(yintercept = 0) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(
+      strip.background = ggplot2::element_blank(),
+      strip.text = ggplot2::element_text(face = "bold", hjust = 0),
+      text = ggplot2::element_text(size = text_size),
+      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+    ) +
+    ggplot2::labs(title = plot_title, subtitle = plot_subtitle, caption = plot_caption)
+
+  # Save if requested
+  if (!is.null(save_path)) {
+    ggplot2::ggsave(save_path, plot = plot, width = width, height = height, units = "cm")
+  }
+
+  return(plot)
+}
+
 #' Plot Activity for a Species at Each Site
 #'
 #' Creates a plot of nightly activity for a chosen species at all sites (or
@@ -29,13 +133,16 @@
 #' @param width Numeric. Plot width in cm. Default is 15.9.
 #' @param height Numeric. Plot height in cm. Default is 8.43.
 #' @param text_size Numeric. Text size for plot labels. Default is 10.
-#' @param date_label Character. Date format for x-axis labels. Default is "%b"
+#' @param date_label Character. Date format for x-axis labels. Default is "\%b"
 #'   (abbreviated month name).
 #' @param date_breaks Character. Optional break specification (e.g., "1 month").
 #'   If \code{NULL} (default), adaptive breaks are used based on timespan.
-#' @param facet_cols,facet_rows Integer. Number of facet columns/rows. Default 2 cols, all rows.
+#' @param facet_cols Integer. Number of facet columns. Default is 2.
+#' @param facet_rows Integer. Number of facet rows. Default is NULL (all rows).
 #' @param title Logical. If \code{TRUE}, adds plot title. Default is \code{FALSE}.
-#' @param plot_title,plot_subtitle,plot_caption Character. Optional plot title, subtitle, caption.
+#' @param plot_title Character. Optional plot title.
+#' @param plot_subtitle Character. Optional plot subtitle.
+#' @param plot_caption Character. Optional plot caption.
 #'
 #' @return A ggplot2 object.
 #'
@@ -184,12 +291,15 @@ species_daily_site_plot <- function(data_path,
 #' @param width Numeric. Plot width in cm. Default is 25.
 #' @param height Numeric. Plot height in cm. Default is 20.
 #' @param text_size Numeric. Text size for plot labels. Default is 10.
-#' @param date_label Character. Date format for x-axis labels. Default is "%b".
+#' @param date_label Character. Date format for x-axis labels. Default is "\%b".
 #' @param date_breaks Character. Optional break specification (e.g., "1 month").
 #'   If \code{NULL} (default), adaptive breaks are used based on timespan.
-#' @param facet_cols,facet_rows Integer. Number of facet columns/rows. Default 2 cols, all rows.
+#' @param facet_cols Integer. Number of facet columns. Default is 1.
+#' @param facet_rows Integer. Number of facet rows. Default is \code{NULL} (all rows).
 #' @param title Logical. If \code{TRUE} (default), adds plot title.
-#' @param plot_title,plot_subtitle,plot_caption Character. Optional plot title, subtitle, caption.
+#' @param plot_title Character. Optional plot title.
+#' @param plot_subtitle Character. Optional plot subtitle.
+#' @param plot_caption Character. Optional plot caption.
 #'
 #' @return A ggplot2 object.
 #'
@@ -416,51 +526,6 @@ monthly_activity_plot <- function(species_night_site, monthly_active_nights, exc
 # Internal Helper Functions
 # ============================================================================
 
-#' Load and validate observation data for plotting
-#' @keywords internal
-.load_plot_data <- function(data_path, species_list = NULL, location_list = NULL) {
-  .validate_rdata_path(data_path)
-
-  load(data_path)
-
-  if (!exists("observations")) {
-    stop("No 'observations' object found in ", data_path)
-  }
-
-  # Remove NA values
-  observations <- observations[!is.na(observations$Species) & !is.na(observations$Location), ]
-
-  if (nrow(observations) == 0) {
-    stop("No valid observations found in dataset")
-  }
-
-  # Treat "all" as NULL
-  if (identical(species_list, "all")) {
-    species_list <- NULL
-  }
-  if (identical(location_list, "all")) {
-    location_list <- NULL
-  }
-
-  # Filter by species
-  if (!is.null(species_list)) {
-    observations <- observations[observations$Species %in% species_list, ]
-    if (nrow(observations) == 0) {
-      stop("No observations found for species: ", paste(species_list, collapse = ", "))
-    }
-  }
-
-  # Filter by location
-  if (!is.null(location_list)) {
-    observations <- observations[observations$Location %in% location_list, ]
-    if (nrow(observations) == 0) {
-      stop("No observations found for locations: ", paste(location_list, collapse = ", "))
-    }
-  }
-
-  return(observations)
-}
-
 #' Load gap data from log files
 #' @keywords internal
 .load_gap_data <- function(data_path) {
@@ -477,7 +542,7 @@ monthly_activity_plot <- function(species_night_site, monthly_active_nights, exc
 #' @keywords internal
 .prepare_activity_data <- function(dataset, species, location_list) {
   dt <- data.table::as.data.table(dataset)
-  counts <- dt[, .(Count = .N), by = .(Night, Species, Location)]
+  counts <- dt[, list(Count = .N), by = list(Night, Species, Location)]
   data.table::setorder(counts, Night, Location, Species)
   return(as.data.frame(counts))
 }
@@ -519,76 +584,4 @@ monthly_activity_plot <- function(species_night_site, monthly_active_nights, exc
       show.legend = FALSE
     ) +
     ggplot2::scale_alpha(guide = "none")
-}
-
-#' Consistent theme for batr plots
-#' @keywords internal
-.batr_theme <- function(text_size = 10) {
-  ggplot2::theme_classic() +
-    ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5),
-      strip.background = ggplot2::element_blank(),
-      strip.text = ggplot2::element_text(hjust = 0),
-      text = ggplot2::element_text(size = text_size)
-    )
-}
-
-#' Calculate Gap Rectangles for Plotting
-#'
-#' Identifies periods when recorders were inactive based on log file data
-#' and converts them to rectangles for ggplot2 geom_rect.
-#'
-#' @param active_dates Data frame with Date, Location, Log_Count columns.
-#'
-#' @return Data frame with xmin, xmax, ymin, ymax, Location columns for geom_rect.
-#'
-#' @keywords internal
-.plot_gap_calculator <- function(active_dates) {
-  # Ensure standard data.frame to avoid data.table method issues
-  active_dates <- as.data.frame(active_dates)
-
-  failed_dates <- active_dates[which(active_dates$Log_Count == 0), ]
-  failed_dates <- failed_dates[order(failed_dates$Location), ]
-  failed_dates <- failed_dates[!duplicated(failed_dates), ]
-  failed_dates$Gaps <- 0
-  failed_dates[1, 4] <- 1
-  row <- 2
-  maximum_row <- length(failed_dates$Gaps) + 1
-
-  while (row < maximum_row) {
-    rowdown <- row - 1
-    if (failed_dates[row, 1] - failed_dates[rowdown, 1] == 1) {
-      failed_dates[row, 4] <- failed_dates[rowdown, 4]
-    } else {
-      failed_dates[row, 4] <- failed_dates[rowdown, 4] + 1
-    }
-    row <- row + 1
-  }
-
-  maximum_fail <- max(failed_dates$Gaps)
-  gap_list <- failed_dates
-  gap_list$Date <- NULL
-  gap_list$Log_Count <- NULL
-  gap_list <- unique(gap_list)
-  fail <- 1
-  gap_list$xmin <- 0
-
-  while (fail < (maximum_fail + 1)) {
-    gap_list[fail, 3] <- min(failed_dates[failed_dates$Gaps == fail, 1])
-    fail <- fail + 1
-  }
-  gap_list$xmin <- as.Date(gap_list$xmin, origin = "1970-01-01")
-
-  fail <- 1
-  gap_list$xmax <- 0
-  while (fail < (maximum_fail + 1)) {
-    gap_list[fail, 4] <- max(failed_dates[failed_dates$Gaps == fail, 1])
-    fail <- fail + 1
-  }
-  gap_list$xmax <- as.Date(gap_list$xmax, origin = "1970-01-01")
-  gap_list$ymax <- Inf
-  gap_list$ymin <- 0
-  gap_list$Gaps <- NULL
-
-  return(gap_list)
 }

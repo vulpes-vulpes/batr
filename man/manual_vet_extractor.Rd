@@ -13,7 +13,7 @@ manual_vet_extractor(
   no_manual = FALSE,
   stratified = FALSE,
   fast_import = TRUE,
-  interactive = interactive()
+  ask_user = interactive()
 )
 }
 \arguments{
@@ -46,7 +46,7 @@ of location. Defaults to \code{FALSE}.}
 methods. If \code{FALSE}, uses standard R file operations. Defaults to
 \code{TRUE}.}
 
-\item{interactive}{Logical. Whether to prompt user for input when issues arise
+\item{ask_user}{Logical. Whether to prompt user for input when issues arise
 (e.g., missing WAV files). Defaults to \code{interactive()}, which detects
 if R is running interactively.}
 }

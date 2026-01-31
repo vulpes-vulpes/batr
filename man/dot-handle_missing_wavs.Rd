@@ -4,7 +4,7 @@
 \alias{.handle_missing_wavs}
 \title{Handle missing WAV files with user interaction}
 \usage{
-.handle_missing_wavs(dataset, WAV_directory, interactive)
+.handle_missing_wavs(dataset, WAV_directory, ask_user)
 }
 \description{
 Handle missing WAV files with user interaction

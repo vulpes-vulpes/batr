@@ -29,7 +29,7 @@
 #' @param fast_import Logical. If \code{TRUE}, uses optimized file discovery
 #'  methods. If \code{FALSE}, uses standard R file operations. Defaults to
 #'  \code{TRUE}.
-#' @param interactive Logical. Whether to prompt user for input when issues arise
+#' @param ask_user Logical. Whether to prompt user for input when issues arise
 #'  (e.g., missing WAV files). Defaults to \code{interactive()}, which detects
 #'  if R is running interactively.
 #'
@@ -56,6 +56,7 @@
 #'   stratified = TRUE
 #' )
 #' }
+#' @import data.table
 #' @export
 manual_vet_extractor <- function(data_path,
                                  WAV_directory,
@@ -65,7 +66,7 @@ manual_vet_extractor <- function(data_path,
                                  no_manual = FALSE,
                                  stratified = FALSE,
                                  fast_import = TRUE,
-                                 interactive = interactive()) {
+                                 ask_user = interactive()) {
   message("\n========== Starting Manual Vetting File Selection ==========")
 
   # Validate inputs
@@ -77,7 +78,7 @@ manual_vet_extractor <- function(data_path,
   dataset_with_wavs <- .match_files_to_wavs(dataset, WAV_directory, fast_import)
 
   # Handle missing files
-  dataset_clean <- .handle_missing_wavs(dataset_with_wavs, WAV_directory, interactive)
+  dataset_clean <- .handle_missing_wavs(dataset_with_wavs, WAV_directory, ask_user)
 
   # Process sampling
   if (stratified) {
@@ -137,9 +138,9 @@ manual_vet_extractor <- function(data_path,
   gc(verbose = FALSE)
 
   if (no_manual == TRUE) {
-    dataset <- dataset[is.na(Species.Manual.ID)]
+    dataset <- dataset[is.na(dataset[["Species.Manual.ID"]]), ]
   }
-  dataset <- dataset[!is.na(Species)]
+  dataset <- dataset[!is.na(dataset[["Species"]]), ]
 
   if (nrow(dataset) == 0) {
     stop("No valid observations found after filtering. Check your data.")
@@ -161,32 +162,43 @@ manual_vet_extractor <- function(data_path,
 
 #' Handle missing WAV files with user interaction
 #' @keywords internal
-.handle_missing_wavs <- function(dataset, WAV_directory, interactive) {
+.handle_missing_wavs <- function(dataset, WAV_directory, ask_user) {
   missing_idx <- which(is.na(dataset$Full.Path))
 
   if (length(missing_idx) == 0) {
+    message("All observations matched to WAV files.")
     return(dataset)
   }
 
   missing_files <- dataset$File.Name[missing_idx]
-  warning(sprintf(
-    "%d observations have no matching WAV file in '%s'. These will be excluded.",
-    length(missing_idx), WAV_directory
+  n_missing <- length(missing_idx)
+  n_total <- nrow(dataset)
+  pct_missing <- (n_missing / n_total) * 100
+
+  message(sprintf(
+    "Warning: %d of %d observations (%.1f%%) have no matching WAV file. These will be excluded.",
+    n_missing, n_total, pct_missing
   ))
 
-  if (interactive) {
+  if (ask_user) {
     show_list <- readline(prompt = "Show missing file names? (y/n): ")
     if (tolower(show_list) %in% c("y", "yes")) {
-      print(missing_files)
+      cat("\nMissing files:\n")
+      for (i in seq_along(missing_files)) {
+        cat(sprintf("  %d. %s\n", i, missing_files[i]))
+      }
+      cat("\n")
     }
   }
 
   # Use data.table syntax for filtering
-  dataset_clean <- dataset[!is.na(Full.Path)]
+  dataset_clean <- dataset[!is.na(dataset[["Full.Path"]]), ]
 
   if (nrow(dataset_clean) == 0) {
     stop("All observations are missing WAV files; nothing to copy for manual vetting.")
   }
+
+  message(sprintf("Proceeding with %d observations that have matching WAV files.", nrow(dataset_clean)))
 
   return(dataset_clean)
 }
@@ -219,7 +231,7 @@ manual_vet_extractor <- function(data_path,
 
   for (species in species_list) {
     # Fast data.table subsetting
-    species_data <- dataset[Species == species]
+    species_data <- dataset[Species == species, ]
     species_count <- nrow(species_data)
 
     if (species_count == 0) {
@@ -234,7 +246,7 @@ manual_vet_extractor <- function(data_path,
     total_copied <- 0
     for (location in locations) {
       # Fast data.table filtering
-      location_data <- species_data[Location == location]
+      location_data <- species_data[Location == location, ]
       location_count <- nrow(location_data)
 
       if (location_count == 0) next
@@ -273,7 +285,7 @@ manual_vet_extractor <- function(data_path,
 
   for (species in species_list) {
     # Fast data.table subsetting
-    species_data <- dataset[Species == species]
+    species_data <- dataset[Species == species, ]
     species_count <- nrow(species_data)
 
     if (species_count == 0) {

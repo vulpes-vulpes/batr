@@ -1,0 +1,525 @@
+---
+title: "Generating Reports with batr"
+author: "Toby Thorne"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Generating Reports with batr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE # Don't run examples in vignette build
+)
+```
+
+## Overview
+
+The batr package provides a comprehensive report generation system for bat monitoring data analysis. This vignette covers:
+
+1. **Built-in Reports**: Quick single-site and multi-site reports using templates
+2. **Custom Templates**: Creating your own report templates
+3. **Advanced Workflows**: Composing complex reports with batr functions directly
+4. **Offline Usage**: Working without internet connectivity
+5. **Tips & Troubleshooting**: Common questions and solutions
+
+## Built-in Reports
+
+### Single-Site Reports
+
+Generate a PDF report for a single monitoring location:
+
+```{r single_site_example}
+library(batr)
+
+single_site_report(
+  data_path = "path/to/data.RData",
+  output_dir = "reports/",
+  output_file = "Site1_Report.pdf",
+  site = "Site1",
+  species = c("Epfu", "Mylu", "Labo"),
+  author = "Jane Researcher",
+  project_name = "2024 Community Monitoring"
+)
+```
+
+**Parameters:**
+
+- `data_path` (Character, required): Path to an RData file containing `observations` and `active_dates` data frames
+- `output_dir` (Character, required): Directory where the PDF will be saved
+- `output_file` (Character, default: "report.pdf"): Output filename
+- `sites` (Character vector, required): One or more site names to include
+- `species` (Character vector, optional): Species codes to include (e.g., "Epfu", "Mylu"). If not specified, all species in the data will be included.
+- `author` (Character): Your name or organization
+- `project_name` (Character): Project title for the report
+- `monitoring_start` (Date, optional): Override the start date of monitoring period
+- `monitoring_end` (Date, optional): Override the end date of monitoring period
+- `include_map` (Logical, default: TRUE): Include a map of monitoring locations
+
+**Return Value:**
+
+Returns (invisibly) a list with:
+- `success`: TRUE if rendering succeeded, FALSE otherwise
+- `output_path`: Path to the generated PDF (NULL if failed)
+- `error`: Error message if rendering failed (NULL if successful)
+
+**Tip:** If you don't specify a `species` parameter, all species in your data will be included in the report automatically:
+
+```{r species_auto_detect}
+single_site_report(
+  data_path = "path/to/data.RData",
+  output_dir = "reports/",
+  output_file = "Site1_AllSpecies.pdf",
+  site = "Site1"
+  # species omitted - all species will be included
+)
+```
+
+### Multi-Site Reports
+
+Generate a single PDF report that combines data from multiple monitoring locations:
+
+```{r multi_site_example}
+multi_site_report(
+  data_path = "path/to/data.RData",
+  output_dir = "reports/",
+  output_file = "All_Sites_Report.pdf",
+  sites = c("Site1", "Site2", "Site3"),
+  species = c("Epfu", "Mylu", "Labo"),
+  author = "Jane Researcher",
+  project_name = "2024 Community Monitoring"
+)
+```
+
+**Parameters:** Same as `single_site_report()` above.
+
+## Built-in Templates
+
+The batr package includes two RMarkdown templates accessible via RStudio:
+
+### In RStudio
+
+1. Go to **File** → **New File** → **R Markdown**
+2. Click the **From Template** option
+3. Look for "Batr Single Site Report" or "Batr Multi-Site Report"
+4. Click **Create**
+
+This creates a skeleton `.Rmd` file you can edit and customize.
+
+## Custom Templates
+
+### Creating a Custom Template
+
+Custom templates allow you to create domain-specific reports, add extra analyses, or customize styling.
+
+#### Step 1: Create a Template Directory
+
+Organize your templates in a project subdirectory (best practice):
+
+```
+my_project/
++-- data.RData
++-- _templates/
+|   +-- my_custom_report.Rmd
+|   +-- analysis_template.Rmd
++-- analysis.R
+```
+
+#### Step 2: Create an RMarkdown Template
+
+A basic template structure with YAML parameters:
+
+````yaml
+---
+title: "My Custom Analysis"
+author: "`r knitr::inline_expr('params$author')`"
+output: pdf_document
+params:
+  data_path: !r NA_character_
+  sites: !r c("Site1")
+  species: !r c("Epfu")
+  author: !r NA_character_
+---
+
+# Setup
+
+\`\`\`{r setup, include=FALSE}
+library(batr)
+load(params$data_path)
+
+# Filter data
+observations <- observations[
+  observations$Species %in% params$species &
+  observations$Location %in% params$sites,
+]
+\`\`\`
+
+# Results
+
+\`\`\`{r analysis}
+# Your analysis code here
+summary_table(
+  data_path = params$data_path,
+  species = params$species,
+  location_list = params$sites
+)
+\`\`\`
+````
+
+**Key elements:**
+
+- **YAML front matter**: Declares parameters with `params:` block
+- **`!r NA_character_`**: Indicates the parameter expects a character value
+- **Code chunks**: Use `params` with dollar signs (e.g., `params$data_path`, `params$sites`) to access parameters
+
+#### Step 3: Render with render_custom_report()
+
+```{r render_custom_example}
+render_custom_report(
+  template_path = "_templates/my_custom_report.Rmd",
+  output_dir = "reports/",
+  output_file = "my_analysis.pdf",
+  params = list(
+    data_path = "data.RData",
+    sites = c("Site1", "Site2"),
+    species = c("Epfu", "Mylu"),
+    author = "Jane Researcher"
+  )
+)
+```
+
+### Using Built-in Functions in Templates
+
+Your template can use any batr function for tables and plots:
+
+````r
+# Summary table
+batr::summary_table(
+  data_path = params$data_path,
+  species = params$species,
+  location_list = params$sites,
+  include_total = TRUE
+)
+
+# Activity plot
+batr::species_daily_site_plot(
+  data_path = params$data_path,
+  species = params$species,
+  location_list = params$sites
+)
+
+# Monitoring effort
+batr::monitoring_effort_plot(
+  active_dates = active_dates,
+  location_list = params$sites
+)
+
+# First observations (timing)
+batr::first_observations_plot(
+  data_path = params$data_path,
+  species = params$species,
+  location_list = params$sites
+)
+
+# Monthly activity (requires pre-aggregated data)
+batr::monthly_activity_plot(
+  species_night_site = aggregated_data,
+  monthly_active_nights = monthly_data
+)
+````
+
+## Reference Template: BBAM_Report.Rmd
+
+The package includes an advanced example template at:
+
+```r
+system.file("rmd", "BBAM_Report.Rmd", package = "batr")
+```
+
+This template demonstrates:
+- Educational content about bat species
+- Spectrograms and acoustic analysis explanations
+- Images embedded from the package
+- More sophisticated reporting structure
+
+You can copy this template to customize it:
+
+```r
+# Find the template
+bbam_template <- system.file("rmd", "BBAM_Report.Rmd", package = "batr")
+
+# Copy to your project
+file.copy(bbam_template, "_templates/BBAM_Report_Custom.Rmd")
+
+# Edit and use
+render_custom_report(
+  template_path = "_templates/BBAM_Report_Custom.Rmd",
+  output_dir = "reports/",
+  params = list(...)
+)
+```
+
+## Advanced: Composing Reports Programmatically
+
+For maximum flexibility, you can generate reports directly in R by composing batr functions:
+
+```{r advanced_composition}
+library(batr)
+library(ggplot2)
+library(kableExtra)
+
+# Load data
+load("data.RData")
+
+# Create summary table
+summary_df <- summary_table(
+  data_path = "data.RData",
+  species = c("Epfu", "Mylu"),
+  location_list = c("Site1", "Site2")
+)
+
+# Generate plots
+plot1 <- species_daily_site_plot(
+  data_path = "data.RData",
+  species = c("Epfu", "Mylu"),
+  location_list = c("Site1", "Site2")
+)
+
+plot2 <- monitoring_effort_plot(
+  active_dates = active_dates,
+  location_list = c("Site1", "Site2")
+)
+
+# Manually construct report
+pdf("report.pdf", width = 11, height = 8.5)
+
+# Title page
+plot.new()
+text(0.5, 0.8, "Bat Monitoring Report", cex = 3, font = 2)
+text(0.5, 0.6, "2024 Project", cex = 2)
+text(0.5, 0.4, "Jane Researcher", cex = 1.5)
+
+# Summary table
+plot.new()
+grid.table(summary_df)
+
+# Plots
+plot(plot1)
+plot(plot2)
+
+dev.off()
+```
+
+## Offline Usage
+
+### Disabling Maps
+
+If you're working without internet access or want to avoid external dependencies:
+
+```{r offline_usage}
+single_site_report(
+  data_path = "data.RData",
+  output_dir = "reports/",
+  site = "Site1",
+  species = c("Epfu", "Mylu"),
+  include_map = FALSE # Skip map generation
+)
+```
+
+### Copying Built-in Templates for Offline Use
+
+1. Copy the template locally:
+
+```r
+template_src <- system.file(
+  "rmarkdown", "templates", "batr-single-site",
+  "skeleton", "skeleton.Rmd",
+  package = "batr"
+)
+file.copy(template_src, "_templates/single_site_offline.Rmd")
+```
+
+2. Edit the template to remove map code or set `include_map = FALSE` in the params
+
+3. Use it:
+
+```r
+render_custom_report(
+  template_path = "_templates/single_site_offline.Rmd",
+  output_dir = "reports/",
+  params = list(
+    data_path = "data.RData",
+    site = "Site1",
+    species = c("Epfu", "Mylu"),
+    include_map = FALSE
+  )
+)
+```
+
+## Data Format Requirements
+
+Your RData file must contain:
+
+### observations (required)
+
+A data frame with columns:
+- `Species`: Species code (character)
+- `Location`: Site name (character)
+- `Night`: Date of observation (Date class)
+- `Latitude`, `Longitude`: Location coordinates (numeric)
+- Other columns (e.g., Frequency, Duration, etc.) are optional
+
+Example:
+```
+Species Location       Night Latitude Longitude
+   Epfu    Site1 2024-05-15   43.6629  -79.3957
+   Mylu    Site1 2024-05-15   43.6629  -79.3957
+   Labo    Site2 2024-05-16   43.7000  -79.4000
+```
+
+### active_dates (optional but recommended)
+
+A data frame with columns:
+- `Location`: Site name (character)
+- `Date`: Date (Date class)
+- `Log_Count`: Number of active recordings (numeric; 0 = not recording, >0 = recording)
+
+Example:
+```
+Location       Date Log_Count
+   Site1 2024-05-15        10
+   Site1 2024-05-16         0
+   Site1 2024-05-17        12
+```
+
+This enables visualization of monitoring effort gaps.
+
+## Common Tasks
+
+### Task: Generate Reports for All Sites
+
+```{r batch_reports}
+library(batr)
+
+# Define your sites and species
+sites_list <- c("Site1", "Site2", "Site3", "Site4")
+species_list <- c("Epfu", "Mylu", "Labo")
+
+# Generate one report per site
+for (site in sites_list) {
+  single_site_report(
+    data_path = "data.RData",
+    output_dir = "reports/site_reports/",
+    output_file = paste0(site, "_Report.pdf"),
+    sites = site,
+    species = species_list,
+    author = "Analysis Team",
+    project_name = "2024 Monitoring"
+  )
+}
+
+# Also generate an overview report for all sites
+multi_site_report(
+  data_path = "data.RData",
+  output_dir = "reports/",
+  output_file = "Overview_Report.pdf",
+  sites = sites_list,
+  species = species_list,
+  author = "Analysis Team",
+  project_name = "2024 Monitoring"
+)
+```
+
+### Task: Add Custom Analysis to a Built-in Template
+
+1. Copy the template:
+
+```r
+src <- system.file(
+  "rmarkdown", "templates", "batr-single-site",
+  "skeleton", "skeleton.Rmd",
+  package = "batr"
+)
+file.copy(src, "_templates/enhanced_single_site.Rmd")
+```
+
+2. Edit `_templates/enhanced_single_site.Rmd` to add new sections:
+
+```markdown
+\newpage
+
+## Additional Analysis
+
+```{r custom_analysis}
+# Your custom code here
+```
+```
+
+3. Use it:
+
+```r
+render_custom_report(
+  template_path = "_templates/enhanced_single_site.Rmd",
+  output_dir = "reports/",
+  params = list(...)
+)
+```
+
+## Troubleshooting
+
+### "Template not found" error
+
+**Problem:** `Error: Template not found: ...`
+
+**Solution:**
+- Verify the file path exists: `file.exists("path/to/template.Rmd")`
+- Use absolute paths if having issues with relative paths
+- Check file permissions: `file.access("path/to/template.Rmd", mode = 4)`
+
+### "No observations found" error
+
+**Problem:** Template rendering fails with observation filtering error
+
+**Solution:**
+- Verify your species codes match those in your data
+- Check site names for spelling and capitalization
+- Ensure the RData file was created with `batr::import_logs()` or similar
+
+### Maps not rendering
+
+**Problem:** Maps appear blank or skip silently
+
+**Solution:**
+- Set `include_map = FALSE` to skip map rendering
+- Check internet connection (Stamen maps require internet)
+- Try offline templates (see "Offline Usage" section)
+
+### Rendering is slow
+
+**Problem:** Reports take a long time to generate
+
+**Solution:**
+- Reduce the date range with `monitoring_start` and `monitoring_end` parameters
+- Filter to fewer species or sites before rendering
+- Use `quiet = TRUE` in `render_report()` if calling directly
+
+## Further Help
+
+For more information:
+- See `?single_site_report` and `?multi_site_report` for function documentation
+- Check `?render_custom_report` for custom template examples
+- Visit the batr package website or GitHub repository for additional examples
+- Consult the RMarkdown documentation: https://rmarkdown.rstudio.com/
+
+## References
+
+- batr package: https://github.com/tobythorne/batr
+- RMarkdown: https://rmarkdown.rstudio.com/
+- ggplot2 for customizing plots: https://ggplot2.tidyverse.org/
+- kableExtra for table styling: https://haozhu233.github.io/kableExtra/
