@@ -16,6 +16,15 @@
 
 # batr: 0.2.2
 
-## Bug Fixes
+A significant refactor and overhaul to address bugs, make the package mroe species agnostic, and improve performance.
 
-- Fixed the Wildlife Acoustics Log File importer to measure monitor activity by night instead of by date.
+
+- Bug fixes and major performance upgrades to import_GUANO
+- Basic bug fixes for import_logs
+- Better organised plots, and added shared functions for consistency
+- Completely restructured report generation and added funcationality for custom templates
+- Bug fixes and added additional sampling options to manual_vet_extractor
+- Restructured package for clearer organisation
+- Added comprehensive testing for all functions
+- Added new vingettes to document features and workflows
+- Addressed numerous small issues that were making the package fail checks
