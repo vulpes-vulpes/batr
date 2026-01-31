@@ -49,7 +49,7 @@ location_map_plot <- function(data_path,
                               plot_subtitle = NULL,
                               plot_caption = NULL) {
   # Load data
-  dataset <- .load_plot_data(data_path, species_list = NULL, location_list = location_list)
+  dataset <- .load_plot_data(data_path, location_list = location_list)
 
   # Check for coordinate columns
   if (!("Latitude" %in% names(dataset)) || !("Longitude" %in% names(dataset))) {

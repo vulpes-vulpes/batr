@@ -106,18 +106,21 @@ A total of **`r n_observations`** acoustic observations of **`r n_species`** bat
 ### Species Summary
 
 ```{r summary_table, fig.cap="Total species observations at the monitoring location."}
-# Use batr's summary_table function
+# Create species summary (without totals row or location column for single site)
 summary <- batr::summary_table(
   data_path = params$data_path,
   species_list = species_filter,
   location_list = c(params$site),
-  include_totals = TRUE
+  include_totals = FALSE
 )
+
+# Remove the Location column (redundant for single site report)
+summary <- summary[, !names(summary) %in% "Location", drop = FALSE]
 
 kable(summary, 
       format = "latex",
       booktabs = TRUE,
-      caption = "Total species observations by site") %>%
+      caption = "Total species observations") %>%
   kable_styling(latex_options = "hold_position")
 ```
 
@@ -198,11 +201,23 @@ unlink(temp_map_file)
 
 ## Notes
 
-- This report is automatically generated from acoustic monitoring data
-- Species identifications are based on automated classification and should be verified
-- The number of observations cannot be directly compared between species, as detection varies by echolocation call characteristics
-- For additional analysis or questions, please contact the research team
+```{r notes, results='asis', echo=FALSE}
+# Check if any manual IDs exist
+has_manual_ids <- "Species.Manual.ID" %in% names(observations) && 
+                  any(!is.na(observations$Species.Manual.ID))
+
+cat("- This report is automatically generated from acoustic monitoring data\n")
+
+if (has_manual_ids) {
+  cat("- Species identifications include manual verification\n")
+} else {
+  cat("- Species identifications are based on automated classification and should be verified\n")
+}
+
+cat("- The number of observations cannot be directly compared between species, as detection varies by echolocation call characteristics\n")
+cat("- For additional analysis or questions, please contact the research team\n")
+```
 
 ---
 
-*Report generated using the batr R package*
+*Report generated using the [batr R package](https://github.com/vulpes-vulpes/batr) by Toby Thorne*
