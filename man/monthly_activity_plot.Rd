@@ -36,8 +36,8 @@ If \code{NULL}, uses the latest date in the dataset.}
 
 \item{exclude_species}{Character vector of species codes to exclude.}
 
-\item{species_names}{Named character vector for custom species labels. Names should be 
-species codes from the data, values should be display names. If NULL (default), 
+\item{species_names}{Named character vector for custom species labels. Names should be
+species codes from the data, values should be display names. If NULL (default),
 species codes are used as labels.}
 
 \item{save_path}{Character. Full file path to save plot as PNG. If \code{NULL}

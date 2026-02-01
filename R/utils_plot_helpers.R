@@ -1,4 +1,5 @@
 #' Adaptive date breaks and label cleaning helpers
+#' @importFrom stats setNames
 #' @keywords internal
 .adaptive_date_breaks <- function(min_date, max_date, date_label = "%b") {
   span_days <- as.integer(max_date - min_date)
