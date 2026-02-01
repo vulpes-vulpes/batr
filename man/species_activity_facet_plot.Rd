@@ -10,6 +10,7 @@ species_activity_facet_plot(
   location_list = NULL,
   monitoring_start = NULL,
   monitoring_end = NULL,
+  species_names = NULL,
   save_path = NULL,
   width = 15,
   height = 20,
@@ -38,6 +39,10 @@ If \code{NULL}, uses the earliest date in the dataset.}
 
 \item{monitoring_end}{Character. Monitoring end date (e.g., "2019-12-31").
 If \code{NULL}, uses the latest date in the dataset.}
+
+\item{species_names}{Named character vector for custom species labels. Names should be
+species codes from the data, values should be display names. If NULL (default),
+species codes are used as labels.}
 
 \item{save_path}{Character. Full file path to save plot as PNG. If \code{NULL}
 (default), plot is not saved.}

@@ -104,6 +104,16 @@ import_logs(
 # 3. Create summary table
 summary_table("project_data.RData")
 
+# Custom species labels
+species_labels <- c(
+  "Epfu" = "Big Brown Bat",
+  "Lano" = "Silver-haired Bat"
+)
+summary_table("project_data.RData",
+  species_list = c("Epfu", "Lano"),
+  species_names = species_labels
+)
+
 # 4. Generate visualizations
 species_daily_site_plot(
   data_path = "project_data.RData",
@@ -164,6 +174,7 @@ Import log files from bat detectors to track survey effort and identify data gap
 #### `summary_table()` - Species × site summary
 
 Generate a data frame or formatted table showing observation counts by species and location.
+Use `species_names` to replace species codes with readable labels in the output.
 
 #### `single_site_report()` & `multi_site_report()`
 

@@ -16,6 +16,9 @@
 #'   If \code{NULL}, includes all species in the dataset.
 #' @param location_list Character vector. Location names to filter/include.
 #'   If \code{NULL} (default), includes all locations.
+#' @param species_names Named character vector for custom species labels. Names should be
+#'   species codes from the data, values should be display names. If NULL (default),
+#'   species codes are used as labels.
 #' @param monitoring_start Character. Monitoring start date (e.g., "2019-01-01").
 #'   If \code{NULL}, uses the earliest date in the dataset.
 #' @param monitoring_end Character. Monitoring end date (e.g., "2019-12-31").
@@ -56,6 +59,7 @@ species_activity_facet_plot <- function(data_path,
                                         location_list = NULL,
                                         monitoring_start = NULL,
                                         monitoring_end = NULL,
+                                        species_names = NULL,
                                         save_path = NULL,
                                         width = 15,
                                         height = 20,
@@ -83,10 +87,18 @@ species_activity_facet_plot <- function(data_path,
     dplyr::group_by(Night, Species) %>%
     dplyr::summarise(Count = dplyr::n(), .groups = "drop")
 
+  # Create species labeller
+  species_labeller <- .species_labeller(unique(obs_plot$Species), species_names)
+
   # Create plot
   plot <- ggplot2::ggplot(obs_plot, ggplot2::aes(x = Night, y = Count)) +
     ggplot2::geom_bar(stat = "identity", fill = "black") +
-    ggplot2::facet_wrap(~Species, ncol = facet_cols, scales = y_scale, strip.position = "top") +
+    ggplot2::facet_wrap(~Species,
+      ncol = facet_cols,
+      scales = y_scale,
+      strip.position = "top",
+      labeller = ggplot2::labeller(Species = species_labeller)
+    ) +
     ggplot2::scale_y_continuous(name = "Observations per Night") +
     ggplot2::scale_x_date(date_labels = date_label, date_breaks = date_breaks) +
     ggplot2::geom_hline(yintercept = 0) +
@@ -612,23 +624,9 @@ monthly_activity_plot <- function(data_path,
   # Ensure Month is ordered correctly
   data_melt$Month <- factor(data_melt$Month, levels = month.name, ordered = TRUE)
 
-  # Get unique species from data and create labels
+  # Create species labeller
   unique_species <- sort(unique(data_melt$Species))
-  if (is.null(species_names)) {
-    # Use species codes as labels if no custom names provided
-    spec_labels <- unique_species
-    names(spec_labels) <- unique_species
-  } else {
-    # Use provided names, matching to species codes in data
-    spec_labels <- species_names[unique_species]
-    # Replace any NA values (species not in the provided mapping) with the code itself
-    spec_labels[is.na(spec_labels)] <- names(spec_labels)[is.na(spec_labels)]
-  }
-
-  # Create labeller function that uses the provided names
-  species_labeller <- function(x) {
-    sapply(x, function(sp) spec_labels[sp], USE.NAMES = FALSE)
-  }
+  species_labeller <- .species_labeller(unique_species, species_names)
 
   # Create plot
   plot <- ggplot2::ggplot() +

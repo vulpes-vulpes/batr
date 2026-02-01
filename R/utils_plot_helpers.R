@@ -41,6 +41,36 @@
   gsub("_", " ", x)
 }
 
+#' Build species label mapping for plots
+#' @keywords internal
+.species_label_map <- function(species_codes, species_names = NULL) {
+  species_codes <- unique(as.character(species_codes))
+  if (length(species_codes) == 0) {
+    return(setNames(character(0), character(0)))
+  }
+
+  if (is.null(species_names)) {
+    spec_labels <- species_codes
+  } else {
+    spec_labels <- species_names[species_codes]
+    spec_labels[is.na(spec_labels)] <- species_codes[is.na(spec_labels)]
+  }
+
+  names(spec_labels) <- species_codes
+  spec_labels
+}
+
+#' Create a labeller for species facets
+#' @keywords internal
+.species_labeller <- function(species_codes, species_names = NULL) {
+  spec_labels <- .species_label_map(species_codes, species_names)
+  function(x) {
+    out <- spec_labels[x]
+    out[is.na(out)] <- x[is.na(out)]
+    unname(out)
+  }
+}
+
 #' Load plot data from RData file
 #'
 #' Loads observation data from an RData file with optional filtering by species
