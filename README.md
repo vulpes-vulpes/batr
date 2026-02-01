@@ -308,7 +308,7 @@ import_guano(
 If you use batr in your research, please cite:
 
     Thorne, T. (2026). batr: Bat Acoustic Monitoring Analysis and Reporting. 
-    R package version 0.2.2. https://github.com/vulpes-vulpes/batr
+    R package version 0.3.0. https://github.com/vulpes-vulpes/batr
 
 ## Acknowledgments
 
