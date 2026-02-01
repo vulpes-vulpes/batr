@@ -32,6 +32,9 @@ Suggests:
   withr,
   bookdown,
   english,
-  kableExtra
+  kableExtra,
+  ggspatial,
+  sf,
+  ggrepel
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr

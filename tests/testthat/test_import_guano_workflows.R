@@ -60,8 +60,8 @@ test_that(".read_file_guano processes metadata, types, and filtering", {
 
   testthat::with_mocked_bindings(
     {
-      out <- batr:::`.read_file_guano`(fl, site_col = "Site", timezone = "UTC", fast_import = FALSE)
-      # bad.wav should be excluded due to read error (warning is allowed)
+      out <- suppressWarnings(batr:::`.read_file_guano`(fl, site_col = "Site", timezone = "UTC", fast_import = FALSE))
+      # bad.wav should be excluded due to read error
       expect_true(all(out$File.Name %in% basename(paths[basename(paths) != "bad.wav"])))
       expect_true(all(c("Timestamp", "Species", "Location", "Latitude", "Longitude", "Night") %in% names(out)))
       expect_type(out$Latitude, "double")

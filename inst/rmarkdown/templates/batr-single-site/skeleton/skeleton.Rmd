@@ -22,7 +22,7 @@ params:
   project_name: !r NA_character_
   monitoring_start: !r NA_character_
   monitoring_end: !r NA_character_
-  include_map: true
+  map: false
 ---
 
 ```{r setup, include=FALSE}
@@ -36,6 +36,9 @@ knitr::opts_chunk$set(
 library(batr)
 library(kableExtra)
 library(lubridate)
+
+# Use temporary directory for map tile cache
+options(rosm.cachedir = tempdir())
 
 # Load data
 if (is.null(params$data_path) || is.na(params$data_path)) {
@@ -165,8 +168,6 @@ if (exists("active_dates") && nrow(active_dates) > 0) {
 }
 ```
 
-\newpage
-
 ## Location Information
 
 ```{r location_info, results='asis'}
@@ -181,7 +182,7 @@ if (nrow(unique_locs) > 0 && !is.na(unique_locs$Latitude[1]) && !is.na(unique_lo
 }
 ```
 
-```{r location_map, fig.cap="Monitoring location map", fig.height=4, fig.width=6, eval=params$include_map}
+```{r location_map, fig.cap="Monitoring location map", fig.height=4, fig.width=7, eval=params$map}
 # Save filtered observations to temporary RData for site-specific map
 temp_map_file <- tempfile(fileext = ".RData")
 save(observations, file = temp_map_file)
@@ -189,6 +190,8 @@ save(observations, file = temp_map_file)
 batr::location_map_plot(
   data_path = temp_map_file,
   location_list = params$site,
+  basemap = TRUE,
+  basemap_type = "cartolight",
   text_size = 10,
   point_size = 4,
   plot_title = NULL
@@ -196,8 +199,6 @@ batr::location_map_plot(
 
 unlink(temp_map_file)
 ```
-
-\newpage
 
 ## Notes
 

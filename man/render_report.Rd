@@ -10,7 +10,6 @@ render_report(
   output_dir,
   params,
   format = "pdf_document",
-  include_map = TRUE,
   quiet = FALSE
 )
 }
@@ -24,8 +23,6 @@ render_report(
 \item{params}{List. Parameters to pass to rmarkdown::render().}
 
 \item{format}{Character. Output format (default: "pdf_document").}
-
-\item{include_map}{Logical. Whether to attempt map rendering (default: TRUE).}
 
 \item{quiet}{Logical. Suppress rendering messages (default: FALSE).}
 }

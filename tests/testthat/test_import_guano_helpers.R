@@ -116,6 +116,6 @@ test_that(".missing_data_checker flags missing fields (non-interactive)", {
     # When site_col missing entirely, all files flagged
     obs2 <- obs
     obs2$Site <- NULL
-    miss2 <- batr:::`.missing_data_checker`(obs2, site_col = "Site")
+    miss2 <- suppressWarnings(batr:::`.missing_data_checker`(obs2, site_col = "Site"))
     expect_equal(nrow(miss2), nrow(obs2))
 })

@@ -23,6 +23,7 @@ params:
   monitoring_start: !r NA_character_
   monitoring_end: !r NA_character_
   include_map: true
+  basemap: false
 ---
 
 ```{r setup, include=FALSE}
@@ -37,6 +38,9 @@ library(batr)
 library(kableExtra)
 library(lubridate)
 library(data.table)
+
+# Use temporary directory for map tile cache
+options(rosm.cachedir = tempdir())
 
 # Load data
 load(params$data_path)
@@ -185,14 +189,16 @@ kable(unique_locs,
   kable_styling(latex_options = "hold_position")
 ```
 
-```{r location_map, fig.cap="Monitoring location map", fig.height=4, fig.width=6, eval=params$include_map}
+```{r location_map, fig.cap="Monitoring location map", fig.height=5, fig.width=7, eval=params$include_map}
 # Save filtered observations to temporary RData for site-specific map
 temp_map_file <- tempfile(fileext = ".RData")
 save(observations, file = temp_map_file)
 
 batr::location_map_plot(
   data_path = temp_map_file,
-  location_list = params$site,
+  location_list = params$sites,
+  basemap = params$basemap,
+  basemap_type = "cartolight",
   text_size = 10,
   point_size = 4,
   plot_title = NULL
