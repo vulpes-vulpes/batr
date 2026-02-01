@@ -1,0 +1,88 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in batr
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please provide as much detail as possible.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: What happened that shouldn't have?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Run function X with parameters...
+        2. See error...
+      value: |
+        ```r
+        # Reproducible example code
+        
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened? Include any error messages.
+      placeholder: |
+        Error message or unexpected output
+      render: shell
+
+  - type: textarea
+    id: session-info
+    attributes:
+      label: Session Info
+      description: Please run `sessionInfo()` in R and paste the output here.
+      placeholder: Paste sessionInfo() output
+      render: r
+    validations:
+      required: true
+
+  - type: input
+    id: batr-version
+    attributes:
+      label: batr Version
+      description: What version of batr are you using? Run `packageVersion("batr")`
+      placeholder: e.g., 0.2.2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context about the problem (data structure, file formats, etc.)
