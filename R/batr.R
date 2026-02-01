@@ -21,7 +21,7 @@ utils::globalVariables(c(
     "xmin", "xmax", "ymin", "ymax",
     "lat", "lon", "sunset_time", "ob_time",
     "Count", "Month", "x",
-    "X", "Y",  # Coordinates from sf::st_coordinates for ggrepel
+    "X", "Y", # Coordinates from sf::st_coordinates for ggrepel
     # Variables from loaded RData files
     "observations", "active_dates"
 ))

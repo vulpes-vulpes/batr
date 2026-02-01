@@ -99,108 +99,111 @@ location_map_plot <- function(data_path,
       basemap <- FALSE
     }
   }
-  
+
   if (basemap) {
     # Create plot with basemap using ggspatial
-    tryCatch({
-      # Check if sf package is available
-      if (!requireNamespace("sf", quietly = TRUE)) {
-        warning("Package 'sf' is required for basemap functionality. Install with install.packages('sf'). Falling back to simple plot.")
-        basemap <<- FALSE
-      } else {
-        # Convert to sf object with explicit CRS
-        unique_locs_sf <- sf::st_as_sf(
-          unique_locs,
-          coords = c("Longitude", "Latitude"),
-          crs = 4326  # WGS84
-        )
-        
-        # Calculate bbox and expand it
-        bbox <- sf::st_bbox(unique_locs_sf)
-        
-        # Expand by 0.5 degrees or 20% of extent, whichever is larger
-        lon_extent <- bbox["xmax"] - bbox["xmin"]
-        lat_extent <- bbox["ymax"] - bbox["ymin"]
-        lon_expand <- max(0.5, lon_extent * 0.2)
-        lat_expand <- max(0.5, lat_extent * 0.2)
-        
-        bbox["xmin"] <- bbox["xmin"] - lon_expand
-        bbox["xmax"] <- bbox["xmax"] + lon_expand
-        bbox["ymin"] <- bbox["ymin"] - lat_expand
-        bbox["ymax"] <- bbox["ymax"] + lat_expand
-        
-        # If zoom not specified, calculate based on extent
-        if (is.null(zoom)) {
-          extent <- max(bbox["xmax"] - bbox["xmin"], bbox["ymax"] - bbox["ymin"])
-          zoom <- if (extent < 0.5) 12 else if (extent < 2) 10 else if (extent < 5) 8 else 7
-        }
-        
-        plot <- ggplot2::ggplot() +
-          ggspatial::annotation_map_tile(
-            type = basemap_type,
-            zoom = zoom,
-            progress = "none"
-          ) +
-          ggplot2::geom_sf(
-            data = unique_locs_sf,
-            size = point_size,
-            color = point_color
-          ) +
-          ggplot2::coord_sf(
-            xlim = c(bbox["xmin"], bbox["xmax"]),
-            ylim = c(bbox["ymin"], bbox["ymax"]),
-            crs = 4326,
-            expand = FALSE
-          ) +
-          ggplot2::labs(
-            title = plot_title,
-            subtitle = plot_subtitle,
-            caption = plot_caption,
-            x = "Longitude",
-            y = "Latitude"
-          ) +
-          ggplot2::theme_minimal() +
-          ggplot2::theme(
-            text = ggplot2::element_text(size = text_size),
-            plot.title = ggplot2::element_text(hjust = 0.5),
-            plot.subtitle = ggplot2::element_text(hjust = 0.5)
+    tryCatch(
+      {
+        # Check if sf package is available
+        if (!requireNamespace("sf", quietly = TRUE)) {
+          warning("Package 'sf' is required for basemap functionality. Install with install.packages('sf'). Falling back to simple plot.")
+          basemap <<- FALSE
+        } else {
+          # Convert to sf object with explicit CRS
+          unique_locs_sf <- sf::st_as_sf(
+            unique_locs,
+            coords = c("Longitude", "Latitude"),
+            crs = 4326 # WGS84
           )
-        
-        # Add labels if multiple locations
-        if (nrow(unique_locs) > 1) {
-          if (requireNamespace("ggrepel", quietly = TRUE)) {
-            # Extract coordinates for labeling
-            coords <- as.data.frame(sf::st_coordinates(unique_locs_sf))
-            coords$Location <- unique_locs$Location
-            
-            plot <- plot +
-              ggrepel::geom_label_repel(
-                data = coords,
-                ggplot2::aes(x = X, y = Y, label = Location),
-                size = text_size / 3,
-                fontface = "bold",
-                box.padding = 0.5,
-                point.padding = 0.3,
-                min.segment.length = 0
-              )
-          } else {
-            plot <- plot +
-              ggplot2::geom_sf_text(
-                data = unique_locs_sf,
-                ggplot2::aes(label = Location),
-                nudge_y = 0.05,
-                size = text_size / 3,
-                fontface = "bold"
-              )
+
+          # Calculate bbox and expand it
+          bbox <- sf::st_bbox(unique_locs_sf)
+
+          # Expand by 0.5 degrees or 20% of extent, whichever is larger
+          lon_extent <- bbox["xmax"] - bbox["xmin"]
+          lat_extent <- bbox["ymax"] - bbox["ymin"]
+          lon_expand <- max(0.5, lon_extent * 0.2)
+          lat_expand <- max(0.5, lat_extent * 0.2)
+
+          bbox["xmin"] <- bbox["xmin"] - lon_expand
+          bbox["xmax"] <- bbox["xmax"] + lon_expand
+          bbox["ymin"] <- bbox["ymin"] - lat_expand
+          bbox["ymax"] <- bbox["ymax"] + lat_expand
+
+          # If zoom not specified, calculate based on extent
+          if (is.null(zoom)) {
+            extent <- max(bbox["xmax"] - bbox["xmin"], bbox["ymax"] - bbox["ymin"])
+            zoom <- if (extent < 0.5) 12 else if (extent < 2) 10 else if (extent < 5) 8 else 7
+          }
+
+          plot <- ggplot2::ggplot() +
+            ggspatial::annotation_map_tile(
+              type = basemap_type,
+              zoom = zoom,
+              progress = "none"
+            ) +
+            ggplot2::geom_sf(
+              data = unique_locs_sf,
+              size = point_size,
+              color = point_color
+            ) +
+            ggplot2::coord_sf(
+              xlim = c(bbox["xmin"], bbox["xmax"]),
+              ylim = c(bbox["ymin"], bbox["ymax"]),
+              crs = 4326,
+              expand = FALSE
+            ) +
+            ggplot2::labs(
+              title = plot_title,
+              subtitle = plot_subtitle,
+              caption = plot_caption,
+              x = "Longitude",
+              y = "Latitude"
+            ) +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(
+              text = ggplot2::element_text(size = text_size),
+              plot.title = ggplot2::element_text(hjust = 0.5),
+              plot.subtitle = ggplot2::element_text(hjust = 0.5)
+            )
+
+          # Add labels if multiple locations
+          if (nrow(unique_locs) > 1) {
+            if (requireNamespace("ggrepel", quietly = TRUE)) {
+              # Extract coordinates for labeling
+              coords <- as.data.frame(sf::st_coordinates(unique_locs_sf))
+              coords$Location <- unique_locs$Location
+
+              plot <- plot +
+                ggrepel::geom_label_repel(
+                  data = coords,
+                  ggplot2::aes(x = X, y = Y, label = Location),
+                  size = text_size / 3,
+                  fontface = "bold",
+                  box.padding = 0.5,
+                  point.padding = 0.3,
+                  min.segment.length = 0
+                )
+            } else {
+              plot <- plot +
+                ggplot2::geom_sf_text(
+                  data = unique_locs_sf,
+                  ggplot2::aes(label = Location),
+                  nudge_y = 0.05,
+                  size = text_size / 3,
+                  fontface = "bold"
+                )
+            }
           }
         }
+      },
+      error = function(e) {
+        warning("Failed to create basemap: ", e$message, ". Falling back to simple plot.")
+        basemap <<- FALSE
       }
-    }, error = function(e) {
-      warning("Failed to create basemap: ", e$message, ". Falling back to simple plot.")
-      basemap <<- FALSE
-    })
+    )
   }
-  
+
   if (!basemap) {
     # Create simple plot without basemap
     plot <- ggplot2::ggplot(unique_locs, ggplot2::aes(x = Longitude, y = Latitude)) +
@@ -218,7 +221,7 @@ location_map_plot <- function(data_path,
         plot.title = ggplot2::element_text(hjust = 0.5),
         plot.subtitle = ggplot2::element_text(hjust = 0.5)
       )
-    
+
     # Add labels if multiple locations
     if (nrow(unique_locs) > 1) {
       if (requireNamespace("ggrepel", quietly = TRUE)) {
