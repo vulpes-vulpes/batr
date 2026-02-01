@@ -454,81 +454,213 @@ monitoring_effort_plot <- function(data_path,
 
 #' Monthly Activity Plot
 #'
-#' \code{monthly_activity_plot} creates a plot showing average nightly activity
-#' by month and species.
+#' Creates a plot showing average nightly activity by month and species.
+#' Requires data loaded with both observation and log file data (active_dates).
 #'
 #' @family Activity Plots
 #'
-#' @param species_night_site Data frame with Night, Location, Species, Count columns.
-#' @param monthly_active_nights Data frame with monthly survey effort.
+#' @param data_path Character. Path to an existing RData file containing
+#'   observation data and active_dates (from import_logs).
+#' @param species Character vector. Species codes to include in the plot.
+#'   If \code{NULL}, includes all species in the dataset.
+#' @param location_list Character vector. Location names to include.
+#'   If \code{NULL} (default), includes all locations.
+#' @param monitoring_start Character. Monitoring start date (e.g., "2019-01-01").
+#'   If \code{NULL}, uses the earliest date in the dataset.
+#' @param monitoring_end Character. Monitoring end date (e.g., "2019-12-31").
+#'   If \code{NULL}, uses the latest date in the dataset.
 #' @param exclude_species Character vector of species codes to exclude.
-#' @param species_codes Character vector of species codes.
-#' @param species_names Character vector of species names matching codes.
+#' @param species_names Named character vector for custom species labels. Names should be
+#'   species codes from the data, values should be display names. If NULL (default),
+#'   species codes are used as labels.
+#' @param save_path Character. Full file path to save plot as PNG. If \code{NULL}
+#'   (default), plot is not saved.
+#' @param width Numeric. Plot width in cm. Default is 20.
+#' @param height Numeric. Plot height in cm. Default is 25.
+#' @param text_size Numeric. Text size for plot labels. Default is 10.
 #'
 #' @return A ggplot2 plot object.
 #'
+#' @examples
+#' \dontrun{
+#' # Plot all species
+#' monthly_activity_plot("data.RData")
+#'
+#' # Plot specific species with custom names
+#' species_labels <- c(
+#'   "Epfu" = "Big Brown Bat",
+#'   "Mylu" = "Little Brown Myotis"
+#' )
+#' monthly_activity_plot("data.RData",
+#'   species = c("Epfu", "Mylu"),
+#'   species_names = species_labels
+#' )
+#' }
 #' @export
-monthly_activity_plot <- function(species_night_site, monthly_active_nights, exclude_species = NULL,
-                                  species_codes = c("Epfu", "Labo", "Laci", "Lano", "Myle", "Mylu", "Myse", "Mysp", "Mysp_all", "Pesu"),
-                                  species_names = c(
-                                    "Big Brown Bat", "Eastern Red Bat", "Hoary Bat", "Silver-haired Bat",
-                                    "Eastern Small-footed Myotis", "Little Brown Myotis", "Northern Myotis",
-                                    "Unidentified Myotis", "Combined Myotis", "Tri-colored Bat"
-                                  )) {
+monthly_activity_plot <- function(data_path,
+                                  species = NULL,
+                                  location_list = NULL,
+                                  monitoring_start = NULL,
+                                  monitoring_end = NULL,
+                                  exclude_species = NULL,
+                                  species_names = NULL,
+                                  save_path = NULL,
+                                  width = 20,
+                                  height = 25,
+                                  text_size = 10) {
+  # Load observation data
+  dataset <- .load_plot_data(data_path, species_list = species, location_list = location_list)
+
+  # Filter by monitoring period if specified
+  if (!is.null(monitoring_start)) {
+    dataset <- dataset[dataset$Night >= as.Date(monitoring_start), ]
+  }
+  if (!is.null(monitoring_end)) {
+    dataset <- dataset[dataset$Night <= as.Date(monitoring_end), ]
+  }
+
+  # Prepare activity data by species and night
+  activity_data <- .prepare_activity_data(dataset, species, location_list)
+
+  # Load active_dates to normalize by effort
+  active_dates <- tryCatch(
+    .load_gap_data(data_path, location_list = location_list),
+    error = function(e) {
+      warning("Failed to load active_dates. Using raw observation counts instead of normalized values.")
+      NULL
+    }
+  )
+
+  # Cast to monthly format
   monthly_species <- reshape2::dcast(
-    species_night_site,
+    activity_data,
     lubridate::year(Night) + Location + Species ~ lubridate::month(Night),
     value.var = "Count",
-    fun.aggregate = sum
+    fun.aggregate = sum,
+    fill = 0
   )
-  colnames(monthly_species)[4:length(monthly_species)] <- paste("Observations", colnames(monthly_species)[4:length(monthly_species)], sep = "_")
+
+  # Rename columns
+  colnames(monthly_species)[4:length(monthly_species)] <- paste("Obs", colnames(monthly_species)[4:length(monthly_species)], sep = "_")
   names(monthly_species)[names(monthly_species) == "lubridate::year(Night)"] <- "Year"
-  colnames(monthly_active_nights)[3:(length(monthly_active_nights) - 1)] <- paste("SurveyEffort", colnames(monthly_active_nights)[3:(length(monthly_active_nights) - 1)], sep = "_")
 
-  data <- merge(monthly_species, monthly_active_nights)
-  species_start <- 4
-  active_start <- 3
+  # If we have active_dates, create monthly effort data
+  if (!is.null(active_dates)) {
+    monthly_effort <- reshape2::dcast(
+      active_dates,
+      lubridate::year(Date) + Location ~ lubridate::month(Date),
+      value.var = "Log_Count",
+      fun.aggregate = function(x) sum(x > 0), # Count days recorded
+      fill = 0
+    )
+    colnames(monthly_effort)[3:length(monthly_effort)] <- paste("Effort", colnames(monthly_effort)[3:length(monthly_effort)], sep = "_")
+    names(monthly_effort)[names(monthly_effort) == "lubridate::year(Date)"] <- "Year"
 
-  for (month in month.name) {
-    if (any(names(data) == paste("Observations_", as.integer(factor(month, levels = month.name)), sep = ""))) {
-      data$mean <- data[, colnames(monthly_species)[species_start]] / data[, colnames(monthly_active_nights)[active_start]]
-      names(data)[names(data) == "mean"] <- month
-      species_start <- species_start + 1
-      active_start <- active_start + 1
+    # Merge observation and effort data
+    data <- merge(monthly_species, monthly_effort, by = c("Year", "Location"), all.x = TRUE)
+
+    # Calculate normalized values (observations per recording day)
+    obs_start <- 4
+    effort_start <- 4 + (length(monthly_species) - 3)
+
+    for (month in 1:12) {
+      obs_col <- paste("Obs", month, sep = "_")
+      effort_col <- paste("Effort", month, sep = "_")
+
+      if (obs_col %in% names(data) && effort_col %in% names(data)) {
+        data[[month.name[month]]] <- ifelse(data[[effort_col]] > 0,
+          data[[obs_col]] / data[[effort_col]],
+          NA
+        )
+      }
+    }
+  } else {
+    # Without effort data, just use raw counts
+    data <- monthly_species
+    for (month in 1:12) {
+      col_name <- paste("Obs", month, sep = "_")
+      if (col_name %in% names(data)) {
+        data[[month.name[month]]] <- data[[col_name]]
+      }
     }
   }
 
-  data <- data[, -grep("Observation", colnames(data))]
-  data <- data[, -grep("SurveyEffort", colnames(data))]
-  data <- data[, -grep("Total_Nights", colnames(data))]
+  # Remove temporary columns
+  data <- data[, !grepl("Obs_|Effort_", names(data))]
 
+  # Filter excluded species
   if (!is.null(exclude_species)) {
     data <- data[!data$Species %in% exclude_species, ]
   }
 
-  data_melt <- reshape2::melt(data, id = c("Year", "Location", "Species"))
-  names(data_melt)[names(data_melt) == "variable"] <- "Month"
-  names(data_melt)[names(data_melt) == "value"] <- "x"
+  # Melt to long format
+  month_cols <- month.name[1:12]
+  available_months <- month_cols[month_cols %in% names(data)]
 
-  spec.labs <- species_names
-  names(spec.labs) <- species_codes
+  if (length(available_months) == 0) {
+    stop("No monthly data available for plotting")
+  }
 
-  ggplot2::ggplot() +
-    ggplot2::geom_bar(data = data_melt, mapping = ggplot2::aes(x = Month, y = x), stat = "identity") +
+  data_melt <- reshape2::melt(
+    data,
+    id.vars = c("Year", "Location", "Species"),
+    measure.vars = available_months,
+    variable.name = "Month",
+    value.name = "MeanObservations"
+  )
+
+  # Ensure Month is ordered correctly
+  data_melt$Month <- factor(data_melt$Month, levels = month.name, ordered = TRUE)
+
+  # Get unique species from data and create labels
+  unique_species <- sort(unique(data_melt$Species))
+  if (is.null(species_names)) {
+    # Use species codes as labels if no custom names provided
+    spec_labels <- unique_species
+    names(spec_labels) <- unique_species
+  } else {
+    # Use provided names, matching to species codes in data
+    spec_labels <- species_names[unique_species]
+    # Replace any NA values (species not in the provided mapping) with the code itself
+    spec_labels[is.na(spec_labels)] <- names(spec_labels)[is.na(spec_labels)]
+  }
+
+  # Create labeller function that uses the provided names
+  species_labeller <- function(x) {
+    sapply(x, function(sp) spec_labels[sp], USE.NAMES = FALSE)
+  }
+
+  # Create plot
+  plot <- ggplot2::ggplot() +
+    ggplot2::geom_bar(
+      data = data_melt,
+      mapping = ggplot2::aes(x = Month, y = MeanObservations),
+      stat = "identity",
+      fill = "black"
+    ) +
     ggplot2::facet_wrap(~Species,
       ncol = 1, scales = "free", strip.position = "top",
-      labeller = ggplot2::labeller(Species = spec.labs)
+      labeller = ggplot2::labeller(Species = species_labeller)
     ) +
-    ggplot2::scale_y_continuous(name = "Mean Nightly Observations") +
+    ggplot2::scale_y_continuous(
+      name = if (is.null(active_dates)) "Observations" else "Mean Observations per Recording Day"
+    ) +
     ggplot2::theme_classic() +
     ggplot2::theme(
       plot.title = ggplot2::element_text(hjust = 0.5),
       strip.background = ggplot2::element_blank(),
       strip.text = ggplot2::element_text(hjust = 0, face = "bold"),
-      text = ggplot2::element_text(size = 25),
+      text = ggplot2::element_text(size = text_size),
       axis.title.x = ggplot2::element_blank(),
       axis.title.y = ggplot2::element_text(face = "bold")
     )
+
+  # Save if requested
+  if (!is.null(save_path)) {
+    ggplot2::ggsave(save_path, plot = plot, width = width, height = height, units = "cm")
+  }
+
+  return(plot)
 }
 
 # ============================================================================

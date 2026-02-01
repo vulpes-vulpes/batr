@@ -258,7 +258,3 @@ first_observations_plot <- function(data_path,
 
   return(plot)
 }
-
-# ============================================================================
-# Helper Functions (shared with plot_activity.R)
-# ============================================================================

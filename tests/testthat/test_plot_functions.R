@@ -133,31 +133,21 @@ test_that(".clean_location_label replaces underscores", {
 })
 
 test_that("monthly_activity_plot returns a ggplot object", {
-    # Create minimal test data
-    species_night_site <- data.frame(
-        Night = as.Date(c("2023-01-15", "2023-02-15", "2023-03-15")),
-        Location = c("Site1", "Site1", "Site1"),
-        Species = c("Epfu", "Epfu", "Epfu"),
-        Count = c(10, 15, 20)
-    )
-    monthly_active_nights <- data.frame(
-        Year = 2023,
-        Location = "Site1",
-        `1` = 5,
-        `2` = 6,
-        `3` = 7,
-        Total_Nights = 18,
-        check.names = FALSE
-    )
+    test_file <- create_test_data()
+    on.exit(unlink(test_file))
 
-    p <- monthly_activity_plot(species_night_site, monthly_active_nights)
+    # Should return a plot
+    p <- monthly_activity_plot(test_file)
     expect_s3_class(p, "ggplot")
 
     # Test with exclusion
-    p2 <- monthly_activity_plot(species_night_site, monthly_active_nights,
-        exclude_species = "Mylu"
-    )
+    p2 <- monthly_activity_plot(test_file, exclude_species = "Mylu")
     expect_s3_class(p2, "ggplot")
+
+    # Test with custom species names
+    species_labs <- c("Epfu" = "Big Brown Bat", "Mylu" = "Little Brown Bat")
+    p3 <- monthly_activity_plot(test_file, species_names = species_labs)
+    expect_s3_class(p3, "ggplot")
 })
 
 test_that("pipe operator %>% works", {
