@@ -708,9 +708,18 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     Species.Auto.ID,
     dplyr::everything()
   )
-  if ("Species.Manual.ID" %in% colnames(observations)) {
-    observations <- dplyr::select(observations, Species.Manual.ID, dplyr::everything())
-  }
+  observations <- dplyr::select(
+    observations,
+    Timestamp,
+    Species,
+    Location,
+    Latitude,
+    Longitude,
+    Species.Auto.ID,
+    Species.Manual.ID,
+    dplyr::everything()
+  )
+
   return(observations)
 }
 
