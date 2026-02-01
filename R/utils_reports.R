@@ -452,3 +452,108 @@ render_custom_report <- function(template_path,
 
   invisible(result)
 }
+
+
+#' List available report templates
+#'
+#' Returns a character vector of available batr report templates that can be
+#' used with \code{\link{use_report_template}}.
+#'
+#' @return Character vector of template names
+#' @export
+#' @examples
+#' list_report_templates()
+list_report_templates <- function() {
+  c("single-site", "multi-site")
+}
+
+
+#' Copy a report template to your project
+#'
+#' Copies a batr report template to your project directory so you can customize it.
+#' Templates are ready-to-use RMarkdown files that can be modified for your specific needs.
+#'
+#' @param template Character string specifying which template to use.
+#'   Options: "single-site" or "multi-site". Use \code{\link{list_report_templates}}
+#'   to see all available templates.
+#' @param path Character string specifying the destination directory.
+#'   Defaults to current working directory.
+#' @param filename Character string for the output filename (without extension).
+#'   If NULL, uses a default name based on the template type.
+#'
+#' @return Invisibly returns the path to the created file
+#' @export
+#' @examples
+#' \dontrun{
+#' # Copy single-site template to current directory
+#' use_report_template("single-site")
+#'
+#' # Copy to a specific location with custom name
+#' use_report_template("multi-site",
+#'   path = "reports/",
+#'   filename = "my_custom_report"
+#' )
+#' }
+use_report_template <- function(template = "single-site",
+                                path = ".",
+                                filename = NULL) {
+  # Validate template choice
+  available <- list_report_templates()
+  if (!template %in% available) {
+    stop(
+      "Template '", template, "' not found. Available templates: ",
+      paste(available, collapse = ", ")
+    )
+  }
+
+  # Find template file
+  template_file <- system.file(
+    "rmarkdown/templates",
+    paste0("batr-", template),
+    "skeleton/skeleton.Rmd",
+    package = "batr"
+  )
+
+  if (!file.exists(template_file)) {
+    stop("Template file not found. Please reinstall batr.")
+  }
+
+  # Set default filename if not provided
+  if (is.null(filename)) {
+    filename <- paste0(gsub("-", "_", template), "_report")
+  }
+
+  # Create destination directory if needed
+  if (!dir.exists(path)) {
+    dir.create(path, recursive = TRUE)
+  }
+
+  # Create destination path
+  dest_file <- file.path(path, paste0(filename, ".Rmd"))
+
+  # Check if file already exists
+  if (file.exists(dest_file)) {
+    if (interactive()) {
+      response <- readline(prompt = sprintf(
+        "File '%s' already exists. Overwrite? (y/n): ", dest_file
+      ))
+      if (!tolower(response) %in% c("y", "yes")) {
+        message("Template copy cancelled.")
+        return(invisible(NULL))
+      }
+    } else {
+      stop("File '", dest_file, "' already exists. Use a different filename or remove the existing file.")
+    }
+  }
+
+  # Copy file
+  file.copy(template_file, dest_file, overwrite = TRUE)
+
+  message("Report template copied to: ", dest_file)
+  message("\nNext steps:")
+  message("1. Open ", dest_file)
+  message("2. Update the 'params' section with your data paths and settings")
+  message("3. Knit the document to generate your report")
+
+  invisible(dest_file)
+}

@@ -225,9 +225,23 @@ Automatic handling of missing files
 
 ### Custom Reports
 
-Create custom report templates using RMarkdown. See
-`vignette("custom-reports")` for details on accessing data objects and
-creating tailored analyses.
+Create custom report templates using RMarkdown. After installing batr,
+access the custom reports vignette with:
+
+``` r
+vignette("custom-reports", package = "batr")
+```
+
+Or use the new helper functions to get started quickly:
+
+``` r
+library(batr)
+list_report_templates()           # See available templates
+use_report_template("single-site") # Copy a template to your project
+```
+
+For details on accessing data objects and creating tailored analyses,
+see the vignette.
 
 ## Data Management
 
