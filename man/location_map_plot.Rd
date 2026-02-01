@@ -7,12 +7,15 @@
 location_map_plot(
   data_path,
   location_list = NULL,
+  basemap = FALSE,
+  basemap_type = "osm",
+  zoom = NULL,
   save_path = NULL,
   width = 15,
   height = 12,
   text_size = 10,
   point_size = 3,
-  point_color = "darkblue",
+  point_color = "red",
   plot_title = "Monitoring Locations",
   plot_subtitle = NULL,
   plot_caption = NULL
@@ -25,6 +28,25 @@ observation data with Latitude and Longitude columns.}
 \item{location_list}{Character vector. Location names to include in the plot.
 If \code{NULL} (default), includes all locations in the dataset.}
 
+\item{basemap}{Logical. If \code{TRUE}, adds a background basemap using ggspatial.
+Requires the ggspatial package to be installed. Default is \code{FALSE}.}
+
+\item{basemap_type}{Character. Type of map tiles to use. Common options include:
+\itemize{
+  \item \code{"osm"} - OpenStreetMap (default)
+  \item \code{"osm-bw"} - OpenStreetMap black and white
+  \item \code{"stamenterrain"} - Stamen terrain with topographic relief
+  \item \code{"stamenwatercolor"} - Stamen watercolor (artistic)
+  \item \code{"stamentoner"} - Stamen toner (high contrast)
+  \item \code{"stamentonerlite"} - Stamen toner lite (minimal)
+  \item \code{"cartolight"} - CartoDB light
+  \item \code{"cartodark"} - CartoDB dark
+}
+See \code{rosm::osm.types()} for the complete list of available types.}
+
+\item{zoom}{Numeric or NULL. Zoom level for map tiles (higher = more detail).
+If NULL (default), zoom is calculated automatically. Typical range is 5-18.}
+
 \item{save_path}{Character. Full file path to save plot as PNG. If \code{NULL}
 (default), plot is not saved.}
 
@@ -36,7 +58,7 @@ If \code{NULL} (default), includes all locations in the dataset.}
 
 \item{point_size}{Numeric. Size of location points. Default is 3.}
 
-\item{point_color}{Character. Color of location points. Default is "darkblue".}
+\item{point_color}{Character. Color of location points. Default is "red".}
 
 \item{plot_title}{Character. Optional plot title. Default is "Monitoring Locations".}
 
@@ -48,17 +70,25 @@ If \code{NULL} (default), includes all locations in the dataset.}
 A ggplot2 object.
 }
 \description{
-Creates a simple scatter plot showing the geographic coordinates of
-monitoring locations.
+Creates a scatter plot showing the geographic coordinates of
+monitoring locations, optionally with a background basemap.
 }
 \examples{
 \dontrun{
 # Plot all locations
 location_map_plot("data.RData")
 
-# Plot specific locations
+# Plot with basemap
 location_map_plot("data.RData",
-  location_list = c("Site1", "Site2")
+  basemap = TRUE,
+  basemap_type = "osm"
+)
+
+# Plot specific locations with terrain basemap
+location_map_plot("data.RData",
+  location_list = c("Site1", "Site2"),
+  basemap = TRUE,
+  basemap_type = "stamenterrain"
 )
 }
 }

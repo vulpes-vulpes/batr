@@ -126,6 +126,16 @@ Once data are imported, you can summarize activity and generate plots.
 ```r
 # Not run
 summary_table("project_data.RData")
+
+# Custom species labels
+species_labels <- c(
+  "Epfu" = "Big Brown Bat",
+  "Lano" = "Silver-haired Bat"
+)
+summary_table("project_data.RData",
+  species_list = c("Epfu", "Lano"),
+  species_names = species_labels
+)
 ```
 
 ### Activity plots

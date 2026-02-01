@@ -1,12 +1,14 @@
 ---
-title: "Single Site Bat Monitoring Report"
-author: "`r params$author`"
-date: "`r format(Sys.Date(), '%B %d, %Y')`"
 output:
   pdf_document:
     toc: false
     keep_tex: false
     extra_dependencies: ["booktabs", "geometry"]
+header-includes:
+  - \usepackage{helvet}
+  - \renewcommand\familydefault{\sfdefault}
+  - \usepackage{caption}
+  - \captionsetup{justification=raggedright, singlelinecheck=false, font=small, labelfont=bf}
 geometry:
 - top=20mm
 - left=20mm
@@ -20,7 +22,7 @@ params:
   project_name: !r NA_character_
   monitoring_start: !r NA_character_
   monitoring_end: !r NA_character_
-  include_map: true
+  map: false
 ---
 
 ```{r setup, include=FALSE}
@@ -34,6 +36,9 @@ knitr::opts_chunk$set(
 library(batr)
 library(kableExtra)
 library(lubridate)
+
+# Use temporary directory for map tile cache
+options(rosm.cachedir = tempdir())
 
 # Load data
 if (is.null(params$data_path) || is.na(params$data_path)) {
@@ -92,8 +97,8 @@ n_observations <- nrow(observations)
 ## Single Site Report: `r site_name`
 
 **Prepared by:** `r params$author`  
-**Report Date:** `r format(Sys.Date(), '%B %d, %Y')`  
-**Monitoring Period:** `r format(mon_start, '%b %d, %Y')` to `r format(mon_end, '%b %d, %Y')`
+**Report Generated Date:** `r format(Sys.Date(), '%B %d, %Y')`  
+**Monitoring Period:** `r format(mon_start, '%d %b %Y')` to `r format(mon_end, '%d %b %Y')`
 
 ---
 
@@ -104,18 +109,21 @@ A total of **`r n_observations`** acoustic observations of **`r n_species`** bat
 ### Species Summary
 
 ```{r summary_table, fig.cap="Total species observations at the monitoring location."}
-# Use batr's summary_table function
+# Create species summary (without totals row or location column for single site)
 summary <- batr::summary_table(
   data_path = params$data_path,
   species_list = species_filter,
   location_list = c(params$site),
-  include_totals = TRUE
+  include_totals = FALSE
 )
+
+# Remove the Location column (redundant for single site report)
+summary <- summary[, !names(summary) %in% "Location", drop = FALSE]
 
 kable(summary, 
       format = "latex",
       booktabs = TRUE,
-      caption = "Total species observations by site") %>%
+      caption = "Total species observations") %>%
   kable_styling(latex_options = "hold_position")
 ```
 
@@ -138,14 +146,17 @@ batr::species_activity_facet_plot(
 
 ## Monitoring Effort
 
-This plot shows the monitoring effort (presence/absence of active recordings) throughout the monitoring period.
+Monitoring effort throughout the monitoring period. Grey bars indicate nights with no monitoring effort.
 
-```{r monitoring_plot, fig.cap="Monitoring effort over time.", fig.height=6, fig.width=10}
+```{r monitoring_plot, fig.cap="Monitoring effort over time.", fig.height=2, fig.width=7}
 if (exists("active_dates") && nrow(active_dates) > 0) {
   tryCatch({
     batr::monitoring_effort_plot(
       data_path = params$data_path,
-      location_list = params$site
+      location_list = params$site,
+      monitoring_start = mon_start,
+      monitoring_end = mon_end,
+      facet_rows = 1
     )
   }, error = function(e) {
     plot.new()
@@ -156,8 +167,6 @@ if (exists("active_dates") && nrow(active_dates) > 0) {
   text(0.5, 0.5, "Monitoring effort data not available", cex = 1.5)
 }
 ```
-
-\newpage
 
 ## Location Information
 
@@ -173,25 +182,43 @@ if (nrow(unique_locs) > 0 && !is.na(unique_locs$Latitude[1]) && !is.na(unique_lo
 }
 ```
 
-```{r location_map, fig.cap="Monitoring location map", fig.height=4, fig.width=6, eval=params$include_map}
+```{r location_map, fig.cap="Monitoring location map", fig.height=4, fig.width=7, eval=params$map}
+# Save filtered observations to temporary RData for site-specific map
+temp_map_file <- tempfile(fileext = ".RData")
+save(observations, file = temp_map_file)
+
 batr::location_map_plot(
-  data_path = params$data_path,
+  data_path = temp_map_file,
   location_list = params$site,
+  basemap = TRUE,
+  basemap_type = "cartolight",
   text_size = 10,
   point_size = 4,
   plot_title = NULL
 )
-```
 
-\newpage
+unlink(temp_map_file)
+```
 
 ## Notes
 
-- This report is automatically generated from acoustic monitoring data
-- Species identifications are based on automated classification and should be verified
-- The number of observations cannot be directly compared between species, as detection varies by echolocation call characteristics
-- For additional analysis or questions, please contact the research team
+```{r notes, results='asis', echo=FALSE}
+# Check if any manual IDs exist
+has_manual_ids <- "Species.Manual.ID" %in% names(observations) && 
+                  any(!is.na(observations$Species.Manual.ID))
+
+cat("- This report is automatically generated from acoustic monitoring data\n")
+
+if (has_manual_ids) {
+  cat("- Species identifications include manual verification\n")
+} else {
+  cat("- Species identifications are based on automated classification and should be verified\n")
+}
+
+cat("- The number of observations cannot be directly compared between species, as detection varies by echolocation call characteristics\n")
+cat("- For additional analysis or questions, please contact the research team\n")
+```
 
 ---
 
-*Report generated using the batr R package*
+*Report generated using the [batr R package](https://github.com/vulpes-vulpes/batr) by Toby Thorne*

@@ -2,7 +2,7 @@
 % Please edit documentation in R/import_guano.R
 \name{.standardize_swift_locations}
 \alias{.standardize_swift_locations}
-\title{Standardize GPS Coordinates for Anabat Swift Files}
+\title{Standardize GPS Coordinates Per Location}
 \usage{
 .standardize_swift_locations(observations)
 }
@@ -10,10 +10,10 @@
 \item{observations}{Data.frame containing processed observations.}
 }
 \value{
-Data.frame with standardized coordinates for Swift files.
+Data.frame with standardized coordinates per location.
 }
 \description{
-Anabat Swift devices often record slightly inconsistent GPS readings at the
+Some recorders report slightly different GPS coordinates for files from the
 same physical location. This function standardizes all coordinates for a given
 location to the first recorded value.
 }

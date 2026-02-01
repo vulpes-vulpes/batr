@@ -1,4 +1,5 @@
 #' Adaptive date breaks and label cleaning helpers
+#' @importFrom stats setNames
 #' @keywords internal
 .adaptive_date_breaks <- function(min_date, max_date, date_label = "%b") {
   span_days <- as.integer(max_date - min_date)
@@ -39,6 +40,36 @@
 #' @keywords internal
 .clean_location_label <- function(x) {
   gsub("_", " ", x)
+}
+
+#' Build species label mapping for plots
+#' @keywords internal
+.species_label_map <- function(species_codes, species_names = NULL) {
+  species_codes <- unique(as.character(species_codes))
+  if (length(species_codes) == 0) {
+    return(setNames(character(0), character(0)))
+  }
+
+  if (is.null(species_names)) {
+    spec_labels <- species_codes
+  } else {
+    spec_labels <- species_names[species_codes]
+    spec_labels[is.na(spec_labels)] <- species_codes[is.na(spec_labels)]
+  }
+
+  names(spec_labels) <- species_codes
+  spec_labels
+}
+
+#' Create a labeller for species facets
+#' @keywords internal
+.species_labeller <- function(species_codes, species_names = NULL) {
+  spec_labels <- .species_label_map(species_codes, species_names)
+  function(x) {
+    out <- spec_labels[x]
+    out[is.na(out)] <- x[is.na(out)]
+    unname(out)
+  }
 }
 
 #' Load plot data from RData file
@@ -94,6 +125,37 @@
   }
 
   return(observations)
+}
+
+#' Load gap data from RData file
+#'
+#' Loads active_dates (recorder uptime) data from an RData file with optional
+#' filtering by location.
+#'
+#' @param data_path Character. Path to an RData file with active_dates data.
+#' @param location_list Character vector. Location names to filter by (optional).
+#'
+#' @return Data frame of active_dates, optionally filtered.
+#'
+#' @keywords internal
+.load_gap_data <- function(data_path, location_list = NULL) {
+  .validate_rdata_path(data_path)
+
+  load(data_path)
+
+  if (!exists("active_dates")) {
+    stop("Log file data missing. Please run import_logs() first.")
+  }
+
+  # Filter by location if specified
+  if (!is.null(location_list)) {
+    active_dates <- active_dates[active_dates$Location %in% location_list, ]
+    if (nrow(active_dates) == 0) {
+      stop("No log data found for specified locations: ", paste(location_list, collapse = ", "))
+    }
+  }
+
+  return(active_dates)
 }
 
 #' Consistent theme for batr plots

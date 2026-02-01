@@ -14,7 +14,8 @@ multi_site_report(
   project_name = "",
   monitoring_start = NULL,
   monitoring_end = NULL,
-  include_map = TRUE
+  include_map = TRUE,
+  basemap = FALSE
 )
 }
 \arguments{
@@ -38,6 +39,8 @@ all species in the data will be included.}
 \item{monitoring_end}{Date. Monitoring period end (optional).}
 
 \item{include_map}{Logical. Whether to include location map (default: TRUE).}
+
+\item{basemap}{Logical. Whether to use basemap on location map (default: FALSE).}
 }
 \value{
 Invisibly, a list with success/failure status and output path.

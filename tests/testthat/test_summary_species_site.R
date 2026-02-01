@@ -381,6 +381,29 @@ test_that("summary_table filters by species_list", {
     unlink(temp_rdata)
 })
 
+test_that("summary_table applies species_names labels", {
+    skip_on_cran()
+
+    observations <- data.frame(
+        Species = c("Epfu", "Labo", "Epfu"),
+        Location = c("Site1", "Site1", "Site2"),
+        stringsAsFactors = FALSE
+    )
+
+    temp_rdata <- tempfile(fileext = ".RData")
+    save(observations, file = temp_rdata)
+
+    species_labels <- c("Epfu" = "Big Brown Bat", "Labo" = "Hoary Bat")
+    result <- summary_table(temp_rdata, species_names = species_labels)
+
+    expect_true("Big Brown Bat" %in% names(result))
+    expect_true("Hoary Bat" %in% names(result))
+    expect_false("Epfu" %in% names(result))
+    expect_false("Labo" %in% names(result))
+
+    unlink(temp_rdata)
+})
+
 test_that("summary_table filters by location_list", {
     skip_on_cran()
 

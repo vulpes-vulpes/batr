@@ -9,8 +9,7 @@ render_custom_report(
   output_dir,
   output_file = "report.pdf",
   params,
-  format = "pdf_document",
-  include_map = TRUE
+  format = "pdf_document"
 )
 }
 \arguments{
@@ -26,9 +25,6 @@ that the template expects (e.g., data_path, sites, species, etc.).}
 
 \item{format}{Character. Output format (default: "pdf_document").
 Other options: "html_document", "word_document", etc.}
-
-\item{include_map}{Logical. Whether to attempt map rendering (default: TRUE).
-If template uses maps, consider setting to FALSE for offline operation.}
 }
 \value{
 Invisibly, a list with success/failure status and output path.

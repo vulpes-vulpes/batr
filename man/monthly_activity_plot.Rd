@@ -5,33 +5,72 @@
 \title{Monthly Activity Plot}
 \usage{
 monthly_activity_plot(
-  species_night_site,
-  monthly_active_nights,
+  data_path,
+  species = NULL,
+  location_list = NULL,
+  monitoring_start = NULL,
+  monitoring_end = NULL,
   exclude_species = NULL,
-  species_codes = c("Epfu", "Labo", "Laci", "Lano", "Myle", "Mylu", "Myse", "Mysp",
-    "Mysp_all", "Pesu"),
-  species_names = c("Big Brown Bat", "Eastern Red Bat", "Hoary Bat", "Silver-haired Bat",
-    "Eastern Small-footed Myotis", "Little Brown Myotis", "Northern Myotis",
-    "Unidentified Myotis", "Combined Myotis", "Tri-colored Bat")
+  species_names = NULL,
+  save_path = NULL,
+  width = 20,
+  height = 25,
+  text_size = 10
 )
 }
 \arguments{
-\item{species_night_site}{Data frame with Night, Location, Species, Count columns.}
+\item{data_path}{Character. Path to an existing RData file containing
+observation data and active_dates (from import_logs).}
 
-\item{monthly_active_nights}{Data frame with monthly survey effort.}
+\item{species}{Character vector. Species codes to include in the plot.
+If \code{NULL}, includes all species in the dataset.}
+
+\item{location_list}{Character vector. Location names to include.
+If \code{NULL} (default), includes all locations.}
+
+\item{monitoring_start}{Character. Monitoring start date (e.g., "2019-01-01").
+If \code{NULL}, uses the earliest date in the dataset.}
+
+\item{monitoring_end}{Character. Monitoring end date (e.g., "2019-12-31").
+If \code{NULL}, uses the latest date in the dataset.}
 
 \item{exclude_species}{Character vector of species codes to exclude.}
 
-\item{species_codes}{Character vector of species codes.}
+\item{species_names}{Named character vector for custom species labels. Names should be
+species codes from the data, values should be display names. If NULL (default),
+species codes are used as labels.}
 
-\item{species_names}{Character vector of species names matching codes.}
+\item{save_path}{Character. Full file path to save plot as PNG. If \code{NULL}
+(default), plot is not saved.}
+
+\item{width}{Numeric. Plot width in cm. Default is 20.}
+
+\item{height}{Numeric. Plot height in cm. Default is 25.}
+
+\item{text_size}{Numeric. Text size for plot labels. Default is 10.}
 }
 \value{
 A ggplot2 plot object.
 }
 \description{
-\code{monthly_activity_plot} creates a plot showing average nightly activity
-by month and species.
+Creates a plot showing average nightly activity by month and species.
+Requires data loaded with both observation and log file data (active_dates).
+}
+\examples{
+\dontrun{
+# Plot all species
+monthly_activity_plot("data.RData")
+
+# Plot specific species with custom names
+species_labels <- c(
+  "Epfu" = "Big Brown Bat",
+  "Mylu" = "Little Brown Myotis"
+)
+monthly_activity_plot("data.RData",
+  species = c("Epfu", "Mylu"),
+  species_names = species_labels
+)
+}
 }
 \seealso{
 Other Activity Plots: 

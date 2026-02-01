@@ -302,43 +302,27 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   return(observations)
 }
 
-#' Standardize GPS Coordinates for Anabat Swift Files
+#' Standardize GPS Coordinates Per Location
 #'
-#' Anabat Swift devices often record slightly inconsistent GPS readings at the
+#' Some recorders report slightly different GPS coordinates for files from the
 #' same physical location. This function standardizes all coordinates for a given
 #' location to the first recorded value.
 #'
 #' @param observations Data.frame containing processed observations.
 #'
-#' @return Data.frame with standardized coordinates for Swift files.
+#' @return Data.frame with standardized coordinates per location.
 #'
 #' @keywords internal
 .standardize_swift_locations <- function(observations) {
-  # Check if Model column exists
-  if (!"Model" %in% colnames(observations)) {
-    return(observations)
-  }
+  message(sprintf("Standardizing coordinates for %d recordings...", nrow(observations)))
 
-  swift_files <- observations[observations$Model == "Swift", ]
-  if (nrow(swift_files) == 0) {
-    return(observations)
-  }
-
-  message(sprintf("Standardizing coordinates for %d Anabat Swift recordings...", nrow(swift_files)))
-
-  swift_files <- swift_files %>%
+  observations <- observations %>%
     dplyr::group_by(Location) %>%
     dplyr::mutate(
       Latitude = dplyr::first(Latitude),
       Longitude = dplyr::first(Longitude)
     ) %>%
     dplyr::ungroup()
-
-  # Replace Swift rows with standardized versions
-  observations <- dplyr::bind_rows(
-    observations[observations$Model != "Swift", ],
-    swift_files
-  )
 
   return(observations)
 }

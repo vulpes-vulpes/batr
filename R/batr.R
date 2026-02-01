@@ -20,7 +20,8 @@ utils::globalVariables(c(
     # Plotting variables
     "xmin", "xmax", "ymin", "ymax",
     "lat", "lon", "sunset_time", "ob_time",
-    "Count", "Month", "x",
+    "Count", "Month", "x", "MeanObservations",
+    "X", "Y", # Coordinates from sf::st_coordinates for ggrepel
     # Variables from loaded RData files
     "observations", "active_dates"
 ))

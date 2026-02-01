@@ -8,7 +8,6 @@
 #' @param output_dir Character. Directory to save the rendered report.
 #' @param params List. Parameters to pass to rmarkdown::render().
 #' @param format Character. Output format (default: "pdf_document").
-#' @param include_map Logical. Whether to attempt map rendering (default: TRUE).
 #' @param quiet Logical. Suppress rendering messages (default: FALSE).
 #'
 #' @return A list with elements:
@@ -22,7 +21,6 @@ render_report <- function(template_path,
                           output_dir,
                           params,
                           format = "pdf_document",
-                          include_map = TRUE,
                           quiet = FALSE) {
   # Validate template exists
   if (!file.exists(template_path)) {
@@ -56,11 +54,6 @@ render_report <- function(template_path,
       output_path = NULL,
       error = "Parameters must be a non-empty list"
     ))
-  }
-
-  # Add include_map to parameters if not present
-  if (!("include_map" %in% names(params))) {
-    params$include_map <- include_map
   }
 
   # Attempt rendering
@@ -108,7 +101,7 @@ render_report <- function(template_path,
 #' @param project_name Character. Project name to display in the report.
 #' @param monitoring_start Date. Monitoring period start (optional).
 #' @param monitoring_end Date. Monitoring period end (optional).
-#' @param include_map Logical. Whether to include location map (default: TRUE).
+#' @param map Logical. Whether to include location map with basemap (default: FALSE).
 #'
 #' @return Invisibly, a list with success/failure status and output path.
 #'
@@ -135,7 +128,7 @@ single_site_report <- function(data_path,
                                project_name = "",
                                monitoring_start = NULL,
                                monitoring_end = NULL,
-                               include_map = TRUE) {
+                               map = FALSE) {
   # Input validation
   if (!file.exists(data_path)) {
     stop("data_path does not exist: ", data_path)
@@ -189,7 +182,7 @@ single_site_report <- function(data_path,
     project_name = project_name,
     monitoring_start = monitoring_start,
     monitoring_end = monitoring_end,
-    include_map = include_map
+    map = map
   )
 
   # Render report
@@ -199,7 +192,6 @@ single_site_report <- function(data_path,
     output_dir = output_dir,
     params = params,
     format = "pdf_document",
-    include_map = include_map,
     quiet = FALSE
   )
 
@@ -232,6 +224,7 @@ single_site_report <- function(data_path,
 #' @param monitoring_start Date. Monitoring period start (optional).
 #' @param monitoring_end Date. Monitoring period end (optional).
 #' @param include_map Logical. Whether to include location map (default: TRUE).
+#' @param basemap Logical. Whether to use basemap on location map (default: FALSE).
 #'
 #' @return Invisibly, a list with success/failure status and output path.
 #'
@@ -262,7 +255,8 @@ multi_site_report <- function(data_path,
                               project_name = "",
                               monitoring_start = NULL,
                               monitoring_end = NULL,
-                              include_map = TRUE) {
+                              include_map = TRUE,
+                              basemap = FALSE) {
   # Input validation
   if (!file.exists(data_path)) {
     stop("data_path does not exist: ", data_path)
@@ -316,7 +310,8 @@ multi_site_report <- function(data_path,
     project_name = project_name,
     monitoring_start = monitoring_start,
     monitoring_end = monitoring_end,
-    include_map = include_map
+    include_map = include_map,
+    basemap = basemap
   )
 
   # Show progress if progressr is available
@@ -339,7 +334,6 @@ multi_site_report <- function(data_path,
     output_dir = output_dir,
     params = params,
     format = "pdf_document",
-    include_map = include_map,
     quiet = FALSE
   )
 
@@ -368,8 +362,6 @@ multi_site_report <- function(data_path,
 #'   that the template expects (e.g., data_path, sites, species, etc.).
 #' @param format Character. Output format (default: "pdf_document").
 #'   Other options: "html_document", "word_document", etc.
-#' @param include_map Logical. Whether to attempt map rendering (default: TRUE).
-#'   If template uses maps, consider setting to FALSE for offline operation.
 #'
 #' @return Invisibly, a list with success/failure status and output path.
 #'
@@ -422,8 +414,7 @@ render_custom_report <- function(template_path,
                                  output_dir,
                                  output_file = "report.pdf",
                                  params,
-                                 format = "pdf_document",
-                                 include_map = TRUE) {
+                                 format = "pdf_document") {
   # Validate template exists and is readable
   if (!file.exists(template_path)) {
     stop("Template file not found: ", template_path)
@@ -450,7 +441,6 @@ render_custom_report <- function(template_path,
     output_dir = output_dir,
     params = params,
     format = format,
-    include_map = include_map,
     quiet = FALSE
   )
 
@@ -461,4 +451,109 @@ render_custom_report <- function(template_path,
   }
 
   invisible(result)
+}
+
+
+#' List available report templates
+#'
+#' Returns a character vector of available batr report templates that can be
+#' used with \code{\link{use_report_template}}.
+#'
+#' @return Character vector of template names
+#' @export
+#' @examples
+#' list_report_templates()
+list_report_templates <- function() {
+  c("single-site", "multi-site")
+}
+
+
+#' Copy a report template to your project
+#'
+#' Copies a batr report template to your project directory so you can customize it.
+#' Templates are ready-to-use RMarkdown files that can be modified for your specific needs.
+#'
+#' @param template Character string specifying which template to use.
+#'   Options: "single-site" or "multi-site". Use \code{\link{list_report_templates}}
+#'   to see all available templates.
+#' @param path Character string specifying the destination directory.
+#'   Defaults to current working directory.
+#' @param filename Character string for the output filename (without extension).
+#'   If NULL, uses a default name based on the template type.
+#'
+#' @return Invisibly returns the path to the created file
+#' @export
+#' @examples
+#' \dontrun{
+#' # Copy single-site template to current directory
+#' use_report_template("single-site")
+#'
+#' # Copy to a specific location with custom name
+#' use_report_template("multi-site",
+#'   path = "reports/",
+#'   filename = "my_custom_report"
+#' )
+#' }
+use_report_template <- function(template = "single-site",
+                                path = ".",
+                                filename = NULL) {
+  # Validate template choice
+  available <- list_report_templates()
+  if (!template %in% available) {
+    stop(
+      "Template '", template, "' not found. Available templates: ",
+      paste(available, collapse = ", ")
+    )
+  }
+
+  # Find template file
+  template_file <- system.file(
+    "rmarkdown/templates",
+    paste0("batr-", template),
+    "skeleton/skeleton.Rmd",
+    package = "batr"
+  )
+
+  if (!file.exists(template_file)) {
+    stop("Template file not found. Please reinstall batr.")
+  }
+
+  # Set default filename if not provided
+  if (is.null(filename)) {
+    filename <- paste0(gsub("-", "_", template), "_report")
+  }
+
+  # Create destination directory if needed
+  if (!dir.exists(path)) {
+    dir.create(path, recursive = TRUE)
+  }
+
+  # Create destination path
+  dest_file <- file.path(path, paste0(filename, ".Rmd"))
+
+  # Check if file already exists
+  if (file.exists(dest_file)) {
+    if (interactive()) {
+      response <- readline(prompt = sprintf(
+        "File '%s' already exists. Overwrite? (y/n): ", dest_file
+      ))
+      if (!tolower(response) %in% c("y", "yes")) {
+        message("Template copy cancelled.")
+        return(invisible(NULL))
+      }
+    } else {
+      stop("File '", dest_file, "' already exists. Use a different filename or remove the existing file.")
+    }
+  }
+
+  # Copy file
+  file.copy(template_file, dest_file, overwrite = TRUE)
+
+  message("Report template copied to: ", dest_file)
+  message("\nNext steps:")
+  message("1. Open ", dest_file)
+  message("2. Update the 'params' section with your data paths and settings")
+  message("3. Knit the document to generate your report")
+
+  invisible(dest_file)
 }

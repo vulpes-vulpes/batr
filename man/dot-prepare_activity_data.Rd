@@ -2,11 +2,17 @@
 % Please edit documentation in R/plot_activity.R
 \name{.prepare_activity_data}
 \alias{.prepare_activity_data}
-\title{Prepare activity count data for plotting}
+\title{Load gap data from log files}
 \usage{
 .prepare_activity_data(dataset, species, location_list)
 }
 \description{
-Prepare activity count data for plotting
+Load gap data from log files
 }
+\keyword{Prepare}
+\keyword{activity}
+\keyword{count}
+\keyword{data}
+\keyword{for}
 \keyword{internal}
+\keyword{plotting}

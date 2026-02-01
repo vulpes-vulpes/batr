@@ -243,3 +243,109 @@ test_that("render_report returns consistent structure", {
   # Cleanup
   unlink(template_path)
 })
+
+
+# Tests for template helper functions
+
+test_that("list_report_templates returns expected templates", {
+  templates <- list_report_templates()
+
+  expect_type(templates, "character")
+  expect_true(length(templates) > 0)
+  expect_true("single-site" %in% templates)
+  expect_true("multi-site" %in% templates)
+})
+
+test_that("use_report_template copies template correctly", {
+  temp_dir <- tempdir()
+  temp_file <- file.path(temp_dir, "test_template_copy.Rmd")
+
+  # Clean up if exists
+  if (file.exists(temp_file)) {
+    unlink(temp_file)
+  }
+
+  # Copy template
+  result <- use_report_template(
+    template = "single-site",
+    path = temp_dir,
+    filename = "test_template_copy"
+  )
+
+  expect_true(file.exists(temp_file))
+  expect_equal(result, temp_file)
+
+  # Check file has content
+  content <- readLines(temp_file)
+  expect_true(length(content) > 0)
+  expect_true(any(grepl("params:", content)))
+
+  # Cleanup
+  unlink(temp_file)
+})
+
+test_that("use_report_template validates template name", {
+  expect_error(
+    use_report_template(template = "nonexistent-template"),
+    "not found"
+  )
+})
+
+test_that("use_report_template creates directory if needed", {
+  temp_base <- tempdir()
+  new_dir <- file.path(temp_base, "new_report_dir")
+
+  # Clean up if exists
+  if (dir.exists(new_dir)) {
+    unlink(new_dir, recursive = TRUE)
+  }
+
+  result <- use_report_template(
+    template = "single-site",
+    path = new_dir,
+    filename = "test_report"
+  )
+
+  expect_true(dir.exists(new_dir))
+  expect_true(file.exists(result))
+
+  # Cleanup
+  unlink(new_dir, recursive = TRUE)
+})
+
+test_that("use_report_template handles existing files in non-interactive mode", {
+  temp_dir <- tempdir()
+  temp_file <- file.path(temp_dir, "existing_template.Rmd")
+
+  # Create an existing file
+  writeLines("existing content", temp_file)
+
+  # Should error in non-interactive mode when file exists
+  expect_error(
+    use_report_template(
+      template = "single-site",
+      path = temp_dir,
+      filename = "existing_template"
+    ),
+    "already exists"
+  )
+
+  # Cleanup
+  unlink(temp_file)
+})
+
+test_that("use_report_template uses default filename when NULL", {
+  temp_dir <- tempdir()
+
+  result <- use_report_template(
+    template = "multi-site",
+    path = temp_dir,
+    filename = NULL
+  )
+
+  expect_true(grepl("multi_site_report\\.Rmd$", result))
+  expect_true(file.exists(result))
+
+  # Cleanup
+  unlink(result)
+})

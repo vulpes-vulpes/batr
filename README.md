@@ -57,6 +57,32 @@ Or using devtools:
 devtools::install_github("vulpes-vulpes/batr")
 ```
 
+### Optional: Basemap Support
+
+Location maps can optionally include background basemaps showing
+geographic context. This requires the **ggspatial** package and its
+spatial dependencies:
+
+``` r
+install.packages(c("ggspatial", "sf", "ggrepel"))
+```
+
+**Note:** The sf package can be challenging to install as it requires
+system-level geospatial libraries (GDAL, GEOS, PROJ). If you encounter
+installation issues:
+
+- **macOS:** Install dependencies via Homebrew:
+  `brew install gdal geos proj`
+- **Ubuntu/Debian:**
+  `sudo apt-get install libgdal-dev libgeos-dev libproj-dev`
+- **Windows:** Binary packages usually work without additional setup
+- **Help:** See the [sf package installation
+  guide](https://r-spatial.github.io/sf/#installing) for detailed
+  troubleshooting
+
+Basemap functionality is entirely optional—all core batr features work
+without these packages.
+
 ## Quick Start
 
 ### Prerequisites: GUANO Metadata
@@ -99,6 +125,16 @@ import_logs(
 
 # 3. Create summary table
 summary_table("project_data.RData")
+
+# Custom species labels
+species_labels <- c(
+  "Epfu" = "Big Brown Bat",
+  "Lano" = "Silver-haired Bat"
+)
+summary_table("project_data.RData",
+  species_list = c("Epfu", "Lano"),
+  species_names = species_labels
+)
 
 # 4. Generate visualizations
 species_daily_site_plot(
@@ -167,18 +203,29 @@ append a hyphen and number, e.g., `SiteA-1.txt`, `SiteA-2.txt`)
 #### Spatial
 
 - `location_map_plot()`: Geographic distribution of monitoring sites
+  with optional basemaps
+
+**Basemap support:** Location maps can include background maps
+(OpenStreetMap, terrain, etc.) by setting `basemap = TRUE` and choosing
+a `basemap_type`. Requires the **ggspatial**, **sf**, and **ggrepel**
+packages (see Installation section for setup details).
 
 ### Analysis & Reporting
 
 #### `summary_table()` - Species × site summary
 
 Generate a data frame or formatted table showing observation counts by
-species and location.
+species and location. Use `species_names` to replace species codes with
+readable labels in the output.
 
 #### `single_site_report()` & `multi_site_report()`
 
 Automated PDF reports with activity plots, phenology charts, site maps,
 and summary tables. Fully customizable using RMarkdown templates.
+
+**Basemap option:** Set `map = TRUE` (single-site) or `basemap = TRUE`
+(multi-site) to include maps with geographic context. Requires optional
+spatial packages.
 
 #### `manual_vet_extractor()`
 
@@ -189,9 +236,23 @@ Automatic handling of missing files
 
 ### Custom Reports
 
-Create custom report templates using RMarkdown. See
-`vignette("custom-reports")` for details on accessing data objects and
-creating tailored analyses.
+Create custom report templates using RMarkdown. After installing batr,
+access the custom reports vignette with:
+
+``` r
+vignette("custom-reports", package = "batr")
+```
+
+Or use the new helper functions to get started quickly:
+
+``` r
+library(batr)
+list_report_templates()           # See available templates
+use_report_template("single-site") # Copy a template to your project
+```
+
+For details on accessing data objects and creating tailored analyses,
+see the vignette.
 
 ## Data Management
 

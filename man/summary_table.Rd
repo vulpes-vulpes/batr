@@ -9,6 +9,7 @@ summary_table(
   species_list = NULL,
   location_list = NULL,
   include_totals = TRUE,
+  species_names = NULL,
   sort = FALSE
 )
 }
@@ -28,6 +29,10 @@ any locations in the list that don't appear in the data.}
 
 \item{include_totals}{Logical. If \code{TRUE} (default), adds a "Totals" row
 at the bottom summarizing counts across all locations.}
+
+\item{species_names}{Named character vector for custom species labels. Names should be
+species codes from the data, values should be display names. If NULL (default),
+species codes are used as column headers.}
 
 \item{sort}{Logical. If \code{TRUE}, sorts locations and species alphabetically
 when no explicit list is provided. Defaults to \code{FALSE}.}
@@ -69,6 +74,16 @@ summary <- summary_table("C:/Folder/Folder/Data.RData",
 # With alphabetical sorting
 summary <- summary_table("C:/Folder/Folder/Data.RData",
   sort = TRUE
+)
+
+# With custom species labels
+species_labels <- c(
+  "Epfu" = "Big Brown Bat",
+  "Lano" = "Silver-haired Bat"
+)
+summary <- summary_table("C:/Folder/Folder/Data.RData",
+  species_list = c("Epfu", "Lano"),
+  species_names = species_labels
 )
 }
 }
