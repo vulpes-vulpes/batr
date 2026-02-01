@@ -1,7 +1,7 @@
 Package: batr
 Type: Package
 Title: Tools for Using Bat Acoustic Monitoring Data in R
-Version: 0.2.2
+Version: 0.3.0
 Authors@R: person("Toby", "Thorne", email = "toby@tobythorne.com",
            role = c("aut", "cre"))
 Description: A collection of tools to import and analyse data from WAV files 
@@ -9,9 +9,8 @@ Description: A collection of tools to import and analyse data from WAV files
     GUANO metadata being present in the original WAV files. batr can create 
     summary data and basic plots, and creates data frames for further analyses.
 Bugreports: https://github.com/vulpes-vulpes/batr/issues
-License: GPL-3
+License: GPL-3 + file LICENSE
 Encoding: UTF-8
-LazyData: true
 Depends: R (>= 3.1.0)
 Imports: 
   ggplot2 (>= 3.2.1),
@@ -20,19 +19,22 @@ Imports:
   dplyr (>= 0.8.3),
   reshape2 (>= 1.4.4),
   data.table (>= 1.14.0),
-  english(>= 1.2),
-  pbapply (>= 1.4),
-  ggrepel (>= 0.9.1),
   rmarkdown (>= 2.8),
-  bookdown (>= 0.22),
-  ggmap (>= 3.0.0),
-  kableExtra (>= 1.3.4),
   suncalc (>= 0.5.0),
   future (>= 1.33.0),
-  future.apply (>= 1.11.0)
+  future.apply (>= 1.11.0),
+  progressr (>= 0.18.0),
+  padr (>= 0.5.0),
+  scales (>= 1.2.0)
 Suggests:
-    knitr,
-    rmarkdown,
-    testthat
-RoxygenNote: 7.2.3
+  knitr,
+  testthat,
+  withr,
+  bookdown,
+  english,
+  kableExtra,
+  ggspatial,
+  sf,
+  ggrepel
+RoxygenNote: 7.3.3
 VignetteBuilder: knitr

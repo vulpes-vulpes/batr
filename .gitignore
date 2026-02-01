@@ -5,3 +5,7 @@
 .DS_Store
 inst/doc
 .log
+rosm.cache/
+**/rosm.cache/
+/doc/
+/Meta/

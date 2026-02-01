@@ -1,0 +1,372 @@
+---
+title: "Creating Custom Reports"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Creating Custom Reports}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Quick Start
+
+The easiest way to create a custom report is to start with a template:
+
+```{r quickstart}
+library(batr)
+
+# See available templates
+list_report_templates()
+
+# Copy a template to your project
+use_report_template("single-site")
+
+# Open single_site_report.Rmd and customize it!
+```
+
+That's it! The template includes all the code you need - just update the parameters at the top and knit the document.
+
+## What Reports Can You Create?
+
+batr provides two built-in templates:
+
+1. **Single-Site Report** - Detailed analysis of one monitoring location
+2. **Multi-Site Report** - Comparison across multiple locations
+
+Both templates are fully customizable RMarkdown documents that you can modify to suit your needs.
+
+## Step-by-Step: Your First Custom Report
+
+### Step 1: Copy a Template
+
+```{r step1}
+# Copy the single-site template
+use_report_template("single-site", filename = "my_site_report")
+```
+
+```
+
+This creates `my_site_report.Rmd` in your current directory.
+
+### Step 2: Update Parameters
+
+Open the file and update the `params` section at the top:
+
+```yaml
+params:
+  data_path: "path/to/your/data.RData"
+  site: "MySite01"
+  species: !r c("Mylu", "Epfu", "Lano")
+  author: "Your Name"
+  project_name: "My Bat Monitoring Project"
+  map: true  # Include location map with basemap
+```
+
+### Step 3: Knit the Document
+
+In RStudio, click the "Knit" button, or run:
+
+```{r step3}
+rmarkdown::render("my_site_report.Rmd")
+```
+
+You'll get a professional PDF report!
+
+## Customizing Your Report
+
+### Adding New Plots
+
+All batr plotting functions work in RMarkdown. Just add a code chunk:
+
+````markdown
+```{r my_plot, fig.cap="Custom plot title"}
+first_observations_plot(
+  data_path = params$data_path,
+  species = params$species,
+  location_list = params$site
+)
+```
+````
+
+Available plotting functions:
+
+- `species_activity_facet_plot()` - Activity patterns by species
+- `first_observations_plot()` - First detection dates
+- `species_daily_site_plot()` - Daily activity patterns
+- `monthly_activity_plot()` - Monthly summaries
+- `monitoring_effort_plot()` - Recording effort timeline
+- `location_map_plot()` - Site locations with optional basemaps
+
+### Adding Tables
+
+Use `summary_table()` to create species summaries:
+
+````markdown
+```{r summary}
+library(kableExtra)
+
+summary <- summary_table(
+  data_path = params$data_path,
+  species_list = params$species,
+  location_list = params$site
+)
+
+kable(summary, booktabs = TRUE) %>%
+  kable_styling(latex_options = "striped")
+```
+````
+
+### Filtering Data
+
+Filter your data in the setup chunk:
+
+```{r filtering}
+# In the setup chunk, after loading data:
+load(params$data_path)
+
+# Filter to specific date range
+observations <- observations[
+  observations$Night >= as.Date("2021-06-01") &
+    observations$Night <= as.Date("2021-08-31"),
+]
+
+# Filter to specific species
+observations <- observations[
+  observations$Species %in% c("Mylu", "Epfu"),
+]
+
+# Filter to specific locations
+observations <- observations[
+  observations$Location %in% c("Site1", "Site2"),
+]
+```
+
+### Changing Report Appearance
+
+Modify the YAML header to customize formatting:
+
+```yaml
+---
+output:
+  pdf_document:
+    toc: true  # Add table of contents
+    number_sections: true  # Number sections
+fontsize: 12pt  # Change font size
+geometry:
+  - top=25mm
+  - left=25mm
+  - right=25mm
+  - bottom=25mm
+---
+```
+
+## Common Recipes
+
+### Recipe 1: Focus on One Species
+
+Create a species-specific report:
+
+```yaml
+params:
+  data_path: "data.RData"
+  site: "Site1"
+  species: !r c("Mylu")  # Only Little Brown Bat
+```
+
+Then add species-specific text:
+
+````markdown
+## Little Brown Bat (*Myotis lucifugus*) Activity
+
+This report focuses on Little Brown Bat detections at Site1.
+
+```{r}
+species_daily_site_plot(
+  data_path = params$data_path,
+  species = "Mylu",
+  location_list = params$site
+)
+```
+````
+
+### Recipe 2: Compare Two Sites
+
+Use the multi-site template, then modify:
+
+```yaml
+params:
+  sites: !r c("Site1", "Site2")
+```
+
+Add comparative text:
+
+````markdown
+## Site Comparison
+
+Site1 is located in mature forest, while Site2 is near a wetland.
+
+```{r comparison}
+species_activity_facet_plot(
+  data_path = params$data_path,
+  location_list = params$sites,
+  facet_cols = 2 # Side-by-side comparison
+)
+```
+````
+
+### Recipe 3: Monthly Summary
+
+Focus on monthly patterns:
+
+````markdown
+```{r monthly}
+monthly_activity_plot(
+  data_path = params$data_path,
+  location_list = params$site,
+  species = params$species
+)
+```
+
+### Peak Activity
+
+```{r peak_month}
+library(lubridate)
+
+observations$Month <- month(observations$Night, label = TRUE)
+peak <- names(sort(table(observations$Month), decreasing = TRUE))[1]
+```
+
+Peak activity occurred in **May** (using inline R: peak).
+````
+
+### Recipe 4: Add Custom Maps
+
+Include maps with different basemap styles:
+
+````markdown
+```{r map_terrain, fig.cap="Site location with terrain"}
+location_map_plot(
+  data_path = params$data_path,
+  basemap = TRUE,
+  basemap_type = "stamenterrain" # Topographic basemap
+)
+```
+````
+
+Available basemap types: `"osm"`, `"cartolight"`, `"cartodark"`, `"stamenterrain"`, `"stamentonerlite"`
+
+## Using Built-in Report Functions
+
+For quick reports without customization, use the wrapper functions:
+
+### Single-Site Report
+
+```{r builtin_single}
+library(batr)
+
+single_site_report(
+  data_path = "path/to/data.RData",
+  output_dir = "reports/",
+  output_file = "Site1_Report.pdf",
+  site = "Site1",
+  species = c("Epfu", "Mylu", "Labo"),
+  author = "Jane Researcher",
+  project_name = "2024 Community Monitoring",
+  map = TRUE # Include map with basemap
+)
+```
+
+### Multi-Site Report
+
+```{r builtin_multi}
+multi_site_report(
+  data_path = "path/to/data.RData",
+  output_dir = "reports/",
+  output_file = "All_Sites_Report.pdf",
+  sites = c("Site1", "Site2", "Site3"),
+  species = c("Epfu", "Mylu", "Labo"),
+  author = "Jane Researcher",
+  project_name = "2024 Community Monitoring",
+  include_map = TRUE, # Include map
+  basemap = TRUE # Use basemap tiles
+)
+```
+
+## Troubleshooting
+
+### "Object not found" errors
+
+Make sure you've loaded your data in the setup chunk:
+
+```{r load_data}
+load(params$data_path)
+```
+
+### Plots not appearing
+
+Check that:
+
+1. Your data path is correct
+2. You've specified valid location and species names
+3. There's data for the specified filters
+
+### Map tiles not loading
+
+If basemaps aren't working:
+
+1. Check your internet connection
+2. Install required packages: `install.packages(c("sf", "ggspatial"))`
+3. Set `basemap = FALSE` to use simple maps without basemaps
+
+### LaTeX errors
+
+Common fixes:
+
+- Install tinytex: `tinytex::install_tinytex()`
+- Update tinytex: `tinytex::reinstall_tinytex()`
+- Check for special characters in text fields
+
+## Advanced: Programmatic Report Generation
+
+Generate multiple reports automatically:
+
+```{r batch}
+library(batr)
+
+# List of sites to report on
+sites <- c("Site1", "Site2", "Site3")
+
+# Generate a report for each site
+for (site in sites) {
+  single_site_report(
+    data_path = "data.RData",
+    site = site,
+    author = "Project Team",
+    project_name = "2024 Monitoring",
+    output_file = paste0(site, "_report.pdf")
+  )
+}
+```
+
+## Getting Help
+
+- View function documentation: `?species_activity_facet_plot`
+- See the batr vignette: `vignette("batr")`
+- Report issues: https://github.com/YourUsername/batr/issues
+
+## Next Steps
+
+1. **Start simple** - Copy a template and change just the parameters
+2. **Add plots gradually** - Add one plot at a time and test
+3. **Customize appearance** - Once content works, refine the formatting
+4. **Save your templates** - Keep customized templates for future projects
+
+Happy reporting!
+

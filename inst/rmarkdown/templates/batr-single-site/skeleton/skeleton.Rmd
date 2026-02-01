@@ -1,0 +1,224 @@
+---
+output:
+  pdf_document:
+    toc: false
+    keep_tex: false
+    extra_dependencies: ["booktabs", "geometry"]
+header-includes:
+  - \usepackage{helvet}
+  - \renewcommand\familydefault{\sfdefault}
+  - \usepackage{caption}
+  - \captionsetup{justification=raggedright, singlelinecheck=false, font=small, labelfont=bf}
+geometry:
+- top=20mm
+- left=20mm
+fontsize: 11pt
+urlcolor: blue
+params:
+  data_path: !r NA_character_
+  site: "Site1"
+  species: !r c("Epfu")
+  author: !r NA_character_
+  project_name: !r NA_character_
+  monitoring_start: !r NA_character_
+  monitoring_end: !r NA_character_
+  map: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center"
+)
+
+library(batr)
+library(kableExtra)
+library(lubridate)
+
+# Use temporary directory for map tile cache
+options(rosm.cachedir = tempdir())
+
+# Load data
+if (is.null(params$data_path) || is.na(params$data_path)) {
+  stop("Parameter data_path is missing or NA")
+}
+
+if (is.null(params$site) || any(is.na(params$site))) {
+  stop("Parameter site is missing or NA")
+}
+
+data_path <- normalizePath(params$data_path)
+load(data_path)
+
+# Handle species parameter - if NULL or NA, use all available species
+if (is.null(params$species) || length(params$species) == 0 || all(is.na(params$species))) {
+  species_filter <- unique(observations$Species)
+} else {
+  species_filter <- params$species
+}
+
+# Filter to specified site and species
+observations <- observations[
+  observations$Species %in% species_filter &
+  observations$Location %in% params$site, 
+]
+
+if (nrow(observations) == 0) {
+  stop("No observations found for specified site and species")
+}
+
+# Filter active_dates if provided
+if (exists("active_dates")) {
+  active_dates <- active_dates[active_dates$Location %in% params$site, ]
+}
+
+# Determine monitoring period
+if (is.null(params$monitoring_start)) {
+  mon_start <- min(observations$Night, na.rm = TRUE)
+} else {
+  mon_start <- as.Date(params$monitoring_start)
+}
+
+if (is.null(params$monitoring_end)) {
+  mon_end <- max(observations$Night, na.rm = TRUE)
+} else {
+  mon_end <- as.Date(params$monitoring_end)
+}
+
+site_name <- params$site
+n_species <- length(unique(observations$Species))
+n_observations <- nrow(observations)
+```
+
+# `r params$project_name`
+
+## Single Site Report: `r site_name`
+
+**Prepared by:** `r params$author`  
+**Report Generated Date:** `r format(Sys.Date(), '%B %d, %Y')`  
+**Monitoring Period:** `r format(mon_start, '%d %b %Y')` to `r format(mon_end, '%d %b %Y')`
+
+---
+
+## Summary
+
+A total of **`r n_observations`** acoustic observations of **`r n_species`** bat species were detected at this location during the monitoring period.
+
+### Species Summary
+
+```{r summary_table, fig.cap="Total species observations at the monitoring location."}
+# Create species summary (without totals row or location column for single site)
+summary <- batr::summary_table(
+  data_path = params$data_path,
+  species_list = species_filter,
+  location_list = c(params$site),
+  include_totals = FALSE
+)
+
+# Remove the Location column (redundant for single site report)
+summary <- summary[, !names(summary) %in% "Location", drop = FALSE]
+
+kable(summary, 
+      format = "latex",
+      booktabs = TRUE,
+      caption = "Total species observations") %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+\newpage
+
+## Activity Patterns
+
+Nightly activity of each species throughout the monitoring period is shown below.
+
+```{r activity_plot, fig.cap="Nightly bat observations by species.", fig.height=6, fig.width=7}
+batr::species_activity_facet_plot(
+  data_path = params$data_path,
+  species = species_filter,
+  location_list = params$site,
+  text_size = 10
+)
+```
+
+\newpage
+
+## Monitoring Effort
+
+Monitoring effort throughout the monitoring period. Grey bars indicate nights with no monitoring effort.
+
+```{r monitoring_plot, fig.cap="Monitoring effort over time.", fig.height=2, fig.width=7}
+if (exists("active_dates") && nrow(active_dates) > 0) {
+  tryCatch({
+    batr::monitoring_effort_plot(
+      data_path = params$data_path,
+      location_list = params$site,
+      monitoring_start = mon_start,
+      monitoring_end = mon_end,
+      facet_rows = 1
+    )
+  }, error = function(e) {
+    plot.new()
+    text(0.5, 0.5, paste("Monitoring effort plot unavailable:", e$message), cex = 1.2)
+  })
+} else {
+  plot.new()
+  text(0.5, 0.5, "Monitoring effort data not available", cex = 1.5)
+}
+```
+
+## Location Information
+
+```{r location_info, results='asis'}
+# Extract location coordinates
+unique_locs <- unique(observations[, c("Location", "Latitude", "Longitude")])
+if (nrow(unique_locs) > 0 && !is.na(unique_locs$Latitude[1]) && !is.na(unique_locs$Longitude[1])) {
+  cat(sprintf("**Monitoring Site:** %s  \n", params$site))
+  cat(sprintf("**Latitude:** %.6f  \n", unique_locs$Latitude[1]))
+  cat(sprintf("**Longitude:** %.6f  \n", unique_locs$Longitude[1]))
+} else {
+  cat("Location coordinates not available")
+}
+```
+
+```{r location_map, fig.cap="Monitoring location map", fig.height=4, fig.width=7, eval=params$map}
+# Save filtered observations to temporary RData for site-specific map
+temp_map_file <- tempfile(fileext = ".RData")
+save(observations, file = temp_map_file)
+
+batr::location_map_plot(
+  data_path = temp_map_file,
+  location_list = params$site,
+  basemap = TRUE,
+  basemap_type = "cartolight",
+  text_size = 10,
+  point_size = 4,
+  plot_title = NULL
+)
+
+unlink(temp_map_file)
+```
+
+## Notes
+
+```{r notes, results='asis', echo=FALSE}
+# Check if any manual IDs exist
+has_manual_ids <- "Species.Manual.ID" %in% names(observations) && 
+                  any(!is.na(observations$Species.Manual.ID))
+
+cat("- This report is automatically generated from acoustic monitoring data\n")
+
+if (has_manual_ids) {
+  cat("- Species identifications include manual verification\n")
+} else {
+  cat("- Species identifications are based on automated classification and should be verified\n")
+}
+
+cat("- The number of observations cannot be directly compared between species, as detection varies by echolocation call characteristics\n")
+cat("- For additional analysis or questions, please contact the research team\n")
+```
+
+---
+
+*Report generated using the [batr R package](https://github.com/vulpes-vulpes/batr) by Toby Thorne*

@@ -1,0 +1,6 @@
+name: Batr Single Site Report
+description: >
+  Generate a single-site bat monitoring report with species summary table,
+  activity plots, and optional location map. Uses batr package functions
+  for consistent, reproducible visualizations.
+create_dir: false

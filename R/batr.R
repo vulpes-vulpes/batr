@@ -6,6 +6,22 @@
 #' future loading. It calculates summary data and basic plots.
 #'
 #'
-#' @docType package
 #' @name batr
-NULL
+"_PACKAGE"
+
+# Global variable bindings for data.table and NSE patterns
+# Suppresses R CMD check notes about "no visible binding for global variable"
+utils::globalVariables(c(
+    # Column names used in data.table operations
+    "Location", "Location_label", "Species", "Night", "Timestamp",
+    "Latitude", "Longitude", "Time_PM", "Time",
+    "Species.Auto.ID", "Species.Manual.ID", "File.Name",
+    "DATE", "night", "update",
+    # Plotting variables
+    "xmin", "xmax", "ymin", "ymax",
+    "lat", "lon", "sunset_time", "ob_time",
+    "Count", "Month", "x", "MeanObservations",
+    "X", "Y", # Coordinates from sf::st_coordinates for ggrepel
+    # Variables from loaded RData files
+    "observations", "active_dates"
+))
