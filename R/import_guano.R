@@ -342,14 +342,18 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   if (is.null(coord_str) || length(coord_str) == 0) {
     return(numeric(0))
   }
-  
+
   sapply(coord_str, function(x) {
-    if (is.na(x) || x == "") return(NA_real_)
-    
+    if (is.na(x) || x == "") {
+      return(NA_real_)
+    }
+
     # Try direct numeric conversion first
     numeric_val <- suppressWarnings(as.numeric(as.character(x)))
-    if (!is.na(numeric_val)) return(numeric_val)
-    
+    if (!is.na(numeric_val)) {
+      return(numeric_val)
+    }
+
     # Try parsing format like "45.25000,N" or "81.66000,W"
     x_str <- as.character(x)
     if (grepl(",", x_str)) {
@@ -357,7 +361,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
       if (length(parts) == 2) {
         value <- suppressWarnings(as.numeric(trimws(parts[1])))
         direction <- toupper(trimws(parts[2]))
-        
+
         if (!is.na(value) && direction %in% c("N", "S", "E", "W")) {
           # Apply sign based on direction
           if (direction %in% c("S", "W")) {
@@ -368,7 +372,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
         }
       }
     }
-    
+
     # If all parsing fails, return NA
     return(NA_real_)
   }, USE.NAMES = FALSE)
@@ -569,9 +573,9 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
 #' @details
 #' When \code{fast_import=TRUE}, attempts single-pass discovery. If this fails,
 #' automatically falls back to standard R functions with a warning message.
-#' 
-#' Files starting with \code{._} (macOS AppleDouble resource fork files) are 
-#' automatically filtered out as they are not valid WAV files and can cause 
+#'
+#' Files starting with \code{._} (macOS AppleDouble resource fork files) are
+#' automatically filtered out as they are not valid WAV files and can cause
 #' errors during parallel processing.
 #'
 #' @keywords internal

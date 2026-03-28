@@ -68,17 +68,17 @@ After manual vetting (editing Species.Manual.ID in GUANO metadata),
 \dontrun{
 # Default: dry run with comparison table
 manual_vet_reimporter(
-  vetted_directory = "path/to/vetted/files",
-  WAV_directory = "path/to/original/wavs",
-  data_path = "path/to/data.RData"
+    vetted_directory = "path/to/vetted/files",
+    WAV_directory = "path/to/original/wavs",
+    data_path = "path/to/data.RData"
 )
 
 # Skip dry run, proceed with warning
 manual_vet_reimporter(
-  vetted_directory = "path/to/vetted/files",
-  WAV_directory = "path/to/original/wavs",
-  data_path = "path/to/data.RData",
-  dry_run = FALSE
+    vetted_directory = "path/to/vetted/files",
+    WAV_directory = "path/to/original/wavs",
+    data_path = "path/to/data.RData",
+    dry_run = FALSE
 )
 }
 }
