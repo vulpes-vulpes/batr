@@ -327,10 +327,58 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   return(observations)
 }
 
+#' Parse Coordinate String with Direction Indicator
+#'
+#' Converts lat/lon strings like "45.25000,N" or "81.66000,W" to decimal degrees.
+#' Handles formats with comma-separated value and direction (N/S/E/W).
+#'
+#' @param coord_str Character vector of coordinate strings.
+#' @param coord_type Character, either "lat" or "lon" for proper sign conversion.
+#'
+#' @return Numeric vector of decimal degrees (negative for S/W).
+#'
+#' @keywords internal
+.parse_coordinate_string <- function(coord_str, coord_type = "lat") {
+  if (is.null(coord_str) || length(coord_str) == 0) {
+    return(numeric(0))
+  }
+  
+  sapply(coord_str, function(x) {
+    if (is.na(x) || x == "") return(NA_real_)
+    
+    # Try direct numeric conversion first
+    numeric_val <- suppressWarnings(as.numeric(as.character(x)))
+    if (!is.na(numeric_val)) return(numeric_val)
+    
+    # Try parsing format like "45.25000,N" or "81.66000,W"
+    x_str <- as.character(x)
+    if (grepl(",", x_str)) {
+      parts <- strsplit(x_str, ",")[[1]]
+      if (length(parts) == 2) {
+        value <- suppressWarnings(as.numeric(trimws(parts[1])))
+        direction <- toupper(trimws(parts[2]))
+        
+        if (!is.na(value) && direction %in% c("N", "S", "E", "W")) {
+          # Apply sign based on direction
+          if (direction %in% c("S", "W")) {
+            return(-abs(value))
+          } else {
+            return(abs(value))
+          }
+        }
+      }
+    }
+    
+    # If all parsing fails, return NA
+    return(NA_real_)
+  }, USE.NAMES = FALSE)
+}
+
 #' Harmonize Location Column Name Variations
 #'
 #' Handles different naming conventions for latitude/longitude in GUANO metadata.
 #' Merges data when both variants exist (preferring capitalized versions).
+#' Parses coordinate strings with direction indicators (e.g., "45.25,N").
 #'
 #' @param observations Data.frame containing GUANO metadata.
 #'
@@ -372,20 +420,48 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     }
   }
 
-  # Rename to final standard names
-  if ("Loc.Position.Lat" %in% colnames(observations)) {
-    colnames(observations)[colnames(observations) == "Loc.Position.Lat"] <- "Latitude"
-  }
-  if ("Loc.Position.Lon" %in% colnames(observations)) {
-    colnames(observations)[colnames(observations) == "Loc.Position.Lon"] <- "Longitude"
+  # Merge Loc.Position fields with direct Latitude/Longitude fields
+  # Prefer Loc.Position-derived values if available, fall back to direct fields
+  # Parse direct fields to handle formats like "45.25,N" or "81.66,W"
+  has_loc_pos_lat <- "Loc.Position.Lat" %in% colnames(observations)
+  has_loc_pos_lon <- "Loc.Position.Lon" %in% colnames(observations)
+  has_direct_lat <- "Latitude" %in% colnames(observations)
+  has_direct_lon <- "Longitude" %in% colnames(observations)
+
+  if (has_loc_pos_lat || has_direct_lat) {
+    # Create or merge Latitude column
+    if (has_loc_pos_lat && has_direct_lat) {
+      # Both exist: coalesce (prefer Loc.Position.Lat, fall back to Latitude)
+      loc_pos_lat <- suppressWarnings(as.numeric(as.character(observations$Loc.Position.Lat)))
+      direct_lat <- .parse_coordinate_string(observations$Latitude, "lat")
+      observations$Latitude <- dplyr::coalesce(loc_pos_lat, direct_lat)
+      observations$Loc.Position.Lat <- NULL
+    } else if (has_loc_pos_lat) {
+      # Only Loc.Position.Lat exists, rename it
+      colnames(observations)[colnames(observations) == "Loc.Position.Lat"] <- "Latitude"
+      observations$Latitude <- suppressWarnings(as.numeric(as.character(observations$Latitude)))
+    } else {
+      # Only direct Latitude exists, parse it
+      observations$Latitude <- .parse_coordinate_string(observations$Latitude, "lat")
+    }
   }
 
-  # Ensure numeric types for final columns
-  if ("Latitude" %in% colnames(observations)) {
-    observations$Latitude <- suppressWarnings(as.numeric(as.character(observations$Latitude)))
-  }
-  if ("Longitude" %in% colnames(observations)) {
-    observations$Longitude <- suppressWarnings(as.numeric(as.character(observations$Longitude)))
+  if (has_loc_pos_lon || has_direct_lon) {
+    # Create or merge Longitude column
+    if (has_loc_pos_lon && has_direct_lon) {
+      # Both exist: coalesce (prefer Loc.Position.Lon, fall back to Longitude)
+      loc_pos_lon <- suppressWarnings(as.numeric(as.character(observations$Loc.Position.Lon)))
+      direct_lon <- .parse_coordinate_string(observations$Longitude, "lon")
+      observations$Longitude <- dplyr::coalesce(loc_pos_lon, direct_lon)
+      observations$Loc.Position.Lon <- NULL
+    } else if (has_loc_pos_lon) {
+      # Only Loc.Position.Lon exists, rename it
+      colnames(observations)[colnames(observations) == "Loc.Position.Lon"] <- "Longitude"
+      observations$Longitude <- suppressWarnings(as.numeric(as.character(observations$Longitude)))
+    } else {
+      # Only direct Longitude exists, parse it
+      observations$Longitude <- .parse_coordinate_string(observations$Longitude, "lon")
+    }
   }
 
   return(observations)
