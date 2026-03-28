@@ -514,7 +514,10 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     if (!any(ok)) {
       return(mk_empty())
     }
-    return(data.frame(Full.Path = fp[ok], File.Modified = mt[ok], stringsAsFactors = FALSE))
+    # Filter out AppleDouble files (._*)
+    basenames <- sub(".*/", "", fp[ok])
+    not_appledouble <- !grepl("^\\._", basenames)
+    return(data.frame(Full.Path = fp[ok][not_appledouble], File.Modified = mt[ok][not_appledouble], stringsAsFactors = FALSE))
   } else if (.Platform$OS.type == "windows") {
     ps_quote <- function(x) sprintf("'%s'", gsub("'", "''", x, fixed = TRUE))
     ps <- sprintf(
@@ -534,7 +537,10 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     if (!any(ok)) {
       return(mk_empty())
     }
-    return(data.frame(Full.Path = fp[ok], File.Modified = mt[ok], stringsAsFactors = FALSE))
+    # Filter out AppleDouble files (._*)
+    basenames <- sub(".*/", "", fp[ok])
+    not_appledouble <- !grepl("^\\._", basenames)
+    return(data.frame(Full.Path = fp[ok][not_appledouble], File.Modified = mt[ok][not_appledouble], stringsAsFactors = FALSE))
   } else {
     return(mk_empty())
   }
@@ -544,6 +550,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
 #'
 #' Discovers WAV files in a directory tree and retrieves their modification times.
 #' Can operate in fast mode (system calls) or standard mode (R functions).
+#' Automatically filters out macOS AppleDouble files (files starting with \code{._}).
 #'
 #' @param input_path Character. Either a directory path to search (when \code{list=FALSE})
 #'   or a character vector of file paths (when \code{list=TRUE}).
@@ -562,6 +569,10 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
 #' @details
 #' When \code{fast_import=TRUE}, attempts single-pass discovery. If this fails,
 #' automatically falls back to standard R functions with a warning message.
+#' 
+#' Files starting with \code{._} (macOS AppleDouble resource fork files) are 
+#' automatically filtered out as they are not valid WAV files and can cause 
+#' errors during parallel processing.
 #'
 #' @keywords internal
 .get_file_list <- function(input_path, fast_import = TRUE, list = FALSE) {
@@ -573,6 +584,10 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
       stop("No files provided in 'input_path' when list=TRUE.")
     }
     file_list_short <- sub(".*/", "", file_list_full)
+    # Filter out AppleDouble files (._*)
+    not_appledouble <- !grepl("^\\._", file_list_short)
+    file_list_full <- file_list_full[not_appledouble]
+    file_list_short <- file_list_short[not_appledouble]
     # Otherwise, read files from directory
   } else {
     message("Discovering WAV files...")
@@ -599,11 +614,19 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
         message("Fast discovery returned no results. Using standard file listing...")
         file_list_full <- list.files(input_path, pattern = wav_pattern, full.names = TRUE, recursive = TRUE, ignore.case = TRUE)
         file_list_short <- sub(".*/", "", file_list_full)
+        # Filter out AppleDouble files (._*)
+        not_appledouble <- !grepl("^\\._", file_list_short)
+        file_list_full <- file_list_full[not_appledouble]
+        file_list_short <- file_list_short[not_appledouble]
       }
     } else {
       message("Using standard file listing...")
       file_list_full <- list.files(input_path, pattern = wav_pattern, full.names = TRUE, recursive = TRUE, ignore.case = TRUE)
       file_list_short <- sub(".*/", "", file_list_full)
+      # Filter out AppleDouble files (._*)
+      not_appledouble <- !grepl("^\\._", file_list_short)
+      file_list_full <- file_list_full[not_appledouble]
+      file_list_short <- file_list_short[not_appledouble]
     }
 
     elapsed <- round(as.numeric(difftime(Sys.time(), start_discover, units = "secs")), 2)
