@@ -661,6 +661,20 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   return(file_list)
 }
 
+#' Safely read GUANO metadata from one WAV path
+#' @keywords internal
+.safe_read_guano <- function(path) {
+  tryCatch(
+    {
+      df <- read.guano(path)
+      as.data.frame(df)
+    },
+    error = function(e) {
+      list(.error = TRUE, .path = path, .message = conditionMessage(e))
+    }
+  )
+}
+
 #' Read GUANO Metadata from WAV File List
 #'
 #' Reads GUANO metadata from a list of WAV files, processes location columns,
@@ -693,19 +707,6 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   message(sprintf("Reading GUANO metadata from %d files...", n_files))
   read_start <- Sys.time()
 
-  # Helper to read single file safely
-  safe_read <- function(path) {
-    tryCatch(
-      {
-        df <- read.guano(path)
-        as.data.frame(df)
-      },
-      error = function(e) {
-        list(.error = TRUE, .path = path, .message = conditionMessage(e))
-      }
-    )
-  }
-
   # Read files (possibly in parallel)
   if (fast_import) {
     message("Using parallel processing...")
@@ -713,15 +714,17 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     on.exit(future::plan(old_plan), add = TRUE)
     future::plan(future::multisession)
     res_list <- progressr::with_progress({
-      p <- progressr::progressor(steps = length(paths))
-      future.apply::future_lapply(paths, function(path) {
-        res <- safe_read(path)
-        p()
-        res
-      }, future.packages = "batr")
+      # Use a package-level worker function and no captured globals to avoid
+      # exporting large closures to workers.
+      future.apply::future_lapply(
+        paths,
+        .safe_read_guano,
+        future.packages = "batr",
+        future.globals = FALSE
+      )
     })
   } else {
-    res_list <- lapply(paths, safe_read)
+    res_list <- lapply(paths, .safe_read_guano)
   }
 
   read_elapsed <- round(as.numeric(difftime(Sys.time(), read_start, units = "secs")), 1)
