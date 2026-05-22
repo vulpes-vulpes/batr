@@ -101,6 +101,8 @@ render_report <- function(template_path,
 #' @param project_name Character. Project name to display in the report.
 #' @param monitoring_start Date. Monitoring period start (optional).
 #' @param monitoring_end Date. Monitoring period end (optional).
+#' @param report_year Integer vector of years to include in report outputs
+#'   (optional). If provided, all report sections are filtered to these years.
 #' @param map Logical. Whether to include location map with basemap (default: FALSE).
 #'
 #' @return Invisibly, a list with success/failure status and output path.
@@ -128,6 +130,7 @@ single_site_report <- function(data_path,
                                project_name = "",
                                monitoring_start = NULL,
                                monitoring_end = NULL,
+                               report_year = NULL,
                                map = FALSE) {
   # Input validation
   if (!file.exists(data_path)) {
@@ -139,6 +142,16 @@ single_site_report <- function(data_path,
 
   if (length(site) != 1 || is.na(site)) {
     stop("site must be a single site (length 1)")
+  }
+
+  if (!is.null(report_year)) {
+    if (!is.numeric(report_year) || length(report_year) == 0 || any(is.na(report_year))) {
+      stop("report_year must be a numeric/integer vector of year values")
+    }
+    report_year <- unique(as.integer(report_year))
+    if (any(report_year < 1900 | report_year > 3000)) {
+      stop("report_year must contain valid calendar years between 1900 and 3000")
+    }
   }
 
   # If species not specified, load all available species from the data
@@ -182,6 +195,7 @@ single_site_report <- function(data_path,
     project_name = project_name,
     monitoring_start = monitoring_start,
     monitoring_end = monitoring_end,
+    report_year = report_year,
     map = map
   )
 
@@ -223,6 +237,11 @@ single_site_report <- function(data_path,
 #' @param project_name Character. Project name to display in the report.
 #' @param monitoring_start Date. Monitoring period start (optional).
 #' @param monitoring_end Date. Monitoring period end (optional).
+#' @param report_year Integer vector of years to include in report outputs
+#'   (optional). If provided, all report sections are filtered to these years.
+#' @param activity_y_scale Character. Y-axis scaling for the activity figure.
+#'   Use "free_y" (default) for independent y-scales per site or "fixed"
+#'   to lock a common y-axis across sites.
 #' @param include_map Logical. Whether to include location map (default: TRUE).
 #' @param basemap Logical. Whether to use basemap on location map (default: FALSE).
 #'
@@ -255,6 +274,8 @@ multi_site_report <- function(data_path,
                               project_name = "",
                               monitoring_start = NULL,
                               monitoring_end = NULL,
+                              report_year = NULL,
+                              activity_y_scale = "free_y",
                               include_map = TRUE,
                               basemap = FALSE) {
   # Input validation
@@ -267,6 +288,20 @@ multi_site_report <- function(data_path,
 
   if (length(sites) == 0 || all(is.na(sites))) {
     stop("sites must be non-empty")
+  }
+
+  if (!is.null(report_year)) {
+    if (!is.numeric(report_year) || length(report_year) == 0 || any(is.na(report_year))) {
+      stop("report_year must be a numeric/integer vector of year values")
+    }
+    report_year <- unique(as.integer(report_year))
+    if (any(report_year < 1900 | report_year > 3000)) {
+      stop("report_year must contain valid calendar years between 1900 and 3000")
+    }
+  }
+
+  if (!activity_y_scale %in% c("free_y", "fixed")) {
+    stop("activity_y_scale must be either 'free_y' or 'fixed'")
   }
 
   # If species not specified, load all available species from the data
@@ -310,6 +345,8 @@ multi_site_report <- function(data_path,
     project_name = project_name,
     monitoring_start = monitoring_start,
     monitoring_end = monitoring_end,
+    report_year = report_year,
+    activity_y_scale = activity_y_scale,
     include_map = include_map,
     basemap = basemap
   )

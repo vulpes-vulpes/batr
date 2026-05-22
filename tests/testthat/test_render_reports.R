@@ -153,6 +153,21 @@ test_that("single_site_report looks for template", {
 })
 
 test_that("multi_site_report validates inputs", {
+  temp_rdata <- file.path(tempdir(), "test_multi_site.RData")
+  observations <- data.frame(
+    Species = c("Epfu", "Mylu"),
+    Location = c("Site1", "Site2"),
+    Night = as.Date(c("2024-01-01", "2025-01-01")),
+    Latitude = c(43.6, 43.7),
+    Longitude = c(-79.3, -79.4)
+  )
+  active_dates <- data.frame(
+    Location = c("Site1", "Site2"),
+    Date = as.Date(c("2024-01-01", "2025-01-01")),
+    Log_Count = c(1, 1)
+  )
+  save(observations, active_dates, file = temp_rdata)
+
   expect_error(
     multi_site_report(
       data_path = "/nonexistent/data.RData",
@@ -162,6 +177,41 @@ test_that("multi_site_report validates inputs", {
     ),
     "does not exist"
   )
+
+  expect_error(
+    multi_site_report(
+      data_path = temp_rdata,
+      output_dir = tempdir(),
+      sites = c("Site1", "Site2"),
+      species = c("Epfu", "Mylu"),
+      report_year = "2024"
+    ),
+    "numeric/integer"
+  )
+
+  expect_error(
+    multi_site_report(
+      data_path = temp_rdata,
+      output_dir = tempdir(),
+      sites = c("Site1", "Site2"),
+      species = c("Epfu", "Mylu"),
+      report_year = c(1899, 2024)
+    ),
+    "between 1900 and 3000"
+  )
+
+  expect_error(
+    multi_site_report(
+      data_path = temp_rdata,
+      output_dir = tempdir(),
+      sites = c("Site1", "Site2"),
+      species = c("Epfu", "Mylu"),
+      activity_y_scale = "locked"
+    ),
+    "activity_y_scale"
+  )
+
+  unlink(temp_rdata)
 })
 
 test_that("render_custom_report validates template path", {

@@ -14,6 +14,7 @@ single_site_report(
   project_name = "",
   monitoring_start = NULL,
   monitoring_end = NULL,
+  report_year = NULL,
   map = FALSE
 )
 }
@@ -36,6 +37,9 @@ all species in the data will be included.}
 \item{monitoring_start}{Date. Monitoring period start (optional).}
 
 \item{monitoring_end}{Date. Monitoring period end (optional).}
+
+\item{report_year}{Integer vector of years to include in report outputs
+(optional). If provided, all report sections are filtered to these years.}
 
 \item{map}{Logical. Whether to include location map with basemap (default: FALSE).}
 }

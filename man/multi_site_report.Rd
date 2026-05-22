@@ -14,6 +14,8 @@ multi_site_report(
   project_name = "",
   monitoring_start = NULL,
   monitoring_end = NULL,
+  report_year = NULL,
+  activity_y_scale = "free_y",
   include_map = TRUE,
   basemap = FALSE
 )
@@ -37,6 +39,13 @@ all species in the data will be included.}
 \item{monitoring_start}{Date. Monitoring period start (optional).}
 
 \item{monitoring_end}{Date. Monitoring period end (optional).}
+
+\item{report_year}{Integer vector of years to include in report outputs
+(optional). If provided, all report sections are filtered to these years.}
+
+\item{activity_y_scale}{Character. Y-axis scaling for the activity figure.
+Use "free_y" (default) for independent y-scales per site or "fixed"
+to lock a common y-axis across sites.}
 
 \item{include_map}{Logical. Whether to include location map (default: TRUE).}
 

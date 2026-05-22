@@ -22,6 +22,7 @@ params:
   project_name: !r NA_character_
   monitoring_start: !r NA_character_
   monitoring_end: !r NA_character_
+  report_year: !r NA
   map: false
 ---
 
@@ -65,6 +66,12 @@ observations <- observations[
   observations$Location %in% params$site, 
 ]
 
+# Optional year filter (applies to all report outputs)
+if (!is.null(params$report_year) && !all(is.na(params$report_year))) {
+  years <- unique(as.integer(params$report_year))
+  observations <- observations[lubridate::year(observations$Night) %in% years, ]
+}
+
 if (nrow(observations) == 0) {
   stop("No observations found for specified site and species")
 }
@@ -72,6 +79,11 @@ if (nrow(observations) == 0) {
 # Filter active_dates if provided
 if (exists("active_dates")) {
   active_dates <- active_dates[active_dates$Location %in% params$site, ]
+  if (!is.null(params$report_year) && !all(is.na(params$report_year)) && "Date" %in% names(active_dates)) {
+    active_dates$Date <- as.Date(active_dates$Date)
+    years <- unique(as.integer(params$report_year))
+    active_dates <- active_dates[lubridate::year(active_dates$Date) %in% years, ]
+  }
 }
 
 # Determine monitoring period
@@ -198,6 +210,31 @@ batr::location_map_plot(
 )
 
 unlink(temp_map_file)
+```
+
+## Manual Vetting Summary
+
+```{r manual_vetting_summary, fig.cap="Manual vetting progress and accuracy"}
+tryCatch({
+  vet_summary <- batr::manual_vet_summary(
+    data_path = params$data_path,
+    stratify_by = "species",
+    species_list = params$species
+  )
+  
+  if (nrow(vet_summary) > 0) {
+    kable(vet_summary,
+          format = "latex",
+          booktabs = TRUE,
+          col.names = c("Species", "Total Files", "Vetted Count", "Match Count", "Percent Vetted", "Percent Match"),
+          caption = "Manual vetting progress by species") %>%
+      kable_styling(latex_options = c("hold_position", "scale_down"))
+  } else {
+    cat("No manual vetting data available for selected species.\n")
+  }
+}, error = function(e) {
+  cat("Manual vetting summary not available: ", e$message, "\n")
+})
 ```
 
 ## Notes
