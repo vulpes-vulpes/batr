@@ -6,6 +6,16 @@
 #' GUANO from new files to an existing RData file, or update metadata in an
 #' existing RData file where the metadata of the original files has changed.
 #'
+#' @section Required GUANO Fields:
+#' Files must contain the following metadata fields:
+#' \itemize{
+#'   \item Location / site name (specified by \code{site_col})
+#'   \item Timestamp
+#'   \item Latitude and Longitude (from \code{Loc Position})
+#' }
+#' Species identifiers (\code{Species.Manual.ID} or \code{Species.Auto.ID}) are
+#' recommended but optional; missing species IDs trigger a warning.
+#'
 #' @section Note: This function will take a long time for large data sets.
 #'   Folders containing tens of thousands of files may take several hours to
 #'   read! For this reason it is recommended to complete all manual vetting
@@ -281,7 +291,8 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
 
   if (!has_manual && !has_auto) {
     warning("Neither Species.Manual.ID nor Species.Auto.ID found in metadata. ",
-      "Species column will be NA.",
+      "Species column will be NA for all observations. ",
+      "Species-dependent summaries, plots, and reports may be empty or fail.",
       call. = FALSE
     )
     observations$Species <- NA_character_
@@ -662,16 +673,8 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   # Harmonize location column names
   observations <- .harmonize_location_columns(observations)
 
-  # Check for missing critical data and get list of files to exclude
-  missing_data <- .missing_data_checker(observations, site_col)
-
-  # Filter out files with missing data
-  if (nrow(missing_data) > 0) {
-    observations <- observations[!(observations$File.Name %in% missing_data$File.Name), ]
-    if (nrow(observations) == 0) {
-      stop("All files have missing critical data. No files to process.")
-    }
-  }
+  # Check for missing required data
+  .missing_data_checker(observations, site_col)
 
   # Combine guano from files with data from file list, and remove unneeded columns
   observations <- merge(observations, file_list, by.x = "File.Name", by.y = "File.Name")
@@ -706,27 +709,17 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     Latitude,
     Longitude,
     Species.Auto.ID,
-    dplyr::everything()
-  )
-  observations <- dplyr::select(
-    observations,
-    Timestamp,
-    Species,
-    Location,
-    Latitude,
-    Longitude,
-    Species.Auto.ID,
-    Species.Manual.ID,
+    dplyr::any_of("Species.Manual.ID"),
     dplyr::everything()
   )
 
   return(observations)
 }
 
-#' Check for Missing Critical Data
+#' Check for Missing Required Data
 #'
-#' Identifies files with missing location name, latitude, or longitude.
-#' Prompts user interactively for confirmation to proceed with exclusions.
+#' Identifies files with missing required GUANO fields and stops with
+#' an error describing the missing data.
 #'
 #' @param observations Data.frame containing observations with File.Name column.
 #' @param site_col Character. Name of the column containing location/site names.
@@ -735,13 +728,11 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
 #'   Returns empty data.frame (0 rows) if all files have complete data.
 #'
 #' @details
-#' In interactive mode, presents missing files and prompts user to:
-#' \itemize{
-#'   \item (p)rint all missing files
-#'   \item (y)es proceed with exclusions
-#'   \item (n)o cancel import
-#' }
-#' In non-interactive mode, automatically proceeds with a warning.
+#' Required fields are: the location column (\code{site_col}), \code{Latitude},
+#' \code{Longitude}, and \code{Timestamp}. Missing required fields cause
+#' the import to stop with an error. Species identifiers are optional; if both
+#' \code{Species.Manual.ID} and \code{Species.Auto.ID} are missing, a warning
+#' is issued but import continues.
 #'
 #' @keywords internal
 .missing_data_checker <- function(observations, site_col) {
@@ -751,31 +742,29 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     stringsAsFactors = FALSE
   )
 
-  # Check for site_col presence in all observations
-  if (!(site_col %in% names(observations))) {
-    warning(sprintf("Location column '%s' not found in metadata. All files flagged as missing location data.", site_col))
-    missing_data <- data.frame(
-      File.Name = observations$File.Name,
-      Missing.Fields = "Location",
-      stringsAsFactors = FALSE
+  required_cols <- c(site_col, "Latitude", "Longitude", "Timestamp")
+  missing_cols <- setdiff(required_cols, names(observations))
+  if (length(missing_cols) > 0) {
+    stop(
+      "Missing required GUANO columns: ", paste(missing_cols, collapse = ", "), ".\n",
+      "Required columns: ", paste(required_cols, collapse = ", "), "."
     )
-    # Immediately return with all files as missing
-    return(missing_data)
   }
 
-  # Check for missing location data
-  missing_loc_idx <- is.na(observations[[site_col]])
+  missing_loc_idx <- is.na(observations[[site_col]]) |
+    (is.character(observations[[site_col]]) & trimws(observations[[site_col]]) == "")
   missing_lat_idx <- is.na(observations$Latitude)
   missing_lon_idx <- is.na(observations$Longitude)
+  missing_ts_idx <- is.na(observations$Timestamp) |
+    (is.character(observations$Timestamp) & trimws(observations$Timestamp) == "")
 
-  # Identify files with any missing critical data
   missing_files <- unique(c(
     observations$File.Name[missing_loc_idx],
     observations$File.Name[missing_lat_idx],
-    observations$File.Name[missing_lon_idx]
+    observations$File.Name[missing_lon_idx],
+    observations$File.Name[missing_ts_idx]
   ))
 
-  # If there are missing files, build the data frame and ask user to proceed
   if (length(missing_files) > 0) {
     missing_data <- data.frame(
       File.Name = missing_files,
@@ -790,59 +779,62 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
         if (fn %in% observations$File.Name[missing_lon_idx]) {
           missing_fields <- c(missing_fields, "Longitude")
         }
+        if (fn %in% observations$File.Name[missing_ts_idx]) {
+          missing_fields <- c(missing_fields, "Timestamp")
+        }
         paste(missing_fields, collapse = ", ")
       }, USE.NAMES = FALSE),
       stringsAsFactors = FALSE
     )
 
-    # Display warning and ask user
-    cat("WARNING: ", nrow(missing_data), " files have missing critical data (Location, Latitude, or Longitude).\n", sep = "")
-    cat("These files will be excluded from further processing.\n\n")
+    preview <- missing_data[seq_len(min(10, nrow(missing_data))), , drop = FALSE]
+    preview_lines <- paste0(preview$File.Name, " [", preview$Missing.Fields, "]")
+    more_count <- nrow(missing_data) - nrow(preview)
+    more_text <- if (more_count > 0) paste0(" (", more_count, " more)") else ""
 
-    # Show first N files (to avoid flooding console), then summary
-    max_show <- 10
-    if (nrow(missing_data) > max_show) {
-      cat("Showing first ", max_show, " files with missing critical data:\n", sep = "")
-      print(missing_data[1:max_show, ])
-      cat("\n... and ", nrow(missing_data) - max_show, " more files.\n", sep = "")
-    } else {
-      cat("Files with missing critical data:\n")
-      print(missing_data)
-    }
-    cat("\n")
-
-    # Prompt user for confirmation (handle both interactive and non-interactive contexts)
-    if (interactive()) {
-      repeat {
-        response <- readline(prompt = "Do you want to (p)rint all files, (y)es proceed, or (n)o cancel? [p/y/n]: ")
-        response <- tolower(trimws(response))
-
-        if (response %in% c("p", "print")) {
-          # User wants to see all missing files
-          cat("\n")
-          cat("All files with missing critical data:\n")
-          print(missing_data)
-          cat("\n")
-          # Loop back to prompt again
-        } else if (response %in% c("y", "yes")) {
-          # User confirms; return the missing data frame so caller can filter it out
-          return(missing_data)
-        } else if (response %in% c("n", "no")) {
-          # User cancels; stop execution
-          stop("Import cancelled by user due to missing critical data.")
-        } else {
-          cat("Please enter 'p', 'y', or 'n'.\n")
-          # Loop back to prompt again
-        }
-      }
-    } else {
-      # Non-interactive mode: automatically exclude and proceed with warning
-      cat("WARNING: Running in non-interactive mode. Automatically excluding files with missing critical data.\n")
-      cat("(To view all missing files, check the 'missing_data' attribute on the result.)\n")
-      return(missing_data)
-    }
+    stop(
+      "Missing required GUANO fields in ", nrow(missing_data), " file(s).\n",
+      "Required fields: ", paste(required_cols, collapse = ", "), ".\n",
+      "Examples: ", paste(preview_lines, collapse = "; "), more_text
+    )
   }
 
-  # No missing data; return empty data frame
+  has_manual <- "Species.Manual.ID" %in% names(observations)
+  has_auto <- "Species.Auto.ID" %in% names(observations)
+
+  if (!has_manual && !has_auto) {
+    warning(
+      "No species ID columns found (Species.Manual.ID or Species.Auto.ID). ",
+      "Species will be NA for all observations. ",
+      "Species-dependent summaries, plots, and reports may be empty or fail."
+    )
+    return(missing_data)
+  }
+
+  manual_missing <- if (has_manual) {
+    is.na(observations$Species.Manual.ID) |
+      (is.character(observations$Species.Manual.ID) & trimws(observations$Species.Manual.ID) == "")
+  } else {
+    rep(TRUE, nrow(observations))
+  }
+  auto_missing <- if (has_auto) {
+    is.na(observations$Species.Auto.ID) |
+      (is.character(observations$Species.Auto.ID) & trimws(observations$Species.Auto.ID) == "")
+  } else {
+    rep(TRUE, nrow(observations))
+  }
+  missing_species_idx <- manual_missing & auto_missing
+  if (any(missing_species_idx)) {
+    preview <- observations$File.Name[missing_species_idx]
+    preview <- preview[seq_len(min(10, length(preview)))]
+    more_count <- sum(missing_species_idx) - length(preview)
+    more_text <- if (more_count > 0) paste0(" (", more_count, " more)") else ""
+    warning(
+      sum(missing_species_idx), " file(s) are missing both Species.Manual.ID and Species.Auto.ID. ",
+      "Species will be NA for these files. Species-dependent outputs may be sparse or empty if this is widespread. ",
+      "Examples: ", paste(preview, collapse = ", "), more_text
+    )
+  }
+
   return(missing_data)
 }

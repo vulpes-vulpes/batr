@@ -2,7 +2,7 @@
 % Please edit documentation in R/import_guano.R
 \name{.missing_data_checker}
 \alias{.missing_data_checker}
-\title{Check for Missing Critical Data}
+\title{Check for Missing Required Data}
 \usage{
 .missing_data_checker(observations, site_col)
 }
@@ -16,16 +16,14 @@ Data.frame listing files with missing data and which fields are missing.
   Returns empty data.frame (0 rows) if all files have complete data.
 }
 \description{
-Identifies files with missing location name, latitude, or longitude.
-Prompts user interactively for confirmation to proceed with exclusions.
+Identifies files with missing required GUANO fields and stops with
+an error describing the missing data.
 }
 \details{
-In interactive mode, presents missing files and prompts user to:
-\itemize{
-  \item (p)rint all missing files
-  \item (y)es proceed with exclusions
-  \item (n)o cancel import
-}
-In non-interactive mode, automatically proceeds with a warning.
+Required fields are: the location column (\code{site_col}), \code{Latitude},
+\code{Longitude}, and \code{Timestamp}. Missing required fields cause
+the import to stop with an error. Species identifiers are optional; if both
+\code{Species.Manual.ID} and \code{Species.Auto.ID} are missing, a warning
+is issued but import continues.
 }
 \keyword{internal}

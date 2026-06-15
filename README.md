@@ -95,13 +95,17 @@ Kaleidoscope, AnalookW, and others.
 
 **Minimum required fields:**
 
-- **Species identification**: `Species Auto ID` or `Species Manual ID`
-  (manual takes precedence)
 - **Site identifier**: A custom field containing unique location names
   (specified as `site_col` during import)
 - **Timestamp**: Recording date and time (GUANO standard field)
 - **Coordinates**: `Loc Position` in decimal degrees format (e.g.,
   “43.123456 -79.654321”)
+
+**Recommended fields:**
+
+- **Species identification**: `Species Auto ID` or `Species Manual ID`
+  (manual takes precedence). Missing species IDs trigger a warning but do not
+  prevent import.
 
 ### Basic Workflow
 

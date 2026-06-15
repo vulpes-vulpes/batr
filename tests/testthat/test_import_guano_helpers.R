@@ -91,31 +91,60 @@ test_that(".validate_input_path checks existence", {
 # .missing_data_checker (non-interactive path)
 # ----------------------------------------------------------------------------
 
-test_that(".missing_data_checker flags missing fields (non-interactive)", {
+test_that(".missing_data_checker errors on missing required fields", {
     obs <- data.frame(
         File.Name = c("a.wav", "b.wav", "c.wav"),
         Site = c("A", NA, "C"),
         Latitude = c(51, 52, NA),
         Longitude = c(-1, NA, -3),
+        Timestamp = as.POSIXct(c("2024-01-01 01:00:00", NA, "2024-01-03 01:00:00"), tz = "UTC"),
         stringsAsFactors = FALSE
     )
 
-    # Mock interactive() to return FALSE so function doesn't prompt
-    withr::local_options(list(batr.non_interactive = TRUE))
-
-    # Or use testthat::local_mocked_bindings to mock readline
-    testthat::local_mocked_bindings(
-        readline = function(prompt) "y", # Default answer "no"
-        .package = "base"
+    expect_error(
+        batr:::`.missing_data_checker`(obs, site_col = "Site"),
+        "Missing required GUANO fields"
     )
 
-    miss <- batr:::`.missing_data_checker`(obs, site_col = "Site")
-    expect_s3_class(miss, "data.frame")
-    expect_equal(sort(miss$File.Name), sort(c("b.wav", "c.wav")))
-
-    # When site_col missing entirely, all files flagged
+    # When site_col missing entirely, error lists missing column
     obs2 <- obs
     obs2$Site <- NULL
-    miss2 <- suppressWarnings(batr:::`.missing_data_checker`(obs2, site_col = "Site"))
-    expect_equal(nrow(miss2), nrow(obs2))
+    expect_error(
+        batr:::`.missing_data_checker`(obs2, site_col = "Site"),
+        "Missing required GUANO columns"
+    )
+})
+
+test_that(".missing_data_checker warns when species IDs are missing", {
+    obs <- data.frame(
+        File.Name = c("a.wav", "b.wav"),
+        Site = c("A", "B"),
+        Latitude = c(51, 52),
+        Longitude = c(-1, -2),
+        Timestamp = as.POSIXct(c("2024-01-01 01:00:00", "2024-01-02 01:00:00"), tz = "UTC"),
+        Species.Manual.ID = c(NA, NA),
+        Species.Auto.ID = c(NA, NA),
+        stringsAsFactors = FALSE
+    )
+
+    expect_warning(
+        batr:::`.missing_data_checker`(obs, site_col = "Site"),
+        "missing both Species.Manual.ID and Species.Auto.ID"
+    )
+})
+
+test_that(".missing_data_checker warning is explicit when species ID columns are absent", {
+    obs <- data.frame(
+        File.Name = c("a.wav", "b.wav"),
+        Site = c("A", "B"),
+        Latitude = c(51, 52),
+        Longitude = c(-1, -2),
+        Timestamp = as.POSIXct(c("2024-01-01 01:00:00", "2024-01-02 01:00:00"), tz = "UTC"),
+        stringsAsFactors = FALSE
+    )
+
+    expect_warning(
+        batr:::`.missing_data_checker`(obs, site_col = "Site"),
+        "Species-dependent summaries, plots, and reports may be empty or fail"
+    )
 })

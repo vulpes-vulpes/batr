@@ -50,6 +50,17 @@ file for easy reference. This function can generate a new RData file, add
 GUANO from new files to an existing RData file, or update metadata in an
 existing RData file where the metadata of the original files has changed.
 }
+\section{Required GUANO Fields}{
+Files must contain the following metadata fields:
+\itemize{
+  \item Location / site name (specified by \code{site_col})
+  \item Timestamp
+  \item Latitude and Longitude (from \code{Loc Position})
+}
+Species identifiers (\code{Species.Manual.ID} or \code{Species.Auto.ID}) are
+recommended but optional; missing species IDs trigger a warning.
+}
+
 \section{Note}{
  This function will take a long time for large data sets.
   Folders containing tens of thousands of files may take several hours to
