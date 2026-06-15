@@ -403,6 +403,17 @@ monitoring_effort_plot <- function(data_path,
         ymax = 1
       )
     }
+  } else if (!is.null(location_list)) {
+    # gap_list was empty from the start (no log/gap data loaded at all).
+    # Create a placeholder so facet_wrap(~Location_label) has a valid column.
+    gap_list <- data.table::data.table(
+      Location = location_list,
+      Location_label = .clean_location_label(location_list),
+      xmin = as.Date(monitoring_start),
+      xmax = as.Date(monitoring_start),
+      ymin = 0,
+      ymax = 1
+    )
   }
 
   # Build x-axis scale (adaptive breaks unless user supplies date_breaks)

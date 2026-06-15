@@ -15,5 +15,6 @@ Data.frame with standardized \code{Latitude} and \code{Longitude} columns.
 \description{
 Handles different naming conventions for latitude/longitude in GUANO metadata.
 Merges data when both variants exist (preferring capitalized versions).
+Parses coordinate strings with direction indicators (e.g., "45.25,N").
 }
 \keyword{internal}

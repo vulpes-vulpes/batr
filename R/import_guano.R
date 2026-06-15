@@ -342,14 +342,18 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   if (is.null(coord_str) || length(coord_str) == 0) {
     return(numeric(0))
   }
-  
+
   sapply(coord_str, function(x) {
-    if (is.na(x) || x == "") return(NA_real_)
-    
+    if (is.na(x) || x == "") {
+      return(NA_real_)
+    }
+
     # Try direct numeric conversion first
     numeric_val <- suppressWarnings(as.numeric(as.character(x)))
-    if (!is.na(numeric_val)) return(numeric_val)
-    
+    if (!is.na(numeric_val)) {
+      return(numeric_val)
+    }
+
     # Try parsing format like "45.25000,N" or "81.66000,W"
     x_str <- as.character(x)
     if (grepl(",", x_str)) {
@@ -357,7 +361,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
       if (length(parts) == 2) {
         value <- suppressWarnings(as.numeric(trimws(parts[1])))
         direction <- toupper(trimws(parts[2]))
-        
+
         if (!is.na(value) && direction %in% c("N", "S", "E", "W")) {
           # Apply sign based on direction
           if (direction %in% c("S", "W")) {
@@ -368,7 +372,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
         }
       }
     }
-    
+
     # If all parsing fails, return NA
     return(NA_real_)
   }, USE.NAMES = FALSE)
@@ -514,7 +518,10 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     if (!any(ok)) {
       return(mk_empty())
     }
-    return(data.frame(Full.Path = fp[ok], File.Modified = mt[ok], stringsAsFactors = FALSE))
+    # Filter out AppleDouble files (._*)
+    basenames <- sub(".*/", "", fp[ok])
+    not_appledouble <- !grepl("^\\._", basenames)
+    return(data.frame(Full.Path = fp[ok][not_appledouble], File.Modified = mt[ok][not_appledouble], stringsAsFactors = FALSE))
   } else if (.Platform$OS.type == "windows") {
     ps_quote <- function(x) sprintf("'%s'", gsub("'", "''", x, fixed = TRUE))
     ps <- sprintf(
@@ -534,7 +541,10 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     if (!any(ok)) {
       return(mk_empty())
     }
-    return(data.frame(Full.Path = fp[ok], File.Modified = mt[ok], stringsAsFactors = FALSE))
+    # Filter out AppleDouble files (._*)
+    basenames <- sub(".*/", "", fp[ok])
+    not_appledouble <- !grepl("^\\._", basenames)
+    return(data.frame(Full.Path = fp[ok][not_appledouble], File.Modified = mt[ok][not_appledouble], stringsAsFactors = FALSE))
   } else {
     return(mk_empty())
   }
@@ -544,6 +554,7 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
 #'
 #' Discovers WAV files in a directory tree and retrieves their modification times.
 #' Can operate in fast mode (system calls) or standard mode (R functions).
+#' Automatically filters out macOS AppleDouble files (files starting with \code{._}).
 #'
 #' @param input_path Character. Either a directory path to search (when \code{list=FALSE})
 #'   or a character vector of file paths (when \code{list=TRUE}).
@@ -563,6 +574,10 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
 #' When \code{fast_import=TRUE}, attempts single-pass discovery. If this fails,
 #' automatically falls back to standard R functions with a warning message.
 #'
+#' Files starting with \code{._} (macOS AppleDouble resource fork files) are
+#' automatically filtered out as they are not valid WAV files and can cause
+#' errors during parallel processing.
+#'
 #' @keywords internal
 .get_file_list <- function(input_path, fast_import = TRUE, list = FALSE) {
   # Identify if input_path is already a character vector of file paths and reformat if so
@@ -573,6 +588,10 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
       stop("No files provided in 'input_path' when list=TRUE.")
     }
     file_list_short <- sub(".*/", "", file_list_full)
+    # Filter out AppleDouble files (._*)
+    not_appledouble <- !grepl("^\\._", file_list_short)
+    file_list_full <- file_list_full[not_appledouble]
+    file_list_short <- file_list_short[not_appledouble]
     # Otherwise, read files from directory
   } else {
     message("Discovering WAV files...")
@@ -599,11 +618,19 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
         message("Fast discovery returned no results. Using standard file listing...")
         file_list_full <- list.files(input_path, pattern = wav_pattern, full.names = TRUE, recursive = TRUE, ignore.case = TRUE)
         file_list_short <- sub(".*/", "", file_list_full)
+        # Filter out AppleDouble files (._*)
+        not_appledouble <- !grepl("^\\._", file_list_short)
+        file_list_full <- file_list_full[not_appledouble]
+        file_list_short <- file_list_short[not_appledouble]
       }
     } else {
       message("Using standard file listing...")
       file_list_full <- list.files(input_path, pattern = wav_pattern, full.names = TRUE, recursive = TRUE, ignore.case = TRUE)
       file_list_short <- sub(".*/", "", file_list_full)
+      # Filter out AppleDouble files (._*)
+      not_appledouble <- !grepl("^\\._", file_list_short)
+      file_list_full <- file_list_full[not_appledouble]
+      file_list_short <- file_list_short[not_appledouble]
     }
 
     elapsed <- round(as.numeric(difftime(Sys.time(), start_discover, units = "secs")), 2)
@@ -632,6 +659,20 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   )
 
   return(file_list)
+}
+
+#' Safely read GUANO metadata from one WAV path
+#' @keywords internal
+.safe_read_guano <- function(path) {
+  tryCatch(
+    {
+      df <- read.guano(path)
+      as.data.frame(df)
+    },
+    error = function(e) {
+      list(.error = TRUE, .path = path, .message = conditionMessage(e))
+    }
+  )
 }
 
 #' Read GUANO Metadata from WAV File List
@@ -666,19 +707,6 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
   message(sprintf("Reading GUANO metadata from %d files...", n_files))
   read_start <- Sys.time()
 
-  # Helper to read single file safely
-  safe_read <- function(path) {
-    tryCatch(
-      {
-        df <- read.guano(path)
-        as.data.frame(df)
-      },
-      error = function(e) {
-        list(.error = TRUE, .path = path, .message = conditionMessage(e))
-      }
-    )
-  }
-
   # Read files (possibly in parallel)
   if (fast_import) {
     message("Using parallel processing...")
@@ -686,15 +714,17 @@ import_guano <- function(action, input_path, site_col, timezone, data_path = NUL
     on.exit(future::plan(old_plan), add = TRUE)
     future::plan(future::multisession)
     res_list <- progressr::with_progress({
-      p <- progressr::progressor(steps = length(paths))
-      future.apply::future_lapply(paths, function(path) {
-        res <- safe_read(path)
-        p()
-        res
-      }, future.packages = "batr")
+      # Use a package-level worker function and no captured globals to avoid
+      # exporting large closures to workers.
+      future.apply::future_lapply(
+        paths,
+        .safe_read_guano,
+        future.packages = "batr",
+        future.globals = FALSE
+      )
     })
   } else {
-    res_list <- lapply(paths, safe_read)
+    res_list <- lapply(paths, .safe_read_guano)
   }
 
   read_elapsed <- round(as.numeric(difftime(Sys.time(), read_start, units = "secs")), 1)
